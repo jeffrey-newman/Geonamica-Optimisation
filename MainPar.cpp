@@ -20,7 +20,11 @@ int main(int argc, char * argv[]) {
     boost::mpi::environment env(argc, argv);
     boost::mpi::communicator world;
     ZonalPolicyParameters params;
-    processOptions(argc, argv, params);
+    int ret = processOptions(argc, argv, params);
+    if (ret == 1)
+    {
+        return 1;
+    }
     ZonalOptimiser zonal_eval(params);
 
     

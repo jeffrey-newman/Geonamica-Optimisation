@@ -58,7 +58,7 @@ private:
     boost::filesystem::path previous_logfile;
     
     
-    int analysisNum;
+//    int analysisNum;
     int eval_count;
     
     int num_objectives;

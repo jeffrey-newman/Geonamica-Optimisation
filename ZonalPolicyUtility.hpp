@@ -63,7 +63,7 @@ std::pair<std::string, std::string> at_option_parser(std::string const&s)
         return std::pair<std::string, std::string>();
 }
 
-void
+int
 processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
 {
     namespace po = boost::program_options;
@@ -128,6 +128,7 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
         
     }
     
+    return (0);
     
 }
 
