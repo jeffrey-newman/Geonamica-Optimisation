@@ -1,0 +1,3 @@
+OPENSUSE-OFFICE
+
+model-cmd="/usr/bin/timeout --kill-after=20m 19m /usr/bin/wine \"Z:\home\a1091793\bin\Metronamica\GeonamicaCmd.exe\""
