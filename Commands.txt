@@ -1,3 +1,21 @@
 OPENSUSE-OFFICE
 
-model-cmd="/usr/bin/timeout --kill-after=20m 19m /usr/bin/wine \"Z:\home\a1091793\bin\Metronamica\GeonamicaCmd.exe\""
+model-cmd=/usr/bin/timeout --kill-after=20m 19m /usr/bin/wine \"Z:\home\a1091793\bin\Metronamica\GeonamicaCmd.exe\"
+template=/home/a1091793/Documents/Modelling/Zonal-Optimisation-Geoprojects/Zonal-Optimisation-Geoprojects/Randstad_SL_Optimisation
+working-dir=/home/a1091793/Documents/Run/Randstad-Zonal-Opt
+wine-working-dir=z:\home\a1091793\Documents\Run\Randstad-Zonal-Opt
+geoproj-file=Randstad.geoproj
+zonal-maps=/Data/OptZone.asc
+obj-maps=\Log\Habitat_fragmentation\Habitat fragmentation map_2030-Jan-01 00_00_00.rst
+obj-maps=\Log\Distance_from_residential_to_work\Distance from residential to work map_2030-Jan-01 00_00_00.rst
+min-or-max=MIN
+min-or-max=MIN
+zone-delineation=clusters2.asc
+log-spec=LogSettings3.xml
+is-logging=TRUE
+save-dir=/home/a1091793/Documents/Run/Randstad-Zonal-Opt/save
+pop-size=300
+max-gen-no-hvol-improve=50
+max-gen=600
+save-freq=10
+replicates=10

@@ -15,6 +15,7 @@
 #include <boost/program_options.hpp>
 #include "Pathify.hpp"
 
+#include "NSGAII.hpp"
 #include "Checkpoints/SavePopCheckpoint.hpp"
 #include "Checkpoints/MaxGenCheckpoint.hpp"
 #include "Checkpoints/PlotFronts.hpp"
@@ -30,18 +31,17 @@
 struct ZonalPolicyParameters
 {
     
-    CmdLinePaths model_cmd;  // command which runs the model (like "/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe")
+    std::string model_cmd;  // command which runs the model (like "/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe")
     CmdLinePaths template_project_dir; // path to template project
     CmdLinePaths working_dir;
     std::string  wine_working_dir;
     std::string  rel_path_geoproj; // relative path of geoproject file from geoproject directory (head/root directory)
-    std::string  rel_path_zonal_map; // relative path of zonal policy map layer that is being optimised relative to (head/root directory)
+    std::string  rel_path_zonal_map; // relative path of zonal policy map layer that is being optimised relative to (head/root directory.)
     std::vector<std::string> rel_path_obj_maps; // relative paths of objectives maps that we are maximising/minimising relative to (head/root directory)
     std::vector<std::string> min_or_max_str;
     std::vector<MinOrMaxType> min_or_max; //vector of whether the objectives in the maps above are minimised or maximised.
     std::string rel_path_log_specification;  // relative path of logging file from geoproject directory (head/root directory)  - should be in wine format.
     std::string rel_path_zones_delineation_map;  // relative path of a map which delineates the project area into regions wherein zonal policiy is optimised.
-    CmdLinePaths  log_dir;
     bool is_logging = false;
     int replicates = 10;
     int pop_size; // For the GA
@@ -52,6 +52,9 @@ struct ZonalPolicyParameters
     int evaluator_id = 0;
     std::vector<int> rand_seeds { 1000,1001,1002,1003,1004,1005,1006,1007,1008,1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020 };
     CmdLinePaths restart_pop_file;
+    int year_start;
+    int year_end;
+    double discount_rate;
     
 };
 
@@ -70,16 +73,16 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help,h", "produce help message")
-    ("model-cmd,m", po::value<std::string>(&params.model_cmd.first), "xecutable string that will run the geonamica model --- without command flags/arguments (like \"/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe\")")
+    ("model-cmd,m", po::value<std::string>(&params.model_cmd), "xecutable string that will run the geonamica model --- without command flags/arguments (like \"/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe\")")
     ("template,t", po::value<std::string>(&params.template_project_dir.first), "path to template geoproject directory")
     ("working-dir,d", po::value<std::string>(&params.working_dir.first)->default_value(boost::filesystem::current_path().string()), "path of directory for storing temp files during running")
     ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
     ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj), "name of geoproject file (without full path), relative to template geoproject directory")
-    ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map), "name of zonal map (without full path), relative to template geoproject directory")
+    ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map), "name of zonal map (without full path), relative to template geoproject directory. This needs to be GDAL create writable, so NOT ASCII grid format")
     ("obj-maps,o",po::value<std::vector<std::string> >(&params.rel_path_obj_maps)->multitoken(), "relative paths wrt template geoproject directory of objective maps")
-    ("min-or-max,n",po::value<std::vector<std::string> >(&params.min_or_max_str)->multitoken(), "relative paths wrt template geoproject directory of objective maps")
+    ("min-or-max,n",po::value<std::vector<std::string> >(&params.min_or_max_str)->multitoken(), "whether the aggregated value in the obj-maps are to be minimised (specify MIN) or maximised (specify MAX)")
     ("zone-delineation,e", po::value<std::string>(&params.rel_path_zones_delineation_map), "name of zonal delineation map (without full path), relative to template geoproject directory")
-    ("log-dir,l", po::value<std::string>(&params.log_dir.first), "path of the log settings xml file (full path in wine format)")
+    ("log-spec,l", po::value<std::string>(&params.rel_path_log_specification), "path of the log settings xml file (relative to template geoproject directory in in wine format)")
     ("is-logging,s", po::value<bool>(&params.is_logging), "TRUE or FALSE whether to log the evaluation")
     ("save-dir,v", po::value<std::string>(&params.save_dir.first)->default_value(boost::filesystem::current_path().string()), "path of the directory for writing results and outputs to")
     ("pop-size,p", po::value<int>(&params.pop_size)->default_value(415), "Population size of the NSGAII")
@@ -88,6 +91,9 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     ("save-freq,q", po::value<int>(&params.save_freq)->default_value(1), "how often to save first front, hypervolume metric and population")
     ("replicates,i", po::value<int>(&params.replicates)->default_value(10), "Number of times to rerun Metronamica to account for stochasticity of model for each objective function evaluation")
     ("reseed,r", po::value<std::string>(&params.restart_pop_file.first)->default_value("no_seed"), "File with saved population as initial seed population for GA")    
+    ("year-start,a",po::value<int>(&params.year_start),"Start year for objective map logging - only valid if objective logging file stem is only given and not full filename")
+    ("year-end,b",po::value<int>(&params.year_end),"End year for objective map logging - only valid if objective logging file stem is only given and not full filename")
+    ("discount-rate,d",po::value<double>(&params.discount_rate)->default_value(0.0),"discount rate for objectives (applies to all of them)")
     ("cfg-file,c", po::value<std::string>(), "can be specified with '@name', too");
     
     po::variables_map vm;
@@ -112,12 +118,15 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     
     po::notify(vm);
     
-    pathify(params.model_cmd); //.second = boost::filesystem::path(metro_exe.first);
+//    pathify(params.model_cmd); //.second = boost::filesystem::path(metro_exe.first);
     pathify(params.template_project_dir);
-    pathify(params.working_dir);
-    pathify(params.log_dir);
-    pathify(params.save_dir);
-    pathify(params.restart_pop_file);
+    pathify_mk(params.working_dir);
+    //pathify(params.log_dir);
+    pathify_mk(params.save_dir);
+    if (params.restart_pop_file.first != "no_seed")
+    {
+        pathify(params.restart_pop_file);
+    }
     
     
     // Get min or max objectives.
@@ -136,17 +145,17 @@ template<typename RNG>
 void
 createCheckpoints(NSGAII<RNG> & optimiser, ZonalPolicyParameters & params)
 {
-    SavePopCheckpoint save_pop(params.save_freq, params.save_dir.second);
-    SaveFirstFrontCheckpoint save_front(params.save_freq, params.save_dir.second);
-    Hypervolume hvol(1, params.save_dir.second, Hypervolume::TERMINATION, params.max_gen_hvol);
-    MetricLinePlot hvol_plot(hvol);
-    MaxGenCheckpoint maxgen(params.max_gen);
+    boost::shared_ptr<SavePopCheckpoint> save_pop(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
+    boost::shared_ptr<SaveFirstFrontCheckpoint> save_front(new SaveFirstFrontCheckpoint(params.save_freq, params.save_dir.second));
+    boost::shared_ptr<Hypervolume> hvol(new Hypervolume(1, params.save_dir.second, Hypervolume::TERMINATION, params.max_gen_hvol));
+    boost::shared_ptr<MetricLinePlot> hvol_plot(new MetricLinePlot(hvol));
+    boost::shared_ptr<MaxGenCheckpoint> maxgen(new MaxGenCheckpoint(params.max_gen));
     std::string mail_subj("Hypervolume of front from Zonal calibrator ");
-    MailCheckpoint mail(10, hvol, mail_subj);
+    boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(10, hvol, mail_subj));
     std::string jeffs_address("jeffrey.newman@adelaide.edu.au");
-    mail.addAddress(jeffs_address);
+    mail->addAddress(jeffs_address);
     
-    PlotFrontVTK plotfront;
+    boost::shared_ptr<PlotFrontVTK> plotfront(new PlotFrontVTK);
     optimiser.add_checkpoint(save_pop);
     optimiser.add_checkpoint(save_front);
     optimiser.add_checkpoint(hvol);
