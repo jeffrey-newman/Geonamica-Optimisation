@@ -40,5 +40,7 @@ int main(int argc, char * argv[]) {
     //Postprocess the results
     postProcessResults(zonal_eval, pop, params);
 
+    //Cleanup
+    cleanup(params);
 
 }

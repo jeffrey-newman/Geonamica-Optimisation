@@ -34,6 +34,8 @@ struct ZonalPolicyParameters
     std::string model_cmd;  // command which runs the model (like "/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe")
     CmdLinePaths template_project_dir; // path to template project
     CmdLinePaths working_dir;
+    CmdLinePaths wine_drive_path;
+    char wine_drive_letter;
     std::string  wine_working_dir;
     std::string  rel_path_geoproj; // relative path of geoproject file from geoproject directory (head/root directory)
     std::string  rel_path_zonal_map; // relative path of zonal policy map layer that is being optimised relative to (head/root directory.)
@@ -76,6 +78,8 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     ("model-cmd,m", po::value<std::string>(&params.model_cmd), "xecutable string that will run the geonamica model --- without command flags/arguments (like \"/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe\")")
     ("template,t", po::value<std::string>(&params.template_project_dir.first), "path to template geoproject directory")
     ("working-dir,d", po::value<std::string>(&params.working_dir.first)->default_value(boost::filesystem::current_path().string()), "path of directory for storing temp files during running")
+            ("wine-drive-path,f", po::value<std::string>(&params.wine_drive_path.first)->default_value("do not test"), "Path of root directory of wine drive")
+            ("wine-drive-letter,g", po::value<char>(&params.wine_drive_letter), "Letter of drive to make symlink for - i.e. C for 'C:' or Z for 'Z:' etc ")
     ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
     ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj), "name of geoproject file (without full path), relative to template geoproject directory")
     ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map), "name of zonal map (without full path), relative to template geoproject directory. This needs to be GDAL create writable, so NOT ASCII grid format")
@@ -119,10 +123,30 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     po::notify(vm);
     
 //    pathify(params.model_cmd); //.second = boost::filesystem::path(metro_exe.first);
+
+
+    if (params.wine_drive_path.first != "do not test")
+    {
+        pathify(params.wine_drive_path);
+        boost::filesystem::path symlinkpath("~/.wine/dosdevices");
+        if (!(boost::filesystem::exists(symlinkpath)))
+        {
+            std::cout << "Could not find dosdevices in ~/.wine.  Is wine installed?";
+        }
+        symlinkpath = symlinkpath / std::string(1, params.wine_drive_letter);
+        //Check is symbolic link for wine J: exists.
+        boost::filesystem::file_status lnk_status = boost::filesystem::status(symlinkpath);
+        if (!(boost::filesystem::exists(lnk_status)))
+        {
+            boost::filesystem::create_directory_symlink(params.wine_drive_path.second, symlinkpath);
+        }
+    }
+
     pathify(params.template_project_dir);
     pathify_mk(params.working_dir);
     //pathify(params.log_dir);
     pathify_mk(params.save_dir);
+
     if (params.restart_pop_file.first != "no_seed")
     {
         pathify(params.restart_pop_file);
@@ -198,5 +222,27 @@ postProcessResults(ZonalOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyP
     ofs2 << pop;
 }
 
+
+void
+cleanup(ZonalPolicyParameters & params)
+{
+    if (params.wine_drive_path.first != "do not test") {
+
+        boost::filesystem::path symlinkpath("~/.wine/dosdevices");
+        symlinkpath = symlinkpath / std::string(1, params.wine_drive_letter);
+//Check is symbolic link for wine J: exists.
+        boost::filesystem::file_status lnk_status = boost::filesystem::status(symlinkpath);
+        if ((boost::filesystem::exists(lnk_status)))
+        {
+            boost::filesystem::remove_all(symlinkpath);
+        }
+    }
+
+    if (boost::filesystem::exists(params.working_dir.second))
+    {
+        boost::filesystem::remove_all(params.working_dir.second)
+    }
+
+}
 
 #endif /* ZonalPolicyUtility_hpp */
