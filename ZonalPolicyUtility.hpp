@@ -60,6 +60,23 @@ struct ZonalPolicyParameters
     
 };
 
+std::string
+userHomeDir()
+{
+        char const* home = getenv("HOME");
+        if (home or ((home = getenv("USERPROFILE"))))
+
+                else {
+            char const *hdrive = getenv("HOMEDRIVE"),
+                    *hpath = getenv("HOMEPATH");
+            assert(hdrive);  // or other error handling
+            assert(hpath);
+            path.replace(0, 1, std::string(hdrive) + hpath);
+        }
+    }
+    return path;
+}
+
 std::pair<std::string, std::string> at_option_parser(std::string const&s)
 {
     if ('@' == s[0])
@@ -133,13 +150,14 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
         {
             std::cout << "Could not find dosdevices in ~/.wine.  Is wine installed?";
         }
-        symlinkpath = symlinkpath / std::string(1, params.wine_drive_letter);
-        //Check is symbolic link for wine J: exists.
+        boost::filesystem::path symlinkpath_ext = symlinkpath / std::string(1, params.wine_drive_letter);
+        //Check if symbolic link for wine J: exists.
         boost::filesystem::file_status lnk_status = boost::filesystem::status(symlinkpath);
         if (!(boost::filesystem::exists(lnk_status)))
         {
-            boost::filesystem::create_directory_symlink(params.wine_drive_path.second, symlinkpath);
+            boost::filesystem::create_directory_symlink(params.wine_drive_path.second, symlinkpath_ext);
         }
+//        system(("ls " + symlinkpath.string()).c_str());
     }
 
     pathify(params.template_project_dir);
