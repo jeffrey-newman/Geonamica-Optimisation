@@ -1,0 +1,3 @@
+ERROR 4: Unable to open EPSG support file gcs.csv
+Try setting the GDAL_DATA environment variable to point to the
+directory containing EPSG csv files.

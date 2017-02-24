@@ -60,16 +60,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 
 #   optional: specifiy (minimal) version / require to find it
 #           (PNGwriter 0.5.6 REQUIRED)
-find_package(PNGwriter)
+#find_package(PNGwriter)
 
-if(PNGwriter_FOUND)
-  # where to find the pngwriter.h header file (-I include for your compiler)
-  include_directories(${PNGwriter_INCLUDE_DIRS})
-  # additional compiler flags (e.g. -DNO_FREETYPE)
-  add_definitions(${PNGwriter_DEFINITIONS})
-  # libraries to link against (including dependencies)
-#  set(LIBS ${LIBS} ${PNGwriter_LIBRARIES})
-endif(PNGwriter_FOUND)
+#if(PNGwriter_FOUND)
+#  # where to find the pngwriter.h header file (-I include for your compiler)
+#  include_directories(${PNGwriter_INCLUDE_DIRS})
+#  # additional compiler flags (e.g. -DNO_FREETYPE)
+#  add_definitions(${PNGwriter_DEFINITIONS})
+#  # libraries to link against (including dependencies)
+##  set(LIBS ${LIBS} ${PNGwriter_LIBRARIES})
+#endif(PNGwriter_FOUND)
 
 # add_executable(yourBinary ${SOURCES})
 # ...

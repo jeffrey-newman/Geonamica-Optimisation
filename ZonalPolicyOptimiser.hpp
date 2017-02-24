@@ -24,7 +24,7 @@
 #include <boost/optional.hpp>
 #include <boost/timer/timer.hpp>
 #include "Evaluation.hpp"
-#include <blink/raster/PngPlotter.h>
+//#include <blink/raster/PngPlotter.h>
 #include <blink/raster/utility.h>
 #include <blink/raster/utility.h> // To open rasters
 #include <blink/iterator/zip_range.h>
