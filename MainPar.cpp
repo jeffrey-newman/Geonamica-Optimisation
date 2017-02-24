@@ -106,4 +106,7 @@ int main(int argc, char * argv[]) {
 //        }
         eval_client();
     }
+
+    //Cleanup
+    cleanup(params);
 }

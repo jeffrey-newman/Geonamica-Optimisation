@@ -39,6 +39,7 @@ include_directories(${Boost_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES(${AHHZ_RASTER_UTIL} )
 INCLUDE_DIRECTORIES(${AHHZ_RASTER_ITERATOR})
 INCLUDE_DIRECTORIES(${PARALLEL-NSGAII})
+include_directories("${CMAKE_SOURCE_DIR}/pugixml-1.7/src/")
 #INCLUDE_DIRECTORIES(${MCL})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -84,6 +85,13 @@ file(GLOB_RECURSE AHHZ_Raster
  "${AHHZ_RASTER_ITERATOR}/*.h" 
  "${AHHZ_RASTER_ITERATOR}/*.hpp" 
  "${AHHZ_RASTER_ITERATOR}/*.cpp"
+ )
+
+
+ SET(PUGIXML-SRC
+        "./pugixml-1.7/src/pugiconfig.hpp"
+        "./pugixml-1.7/src/pugixml.hpp"
+        "./pugixml-1.7/src/pugixml.cpp"
  )
 
 # SET(AHHZ_Raster_Utility
@@ -179,7 +187,7 @@ SET(Metro_calib_parallel_Src
 
     )
 
-add_executable(metrocalpar ${Metro_calib_parallel_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility} ${MCL_SOURCES})
+add_executable(metrocalpar ${Metro_calib_parallel_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility} ${MCL_SOURCES} ${PUGIXML-SRC})
 target_link_libraries(metrocalpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES})
 
 IF(USE_VTK)
@@ -208,7 +216,7 @@ SET(Metro_calib_serial_Src
 
 
 
-add_executable(metrocalser ${Metro_calib_serial_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES})
+add_executable(metrocalser ${Metro_calib_serial_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES}  ${PUGIXML-SRC})
 target_link_libraries(metrocalser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES})
 
 IF(USE_VTK)
