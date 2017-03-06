@@ -57,6 +57,8 @@ private:
     
     boost::filesystem::path logfile;
     boost::filesystem::path previous_logfile;
+
+//    std::string temp_dir_template;
     
     
 //    int analysisNum;
@@ -154,8 +156,30 @@ public:
     :
     params(_params),
     eval_count(0),
-    num_objectives(params.rel_path_obj_maps.size())
+    num_objectives(params.rel_path_obj_maps.size() + 1)
     {
+        boost::filesystem::path symlinkpath = boost::filesystem::path(userHomeDir()) / ".wine/dosdevices";
+        if (!(boost::filesystem::exists(symlinkpath)))
+        {
+            std::cout << "Could not find dosdevices in ~/.wine.  Is wine installed?";
+        }
+        std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:", "x:", "y:", "l:", "a:", "b:"};
+
+        BOOST_FOREACH(std::string & drive_option, drive_options)
+                    {
+                        boost::filesystem::path symlinkpath_ext = symlinkpath / drive_option;
+                        //Check if symbolic link for wine J: exists.
+                        boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(symlinkpath_ext);
+                        if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(symlinkpath_ext)))
+                        {
+                            boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
+                            params.wine_drive_letter = drive_option;
+                            params.wine_working_dir = drive_option;
+                            break;
+                        }
+
+                    }
+
         // Copy project directory into working directory
         std::string temp_dir_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_%%%%-%%%%";
         params.working_dir.second = boost::filesystem::unique_path(params.working_dir.second / temp_dir_template);
@@ -167,6 +191,15 @@ public:
         working_project = params.working_dir.second / params.rel_path_geoproj;
         wine_working_project =  params.wine_working_dir + "\\" + params.rel_path_geoproj;
         zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
+
+        // Get min or max objectives.
+        BOOST_FOREACH(std::string & str, params.min_or_max_str)
+                    {
+                        if (str == "MIN") params.min_or_max.push_back(MINIMISATION);
+                        if (str == "MAX") params.min_or_max.push_back(MAXIMISATION);
+
+                    }
+        params.min_or_max.push_back(MINIMISATION)  // For minimising the number of zonal policies.
         BOOST_FOREACH(std::string & rel_path, params.rel_path_obj_maps)
         {
             obj_map_paths.push_back(params.working_dir.second / rel_path);
@@ -336,15 +369,20 @@ public:
 
         // Make Zonal map
         {
+            objectives.back() = 0.0;
             namespace raster = blink::raster;
             namespace raster_it = blink::iterator;
             raster::gdal_raster<int> zonal_map = raster::open_gdal_raster<int>(this->zonal_map_path, GA_Update);
-//            boost::shared_ptr<raster::gdal_raster<int> > zonal_map(&(raster::open_gdal_raster<int>(this->zonal_map_path, GA_Update)));
             auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map), std::ref(zonal_map));
             for (auto&& i : zip)
             {
                 const int zone = std::get<0>(i);
-                std::get<1>(i) = zone_policies[int_decision_vars[zone] ];
+                float & zone_policy = zone_policies[int_decision_vars[zone] ];
+                std::get<1>(i) = zone_policy;
+                if (zone_policy != 1.0)
+                {
+                    objectives.back() += 1.0;
+                }
             }
         }
 
