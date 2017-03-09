@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     ZonalOptimiser zonal_eval(params);
-
+;
     
     
     if (world.rank() == 0)

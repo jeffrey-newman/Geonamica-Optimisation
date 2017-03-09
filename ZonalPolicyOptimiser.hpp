@@ -199,7 +199,7 @@ public:
                         if (str == "MAX") params.min_or_max.push_back(MAXIMISATION);
 
                     }
-        params.min_or_max.push_back(MINIMISATION)  // For minimising the number of zonal policies.
+        params.min_or_max.push_back(MINIMISATION);  // For minimising the number of zonal policies.
         BOOST_FOREACH(std::string & rel_path, params.rel_path_obj_maps)
         {
             obj_map_paths.push_back(params.working_dir.second / rel_path);
@@ -327,7 +327,7 @@ public:
                         blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(map_path_year, GA_ReadOnly);
                         int years_since_start = year - params.year_start;
                         double obj = sumMap(map);
-                        obj / std::pow((1+params.discount_rate), years_since_start);
+                        obj = obj / std::pow((1+params.discount_rate), years_since_start);
                         obj_vals[metric_num] += obj;
                     }
                 }
