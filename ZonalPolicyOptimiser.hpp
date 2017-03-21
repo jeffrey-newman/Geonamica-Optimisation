@@ -68,7 +68,7 @@ private:
     int num_real_decision_vars = 0;
     int num_int_decision_vars;
     int num_constraints = 0;
-    
+
     int min_dv_values  = 0; //lower bounds
     int max_dv_values = 3; // upper bound of x
     // Decision variable mapping:
@@ -80,6 +80,9 @@ private:
     
     ProblemDefinitionsSPtr prob_defs;
     std::pair<std::vector<double>, std::vector<double> > objectives_and_constrataints;
+
+
+    bool delete_wine_dir_on_exit = false;
     
     //Copies entire directory - so that each geoproject is running in a different directory.
     bool copyDir(
@@ -158,16 +161,30 @@ public:
     eval_count(0),
     num_objectives(params.rel_path_obj_maps.size() + 1)
     {
-        boost::filesystem::path symlinkpath = boost::filesystem::path(userHomeDir()) / ".wine/dosdevices";
-        if (!(boost::filesystem::exists(symlinkpath)))
+//        boost::filesystem::path symlinkpath;
+        if (params.wine_drive_path.first != "use_home_path")
         {
-            std::cout << "Could not find dosdevices in ~/.wine.  Is wine installed?";
+            pathify_mk(params.wine_drive_path);
+            params.wine_drive_path.second = params.wine_drive_path.second / "dosdevices";
+//            symlinkpath = params.wine_drive_path.second / "dosdevices";
+        }
+        else
+        {
+            params.wine_drive_path.second = boost::filesystem::path(userHomeDir()) / ".wine/dosdevices";
+            params.wine_drive_path.first = userHomeDir() + "/.wine";
+
+//            symlinkpath = boost::filesystem::path(userHomeDir()) / ".wine/dosdevices";
+        }
+
+        if (!(boost::filesystem::exists(params.wine_drive_path.second)))
+        {
+            std::cout << "Could not find dosdevices in " << params.wine_drive_path.second << " Is wine installed?\n";
         }
         std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:", "x:", "y:", "l:", "a:", "b:"};
 
         BOOST_FOREACH(std::string & drive_option, drive_options)
                     {
-                        boost::filesystem::path symlinkpath_ext = symlinkpath / drive_option;
+                        boost::filesystem::path symlinkpath_ext = params.wine_drive_path.second / drive_option;
                         //Check if symbolic link for wine J: exists.
                         boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(symlinkpath_ext);
                         if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(symlinkpath_ext)))
@@ -175,8 +192,11 @@ public:
                             boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
                             params.wine_drive_letter = drive_option;
                             params.wine_working_dir = drive_option;
+                            params.wine_drive_path.second = params.wine_drive_path.second / drive_option;
+                            delete_wine_dir_on_exit = true;
                             break;
                         }
+                        if (drive_option == "b:") std::cerr << "Could not make a symlink to the working drive for winedrive.\n";
 
                     }
 
@@ -245,6 +265,22 @@ public:
     ~ZonalOptimiser()
     {
         //        boost::filesystem::remove_all(worker_dir);
+        if (delete_wine_dir_on_exit)
+        {
+            //Check if symbolic link for wine J: exists.
+            boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(params.wine_drive_path.second);
+            if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(params.wine_drive_path.second)))
+            {
+                boost::filesystem::remove_all(params.wine_drive_path.second);
+            }
+        }
+
+        if (boost::filesystem::exists(params.working_dir.second))
+        {
+            boost::filesystem::remove_all(params.working_dir.second);
+        }
+
+
     }
     
     

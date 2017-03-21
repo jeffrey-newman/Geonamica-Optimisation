@@ -99,6 +99,7 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     ("model-cmd,m", po::value<std::string>(&params.model_cmd), "xecutable string that will run the geonamica model --- without command flags/arguments (like \"/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe\")")
     ("template,t", po::value<std::string>(&params.template_project_dir.first), "path to template geoproject directory")
     ("working-dir,d", po::value<std::string>(&params.working_dir.first)->default_value(deafult_working_dir.string()), "path of directory for storing temp files during running")
+    ("wine-prefix-path,w", po::value<std::string>(&params.wine_drive_path.first)->default_value("use_home_path"), "Path to the wine prefix to use. Subfolder should contain dosdevices")
 //            ("wine-drive-path,f", po::value<std::string>(&params.wine_drive_path.first)->default_value("do not test"), "Path of root directory of wine drive")
 //            ("wine-drive-letter,g", po::value<std::string>(&params.wine_drive_letter), "Letter of drive to make symlink for - i.e. C for 'C:' or Z for 'Z:' etc ")
 //    ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
@@ -187,10 +188,10 @@ createCheckpoints(NSGAII<RNG> & optimiser, ZonalPolicyParameters & params)
     boost::shared_ptr<Hypervolume> hvol(new Hypervolume(1, params.save_dir.second, Hypervolume::TERMINATION, params.max_gen_hvol));
 //    boost::shared_ptr<MetricLinePlot> hvol_plot(new MetricLinePlot(hvol));
     boost::shared_ptr<MaxGenCheckpoint> maxgen(new MaxGenCheckpoint(params.max_gen));
-//    std::string mail_subj("Hypervolume of front from Zonal calibrator ");
-//    boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(10, hvol, mail_subj));
-//    std::string jeffs_address("jeffrey.newman@adelaide.edu.au");
-//    mail->addAddress(jeffs_address);
+    std::string mail_subj("Hypervolume of front from Zonal calibrator ");
+    boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(10, hvol, mail_subj));
+    std::string jeffs_address("jeffrey.newman@adelaide.edu.au");
+    mail->addAddress(jeffs_address);
     
 //    boost::shared_ptr<PlotFrontVTK> plotfront(new PlotFrontVTK);
     optimiser.add_checkpoint(save_pop);

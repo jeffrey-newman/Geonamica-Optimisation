@@ -11,6 +11,7 @@
 #include <random>
 #include <chrono>
 #include <boost/mpi.hpp>
+#include <boost/timer/timer.hpp>
 #include "ParallelEvaluator.hpp"
 #include "NSGAII.hpp"
 #include "ZonalPolicyUtility.hpp"
@@ -20,17 +21,33 @@ int main(int argc, char * argv[]) {
     boost::mpi::environment env(argc, argv);
     boost::mpi::communicator world;
     ZonalPolicyParameters params;
+    //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
+    std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
     int ret = processOptions(argc, argv, params);
     if (ret == 1)
     {
         return 1;
     }
+
     ZonalOptimiser zonal_eval(params);
 ;
     
     
     if (world.rank() == 0)
     {
+
+        boost::shared_ptr<boost::timer::auto_cpu_timer> timer(nullptr);
+        boost::filesystem::path timing_fname = params.save_dir.second / "ZonalOptTiming.txt";
+        std::ofstream timer_fs(timing_fname.c_str());
+        if (timer_fs.is_open())
+        {
+            timer.reset(new boost::timer::auto_cpu_timer(timer_fs, 3));
+        }
+        else
+        {
+            std::cerr << "Error: Could not open file for writing time elapsed for search, using std::cout";
+            timer.reset(new boost::timer::auto_cpu_timer(3));
+        }
 
         //create evaluator server
         boost::filesystem::path eval_log = params.save_dir.second / "evaluation_timing.log";
@@ -67,22 +84,18 @@ int main(int argc, char * argv[]) {
             pop = restore_population(params.restart_pop_file.second);
         }
 
+        optimiser(pop);
 
-
-//        hvol(pop);
-//        std::cout << "Hypervolume: " << hvol.getVal() << std::endl;
 
         //Postprocess the results
         postProcessResults(zonal_eval, pop, params);
 
 
-//        t.reset((boost::timer::auto_cpu_timer *) nullptr);
-//        if (ofs.is_open())
-//        {
-//            ofs << timer_info.str();
-//            ofs.close();
-//        }
-//        std::cout << timer_info.str() << std::endl;
+        timer.reset((boost::timer::auto_cpu_timer *) nullptr);
+        if (timer_fs.is_open())
+        {
+            timer_fs.close();
+        }
 
     }
     else
