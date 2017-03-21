@@ -1,0 +1,19 @@
+module load foss/2016uofa
+module load CMake/3.5.2-foss-2016uofa
+module load GDAL/2.1.0-foss-2016uofa
+module load Boost/1.61.0-foss-2016uofa
+
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/ar
+/apps/software/GCC/5.3.0-binutils-2.25/bin/c++
+/apps/software/GCC/5.3.0-binutils-2.25/bin/gcc
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/ld
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/nm
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/objcopy
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/objdump
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/ranlib
+/apps/software/binutils/2.25-GCC-5.3.0-binutils-2.25/bin/strip
+
+
+/home/a1091793/Code/AHHZRasterUtilities/raster/include
+/home/a1091793/Code/AHHZRasterUtilities/iterator/include
+/home/a1091793/Code/ParallelNSGAII/parallel-nsgaII-backend
