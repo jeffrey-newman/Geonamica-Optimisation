@@ -83,37 +83,41 @@ private:
 
 
     bool delete_wine_dir_on_exit = false;
+    bool delete_wine_prefix_on_exit = false;
+
+    bool using_wine;
+    bool using_timeout;
     
     //Copies entire directory - so that each geoproject is running in a different directory.
     bool copyDir(
-                 boost::filesystem::path const & source,
-                 boost::filesystem::path const & destination
-                 )
+            boost::filesystem::path const & source,
+            boost::filesystem::path const & destination
+    )
     {
         namespace fs = boost::filesystem;
         try
         {
             // Check whether the function call is valid
             if(
-               !fs::exists(source) ||
-               !fs::is_directory(source)
-               )
+                    !fs::exists(source) ||
+                    !fs::is_directory(source)
+                    )
             {
                 std::cerr << "Source directory " << source.string()
-                << " does not exist or is not a directory." << '\n';
+                          << " does not exist or is not a directory." << '\n';
                 return false;
             }
             if(fs::exists(destination))
             {
                 std::cerr << "Destination directory " << destination.string()
-                << " already exists." << '\n';
+                          << " already exists." << '\n';
                 return false;
             }
             // Create the destination directory
             if(!fs::create_directory(destination))
             {
                 std::cerr << "Unable to create destination directory"
-                << destination.string() << '\n';
+                          << destination.string() << '\n';
                 return false;
             }
         }
@@ -124,9 +128,9 @@ private:
         }
         // Iterate through the source directory
         for(
-            fs::directory_iterator file(source);
-            file != fs::directory_iterator(); ++file
-            )
+                fs::directory_iterator file(source);
+                file != fs::directory_iterator(); ++file
+                )
         {
             try
             {
@@ -152,6 +156,62 @@ private:
         }
         return true;
     }
+
+//    //Copies entire directory - so that each geoproject is running in a different directory.
+//    bool copyDirContents(
+//            boost::filesystem::path const & source,
+//            boost::filesystem::path const & destination
+//    )
+//    {
+//        namespace fs = boost::filesystem;
+//        try
+//        {
+//            // Check whether the function call is valid
+//            if(!fs::exists(source) || !fs::is_directory(source))
+//            {
+//                std::cerr << "Source directory " << source.string()
+//                          << " does not exist or is not a directory." << '\n';
+//                return false;
+//            }
+//            if(!fs::exists(destination) || !fs::is_directory(destination))
+//            {
+//                std::cerr << "Destination directory " << destination.string()
+//                          << " does not exist or is not a directory." << '\n';
+//                return false;
+//            }
+//        }
+//        catch(fs::filesystem_error const & e)
+//        {
+//            std::cerr << e.what() << '\n';
+//            return false;
+//        }
+//        // Iterate through the source directory
+//        for(fs::directory_iterator file(source); file != fs::directory_iterator(); ++file)
+//        {
+//            try
+//            {
+//                fs::path current(file->path());
+//                if(fs::is_directory(current))
+//                {
+//                    // Found directory: Recursion
+//                    if(!copyDir(current, destination / current.filename()))
+//                    {
+//                        return false;
+//                    }
+//                }
+//                else
+//                {
+//                    // Found file: Copy
+//                    fs::copy_file(current, destination / current.filename());
+//                }
+//            }
+//            catch(fs::filesystem_error const & e)
+//            {
+//                std:: cerr << e.what() << '\n';
+//            }
+//        }
+//        return true;
+//    }
     
     
 public:
@@ -161,56 +221,88 @@ public:
     eval_count(0),
     num_objectives(params.rel_path_obj_maps.size() + 1)
     {
-//        boost::filesystem::path symlinkpath;
-        if (params.wine_drive_path.first != "use_home_path")
-        {
-            pathify_mk(params.wine_drive_path);
-            params.wine_drive_path.second = params.wine_drive_path.second / "dosdevices";
-//            symlinkpath = params.wine_drive_path.second / "dosdevices";
-        }
-        else
-        {
-            params.wine_drive_path.second = boost::filesystem::path(userHomeDir()) / ".wine/dosdevices";
-            params.wine_drive_path.first = userHomeDir() + "/.wine";
-
-//            symlinkpath = boost::filesystem::path(userHomeDir()) / ".wine/dosdevices";
-        }
-
-        if (!(boost::filesystem::exists(params.wine_drive_path.second)))
-        {
-            std::cout << "Could not find dosdevices in " << params.wine_drive_path.second << " Is wine installed?\n";
-        }
-        std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:", "x:", "y:", "l:", "a:", "b:"};
-
-        BOOST_FOREACH(std::string & drive_option, drive_options)
-                    {
-                        boost::filesystem::path symlinkpath_ext = params.wine_drive_path.second / drive_option;
-                        //Check if symbolic link for wine J: exists.
-                        boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(symlinkpath_ext);
-                        if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(symlinkpath_ext)))
-                        {
-                            boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
-                            params.wine_drive_letter = drive_option;
-                            params.wine_working_dir = drive_option;
-                            params.wine_drive_path.second = params.wine_drive_path.second / drive_option;
-                            delete_wine_dir_on_exit = true;
-                            break;
-                        }
-                        if (drive_option == "b:") std::cerr << "Could not make a symlink to the working drive for winedrive.\n";
-
-                    }
-
         // Copy project directory into working directory
         std::string temp_dir_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_%%%%-%%%%";
         params.working_dir.second = boost::filesystem::unique_path(params.working_dir.second / temp_dir_template);
         temp_dir_template = params.working_dir.second.filename().string();
         copyDir(params.template_project_dir.second, params.working_dir.second);
         params.wine_working_dir = params.wine_working_dir + "\\" + temp_dir_template;
-        
+
         // get paths of important files in working directory.
         working_project = params.working_dir.second / params.rel_path_geoproj;
         wine_working_project =  params.wine_working_dir + "\\" + params.rel_path_geoproj;
         zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
+
+
+        if (params.wine_cmd != "no_wine")
+        {
+            // Configure Wine prefix tp use.
+            if (params.wine_prefix_path.first == "use_home_path")
+            {
+                params.wine_prefix_path.second = boost::filesystem::path(userHomeDir()) / ".wine";
+                params.wine_prefix_path.first = params.wine_prefix_path.second.string();
+            }
+            else if (params.wine_prefix_path.first == "generate")
+            {
+                std::string prefix_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "wine_prefix_%%%%-%%%%";
+                params.wine_prefix_path.second = boost::filesystem::unique_path(params.working_dir.second / prefix_template);
+                params.wine_prefix_path.first = params.wine_prefix_path.second.string();
+                std::stringstream cmd;
+                cmd << "WINEPREFIX=" << params.wine_prefix_path.second.c_str() << " " << params.wine_cmd << " winecfg";
+                int return_val = system(cmd.str().c_str());
+                this->delete_wine_prefix_on_exit = true;
+            }
+            else if (params.wine_prefix_path.first.substr(0,4) == "copy")
+            {
+                std::string prefix_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "wine_prefix_%%%%-%%%%";
+                params.wine_prefix_path.second = boost::filesystem::unique_path(params.working_dir.second / prefix_template);
+                params.wine_prefix_path.first = params.wine_prefix_path.second.string();
+                boost::filesystem::path template_wine_prefix = params.wine_prefix_path.first.substr(4);
+                copyDir(template_wine_prefix, params.wine_prefix_path.second);
+                this->delete_wine_prefix_on_exit = true;
+            }
+            else
+            {
+                pathify_mk(params.wine_prefix_path); //although should really already exist....
+            }
+
+            // Check dosdevices path exists.
+            params.wine_drive_path.second = params.wine_prefix_path.second / "dosdevices";
+            params.wine_drive_path.first = params.wine_drive_path.second.string();
+            if (!(boost::filesystem::exists(params.wine_drive_path.second)))
+            {
+                std::cout << "Could not find dosdevices in " << params.wine_prefix_path.second
+                          << " Is wine installed?\n";
+
+                // Make the prefix.
+
+
+            }
+
+            // Create new dosdevice drive to working geoproject file directory.
+            std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:",
+                                                      "x:", "y:", "l:", "a:", "b:"};
+
+            BOOST_FOREACH(std::string &drive_option, drive_options)
+                        {
+                            boost::filesystem::path symlinkpath_ext = params.wine_drive_path.second / drive_option;
+                            //Check if symbolic link for wine J: exists.
+                            boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(
+                                    symlinkpath_ext);
+                            if (!(boost::filesystem::is_symlink(lnk_status)) ||
+                                !(boost::filesystem::exists(symlinkpath_ext)))
+                            {
+                                boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
+                                params.wine_drive_letter = drive_option;
+                                params.wine_working_dir = drive_option;
+                                params.wine_drive_path.second = params.wine_drive_path.second / drive_option;
+                                delete_wine_dir_on_exit = true;
+                                break;
+                            }
+                            if (drive_option == "b:")
+                                std::cerr << "Could not make a symlink to the working drive for winedrive.\n";
+                        }
+        }
 
         // Get min or max objectives.
         BOOST_FOREACH(std::string & str, params.min_or_max_str)
@@ -275,6 +367,15 @@ public:
             }
         }
 
+        if (delete_wine_prefix_on_exit)
+        {
+
+            if (!(boost::filesystem::exists(params.wine_prefix_path.second)))
+            {
+                boost::filesystem::remove_all(params.wine_prefix_path.second);
+            }
+        }
+
         if (boost::filesystem::exists(params.working_dir.second))
         {
             boost::filesystem::remove_all(params.working_dir.second);
@@ -289,15 +390,21 @@ public:
     {
         std::stringstream cmd1, cmd2;
         //Call the model
-        cmd1 << params.model_cmd << " --Reset --Save " << "\"" << wine_working_project << "\"" ;
+        if (using_wine) cmd1 << "WINEPREFIX=" << params.wine_prefix_path.second.c_str() << " ";
+        if (using_timeout) cmd1 << params.timout_cmd << " ";
+        if (using_wine) cmd1 << params.wine_cmd << " ";
+        cmd1 << params.geonamica_cmd << " --Reset --Save " << "\"" << wine_working_project << "\"" ;
         if (params.is_logging) cmd1 << " >> \"" << logfile.c_str() << "\" 2>&1";
         if (params.is_logging) logging_file << "Running: " << cmd1.str() << std::endl;
         if (params.is_logging)  logging_file.close();
         int i1 = system(cmd1.str().c_str());
         if (params.is_logging) logging_file.open(logfile.c_str(), std::ios_base::app);
         if (!logging_file.is_open()) params.is_logging = false;
-        
-        cmd2 << params.model_cmd << " --Run --Save --LogSettings " << "\"" << wine_working_logging << "\"" << " " << "\"" << wine_working_project << "\"";
+
+        if (using_wine) cmd2 << "WINEPREFIX=" << params.wine_prefix_path.second.c_str() << " ";
+        if (using_timeout) cmd2 << params.timout_cmd << " ";
+        if (using_wine) cmd2 << params.wine_cmd << " ";
+        cmd2 << params.geonamica_cmd << " --Run --Save --LogSettings " << "\"" << wine_working_logging << "\"" << " " << "\"" << wine_working_project << "\"";
         if (params.is_logging) cmd2 << " >> \"" << logfile.c_str() << "\" 2>&1";
         if (params.is_logging) logging_file << "Running: " << cmd2.str() << std::endl;
         if (params.is_logging) logging_file.close();

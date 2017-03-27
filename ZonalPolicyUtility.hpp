@@ -32,10 +32,12 @@
 
 struct ZonalPolicyParameters
 {
-    
-    std::string model_cmd;  // command which runs the model (like "/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe")
+    std::string timout_cmd; //cmd to run everything through another program which kills model on timer, incase it gets stuck/spins/hangs
+    std::string wine_cmd; // cmd to run geonamica model through wine, emulation for running on linux or mac.
+    std::string geonamica_cmd;  // path to geonamicaCmd.exe. Usually UNIX or Wine path both should work Z://PATH/geonamica.exe")
     CmdLinePaths template_project_dir; // path to template project
     CmdLinePaths working_dir;
+    CmdLinePaths wine_prefix_path;
     CmdLinePaths wine_drive_path;
     std::string wine_drive_letter;
     std::string  wine_working_dir;
@@ -96,11 +98,13 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help,h", "produce help message")
-    ("model-cmd,m", po::value<std::string>(&params.model_cmd), "xecutable string that will run the geonamica model --- without command flags/arguments (like \"/bin/timeout --kill-after=20m 19m  /bin/wine Z://PATH/geonamica.exe\")")
+    ("timeout-cmd,u", po::value<std::string>(&params.timout_cmd)->default_value("no_timeout"), "[optional] excutable string that will run the timeout cmd --- to run everything through another program which kills model on timer, incase it gets stuck/spins/hangs")
+    ("wine-cmd,f", po::value<std::string>(&params.wine_cmd)->default_value("no_wine"), "[optional] path to wine (emulator) excutable ")
+    ("geonamica-cmd,m", po::value<std::string>(&params.geonamica_cmd), "excutable string that will run the geonamica model --- without command flags/arguments (like Z://PATH/geonamica.exe\")")
     ("template,t", po::value<std::string>(&params.template_project_dir.first), "path to template geoproject directory")
     ("working-dir,d", po::value<std::string>(&params.working_dir.first)->default_value(deafult_working_dir.string()), "path of directory for storing temp files during running")
-    ("wine-prefix-path,w", po::value<std::string>(&params.wine_drive_path.first)->default_value("use_home_path"), "Path to the wine prefix to use. Subfolder should contain dosdevices")
-//            ("wine-drive-path,f", po::value<std::string>(&params.wine_drive_path.first)->default_value("do not test"), "Path of root directory of wine drive")
+    ("wine-prefix-path,w", po::value<std::string>(&params.wine_prefix_path.first)->default_value("use_home_path"), "Path to the wine prefix to use. Subfolder should contain dosdevices. To use default in home drive, specify <use_home_drive> to generate new prefix use <generate>")
+//            ("wine-drive-path,f", po::value<std::string>(&params.wine_prefix_path.first)->default_value("do not test"), "Path of root directory of wine drive")
 //            ("wine-drive-letter,g", po::value<std::string>(&params.wine_drive_letter), "Letter of drive to make symlink for - i.e. C for 'C:' or Z for 'Z:' etc ")
 //    ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
     ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj), "name of geoproject file (without full path), relative to template geoproject directory. Needs to be in top level at the moment")
@@ -144,7 +148,7 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     
     po::notify(vm);
     
-//    pathify(params.model_cmd); //.second = boost::filesystem::path(metro_exe.first);
+//    pathify(params.geonamica_cmd); //.second = boost::filesystem::path(metro_exe.first);
 
 
 
@@ -240,7 +244,7 @@ postProcessResults(ZonalOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyP
 void
 cleanup(ZonalPolicyParameters & params)
 {
-    if (params.wine_drive_path.first != "do not test") {
+    if (params.wine_prefix_path.first != "do not test") {
 
         boost::filesystem::path symlinkpath("~/.wine/dosdevices");
         symlinkpath = symlinkpath / params.wine_drive_letter;
