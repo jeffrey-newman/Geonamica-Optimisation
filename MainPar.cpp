@@ -29,6 +29,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
+    params.evaluator_id = world.rank();
     ZonalOptimiser zonal_eval(params);
 ;
     

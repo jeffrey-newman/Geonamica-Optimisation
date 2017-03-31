@@ -54,6 +54,8 @@ private:
     
     boost::filesystem::path zones_delineation_map_path;
     blink::raster::gdal_raster<int> zones_delineation_map;
+    boost::optional<int> zones_delineation_no_data_val;
+    std::unordered_set<int> zones;
     
     boost::filesystem::path logfile;
     boost::filesystem::path previous_logfile;
@@ -76,7 +78,8 @@ private:
     // 1 -- 0.5 Weakly restrict
     // 2 -- 1 Allow
     // 3 -- 1.5 Stimulate
-    std::map<int, float> zone_policies = {{0, 0.0}, {1, 0.5}, {2, 1.0}, {3, 1.5}};
+    std::map<int, float> zone_policies = {{0, 1}, {1, 2}, {2, 3}, {3, 4}};
+    std::vector<int> zone_policies_vec = {1,2,3,4};
     
     ProblemDefinitionsSPtr prob_defs;
     std::pair<std::vector<double>, std::vector<double> > objectives_and_constrataints;
@@ -89,19 +92,15 @@ private:
     bool using_timeout;
     
     //Copies entire directory - so that each geoproject is running in a different directory.
-    bool copyDir(
-            boost::filesystem::path const & source,
-            boost::filesystem::path const & destination
-    )
+    bool copyDir(   boost::filesystem::path const & source,
+                    boost::filesystem::path const & destination )
     {
+//        std::cout << "Copying " << source << " to " << destination << std::endl;
         namespace fs = boost::filesystem;
         try
         {
             // Check whether the function call is valid
-            if(
-                    !fs::exists(source) ||
-                    !fs::is_directory(source)
-                    )
+            if(!fs::exists(source) || !fs::is_directory(source))
             {
                 std::cerr << "Source directory " << source.string()
                           << " does not exist or is not a directory." << '\n';
@@ -114,7 +113,8 @@ private:
                 return false;
             }
             // Create the destination directory
-            if(!fs::create_directory(destination))
+            fs::copy_directory(source, destination);
+            if(!fs::exists(destination) || !fs::is_directory(destination))
             {
                 std::cerr << "Unable to create destination directory"
                           << destination.string() << '\n';
@@ -132,9 +132,11 @@ private:
                 file != fs::directory_iterator(); ++file
                 )
         {
+
             try
             {
                 fs::path current(file->path());
+//                std::cout << "descending into: " << current << std::endl;
                 if(fs::is_directory(current))
                 {
                     // Found directory: Recursion
@@ -144,6 +146,59 @@ private:
                     }
                 }
                 else
+                {
+                    // Found file: Copy
+//                    std::cout << "Copying " << current << " to " << destination / current.filename() << std::endl;
+                    fs::copy_file(current, destination / current.filename());
+                }
+            }
+            catch(fs::filesystem_error const & e)
+            {
+                std:: cerr << e.what() << '\n';
+            }
+        }
+        return true;
+    }
+
+    //Copies entire directory - so that each geoproject is running in a different directory.
+    bool copyFilesInDir(
+            boost::filesystem::path const & source,
+            boost::filesystem::path const & destination
+    )
+    {
+        namespace fs = boost::filesystem;
+        try
+        {
+            // Check whether the function call is valid
+            if(!fs::exists(source) || !fs::is_directory(source))
+            {
+                std::cerr << "Source directory " << source.string()
+                          << " does not exist or is not a directory." << '\n';
+                return false;
+            }
+            if(!fs::exists(destination) || !fs::is_directory(destination))
+            {
+                std::cerr << "Destination directory " << destination.string()
+                          << " does not exist or is not a directory." << '\n';
+                return false;
+            }
+
+        }
+        catch(fs::filesystem_error const & e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+        // Iterate through the source directory
+        for(
+                fs::directory_iterator file(source);
+                file != fs::directory_iterator(); ++file
+                )
+        {
+            try
+            {
+                fs::path current(file->path());
+                if(!(fs::is_directory(current)))  // Should we be checking for other things?
                 {
                     // Found file: Copy
                     fs::copy_file(current, destination / current.filename());
@@ -221,44 +276,57 @@ public:
     eval_count(0),
     num_objectives(params.rel_path_obj_maps.size() + 1)
     {
-        // Copy project directory into working directory
-        std::string temp_dir_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_%%%%-%%%%";
-        params.working_dir.second = boost::filesystem::unique_path(params.working_dir.second / temp_dir_template);
-        temp_dir_template = params.working_dir.second.filename().string();
-        copyDir(params.template_project_dir.second, params.working_dir.second);
-        params.wine_working_dir = params.wine_working_dir + "\\" + temp_dir_template;
-
-        // get paths of important files in working directory.
-        working_project = params.working_dir.second / params.rel_path_geoproj;
-        wine_working_project =  params.wine_working_dir + "\\" + params.rel_path_geoproj;
-        zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
 
 
+        // Set up wine prefixes and wine paths.
+        using_wine = false;
         if (params.wine_cmd != "no_wine")
         {
+            using_wine = true;
             // Configure Wine prefix tp use.
             if (params.wine_prefix_path.first == "use_home_path")
             {
                 params.wine_prefix_path.second = boost::filesystem::path(userHomeDir()) / ".wine";
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
             }
-            else if (params.wine_prefix_path.first == "generate")
+            else if (params.wine_prefix_path.first.substr(0,8) == "generate")
             {
-                std::string prefix_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "wine_prefix_%%%%-%%%%";
+                std::string prefix_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_wine_prefix_%%%%-%%%%";
                 params.wine_prefix_path.second = boost::filesystem::unique_path(params.working_dir.second / prefix_template);
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
                 std::stringstream cmd;
                 cmd << "WINEPREFIX=" << params.wine_prefix_path.second.c_str() << " " << params.wine_cmd << " winecfg";
                 int return_val = system(cmd.str().c_str());
                 this->delete_wine_prefix_on_exit = true;
+
+                //Copy model into prefix
+                boost::filesystem::path template_geonamica_binary_root = params.wine_prefix_path.first.substr(9);
+                boost::filesystem::path copy_geonamica_binary_root = params.wine_prefix_path.second / "drive_c/Program Files (x86)/Geonamica";
+                copyDir(template_geonamica_binary_root, copy_geonamica_binary_root);
+
+
+
             }
             else if (params.wine_prefix_path.first.substr(0,4) == "copy")
             {
-                std::string prefix_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "wine_prefix_%%%%-%%%%";
-                params.wine_prefix_path.second = boost::filesystem::unique_path(params.working_dir.second / prefix_template);
+                std::string prefix_copy_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_wine_prefix_%%%%-%%%%";
+                boost::filesystem::path prefix_copied_path = boost::filesystem::unique_path(params.working_dir.second / prefix_copy_template);
+                boost::filesystem::path prefix_template_path = params.wine_prefix_path.first.substr(5);
+                boost::filesystem::create_directories(prefix_copied_path);
+                copyFilesInDir(prefix_template_path, prefix_copied_path);
+
+                boost::filesystem::path drive_c_copied_path = prefix_copied_path / "drive_c";
+                boost::filesystem::path drive_c_template_path = prefix_template_path / "drive_c";
+                copyDir(drive_c_template_path, drive_c_copied_path);
+
+                boost::filesystem::copy_directory(prefix_template_path / "dosdevices", prefix_copied_path / "dosdevices");
+                boost::filesystem::path drive_c_link = prefix_copied_path / "dosdevices/c:";
+                boost::filesystem::create_directory_symlink(drive_c_copied_path, drive_c_link);
+                boost::filesystem::path drive_z_link = prefix_copied_path / "dosdevices/z:";
+                boost::filesystem::create_directory_symlink(boost::filesystem::path("/"), drive_z_link);
+
+                params.wine_prefix_path.second = prefix_copied_path;
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
-                boost::filesystem::path template_wine_prefix = params.wine_prefix_path.first.substr(4);
-                copyDir(template_wine_prefix, params.wine_prefix_path.second);
                 this->delete_wine_prefix_on_exit = true;
             }
             else
@@ -274,10 +342,16 @@ public:
                 std::cout << "Could not find dosdevices in " << params.wine_prefix_path.second
                           << " Is wine installed?\n";
 
-                // Make the prefix.
-
-
             }
+
+            // Copy project directory into working directory
+            std::string temp_dir_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_%%%%-%%%%";
+            params.working_dir.second = boost::filesystem::unique_path(params.working_dir.second / temp_dir_template);
+            params.working_dir.first = params.working_dir.second.string();
+//            temp_dir_template = params.working_dir.second.filename().string();
+            copyDir(params.template_project_dir.second, params.working_dir.second);
+//            params.wine_working_dir = params.wine_working_dir + "\\" + temp_dir_template;
+
 
             // Create new dosdevice drive to working geoproject file directory.
             std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:",
@@ -304,6 +378,17 @@ public:
                         }
         }
 
+        using_timeout = false;
+        if (params.timout_cmd != "no_timeout")
+        {
+            using_timeout = true;
+        }
+
+        // get paths of important files in working directory.
+        working_project = params.working_dir.second / params.rel_path_geoproj;
+        wine_working_project =  params.wine_working_dir + "\\" + params.rel_path_geoproj;
+        zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
+
         // Get min or max objectives.
         BOOST_FOREACH(std::string & str, params.min_or_max_str)
                     {
@@ -325,15 +410,14 @@ public:
         
         
         // Calculate number of zones (this will be equal to the number of decision variables)
-        std::unordered_set<int> zones;
         auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map));
-        auto no_data_val = zones_delineation_map.noDataVal();
+        zones_delineation_no_data_val = zones_delineation_map.noDataVal();
         for (auto i : zip)
         {
             int val_i = std::get<0>(i);
-            if (no_data_val)
+            if (zones_delineation_no_data_val)
             {
-                if (val_i != no_data_val.get())
+                if (val_i != zones_delineation_no_data_val.get())
                 {
                     zones.emplace(val_i);
                 }
@@ -349,7 +433,8 @@ public:
         // Make the problem defintions and intialise the objectives and constraints struct.
         prob_defs.reset(new ProblemDefinitions(num_real_decision_vars, 0.0,  1.0, num_int_decision_vars, min_dv_values, max_dv_values, params.min_or_max, num_constraints));
         objectives_and_constrataints = std::pair<std::vector<double>, std::vector<double> >(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
-        
+//        objectives_and_constrataints = std::make_pair(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
+
         
         
     }
@@ -361,9 +446,9 @@ public:
         {
             //Check if symbolic link for wine J: exists.
             boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(params.wine_drive_path.second);
-            if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(params.wine_drive_path.second)))
+            if ((boost::filesystem::is_symlink(lnk_status)) && (boost::filesystem::exists(params.wine_drive_path.second)))
             {
-                boost::filesystem::remove_all(params.wine_drive_path.second);
+                boost::filesystem::remove(params.wine_drive_path.second);
             }
         }
 
@@ -520,11 +605,26 @@ public:
             for (auto&& i : zip)
             {
                 const int zone = std::get<0>(i);
-                float & zone_policy = zone_policies[int_decision_vars[zone] ];
-                std::get<1>(i) = zone_policy;
-                if (zone_policy != 1.0)
+                if (zones_delineation_no_data_val)
                 {
-                    objectives.back() += 1.0;
+                    if (zone != zones_delineation_no_data_val.get())
+                    {
+                        int & zone_policy = zone_policies_vec[int_decision_vars[(zone-1)] ]; // zone map index starts at 1; while c++ vectors index starts at 0.
+                        std::get<1>(i) = zone_policy;
+                        if (zone_policy != 0 or zone_policy != 2)
+                        {
+                            objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
+                        }
+                    }
+                }
+                else
+                {
+                    int & zone_policy = zone_policies_vec[int_decision_vars[(zone-1)] ]; // zone map index starts at 1; while c++ vectors index starts at 0.
+                    std::get<1>(i) = zone_policy;
+                    if (zone_policy != 0 or zone_policy != 2)
+                    {
+                        objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
+                    }
                 }
             }
         }
