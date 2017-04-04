@@ -92,92 +92,105 @@ int
 processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
 {
 
-    boost::filesystem::path deafult_working_dir = boost::filesystem::path(userHomeDir()) / ".geonamicaZonalOpt/working_dir";
-
-    namespace po = boost::program_options;
-    po::options_description desc("Allowed options");
-    desc.add_options()
-    ("help,h", "produce help message")
-    ("timeout-cmd,u", po::value<std::string>(&params.timout_cmd)->default_value("no_timeout"), "[optional] excutable string that will run the timeout cmd --- to run everything through another program which kills model on timer, incase it gets stuck/spins/hangs")
-    ("wine-cmd,f", po::value<std::string>(&params.wine_cmd)->default_value("no_wine"), "[optional] path to wine (emulator) excutable ")
-    ("geonamica-cmd,m", po::value<std::string>(&params.geonamica_cmd), "excutable string that will run the geonamica model --- without command flags/arguments (like Z://PATH/geonamica.exe\")")
-    ("template,t", po::value<std::string>(&params.template_project_dir.first), "path to template geoproject directory")
-    ("working-dir,d", po::value<std::string>(&params.working_dir.first)->default_value(deafult_working_dir.string()), "path of directory for storing temp files during running")
-    ("wine-prefix-path,w", po::value<std::string>(&params.wine_prefix_path.first)->default_value("use_home_path"), "Path to the wine prefix to use. Subfolder should contain dosdevices. To use default in home drive, specify <use_home_drive> to generate new prefix use <generate>")
-//            ("wine-drive-path,f", po::value<std::string>(&params.wine_prefix_path.first)->default_value("do not test"), "Path of root directory of wine drive")
-//            ("wine-drive-letter,g", po::value<std::string>(&params.wine_drive_letter), "Letter of drive to make symlink for - i.e. C for 'C:' or Z for 'Z:' etc ")
-//    ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
-    ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj), "name of geoproject file (without full path), relative to template geoproject directory. Needs to be in top level at the moment")
-    ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map), "name of zonal map (without full path), relative to template geoproject directory. This needs to be GDAL create writable, so NOT ASCII grid format")
-    ("obj-maps,o",po::value<std::vector<std::string> >(&params.rel_path_obj_maps)->multitoken(), "relative paths wrt template geoproject directory of objective maps")
-    ("min-or-max,n",po::value<std::vector<std::string> >(&params.min_or_max_str)->multitoken(), "whether the aggregated value in the obj-maps are to be minimised (specify MIN) or maximised (specify MAX)")
-    ("zone-delineation,e", po::value<std::string>(&params.rel_path_zones_delineation_map), "name of zonal delineation map (without full path), relative to template geoproject directory")
-    ("log-spec,l", po::value<std::string>(&params.rel_path_log_specification), "path of the log settings xml file (relative to template geoproject directory in in wine format)")
-    ("is-logging,s", po::value<bool>(&params.is_logging), "TRUE or FALSE whether to log the evaluation")
-    ("save-dir,v", po::value<std::string>(&params.save_dir.first)->default_value(boost::filesystem::current_path().string()), "path of the directory for writing results and outputs to")
-    ("pop-size,p", po::value<int>(&params.pop_size)->default_value(415), "Population size of the NSGAII")
-    ("max-gen-no-hvol-improve,x", po::value<int>(&params.max_gen_hvol)->default_value(50), "maximum generations with no improvement in the hypervolume metric - terminaation condition")
-    ("max-gen,y", po::value<int>(&params.max_gen)->default_value(500), "Maximum number of generations - termination condition")
-    ("save-freq,q", po::value<int>(&params.save_freq)->default_value(1), "how often to save first front, hypervolume metric and population")
-    ("replicates,i", po::value<int>(&params.replicates)->default_value(10), "Number of times to rerun Metronamica to account for stochasticity of model for each objective function evaluation")
-    ("reseed,r", po::value<std::string>(&params.restart_pop_file.first)->default_value("no_seed"), "File with saved population as initial seed population for GA")    
-    ("year-start,a",po::value<int>(&params.year_start),"Start year for objective map logging - only valid if objective logging file stem is only given and not full filename")
-    ("year-end,b",po::value<int>(&params.year_end),"End year for objective map logging - only valid if objective logging file stem is only given and not full filename")
-    ("discount-rate,d",po::value<double>(&params.discount_rate)->default_value(0.0),"discount rate for objectives (applies to all of them)")
-    ("cfg-file,c", po::value<std::string>(), "can be specified with '@name', too");
-    
-    po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).options(desc).extra_parser(at_option_parser).run(), vm);
-    
-    if (vm.count("help"))
+    try
     {
-        std::cout << desc << "\n";
-        return 1;
-    }
-    
-    if (vm.count("cfg-file")) {
-        // Load the file and tokenize it
-        std::ifstream ifs(vm["cfg-file"].as<std::string>().c_str());
-        if (!ifs) {
-            std::cout << "Could not open the cfg file\n";
+
+        boost::filesystem::path deafult_working_dir = boost::filesystem::path(userHomeDir()) / ".geonamicaZonalOpt/working_dir";
+
+        namespace po = boost::program_options;
+        po::options_description desc("Allowed options");
+        desc.add_options()
+        ("help,h", "produce help message")
+        ("timeout-cmd,u", po::value<std::string>(&params.timout_cmd)->default_value("no_timeout"), "[optional] excutable string that will run the timeout cmd --- to run everything through another program which kills model on timer, incase it gets stuck/spins/hangs")
+        ("wine-cmd,f", po::value<std::string>(&params.wine_cmd)->default_value("no_wine"), "[optional] path to wine (emulator) excutable ")
+        ("geonamica-cmd,m", po::value<std::string>(&params.geonamica_cmd), "excutable string that will run the geonamica model --- without command flags/arguments (like Z://PATH/geonamica.exe\")")
+        ("template,t", po::value<std::string>(&params.template_project_dir.first), "path to template geoproject directory")
+        ("working-dir,d", po::value<std::string>(&params.working_dir.first)->default_value(deafult_working_dir.string()), "path of directory for storing temp files during running")
+        ("wine-prefix-path,w", po::value<std::string>(&params.wine_prefix_path.first)->default_value("use_home_path"), "Path to the wine prefix to use. Subfolder should contain dosdevices. To use default in home drive, specify <use_home_drive> to generate new prefix use <generate>")
+    //            ("wine-drive-path,f", po::value<std::string>(&params.wine_prefix_path.first)->default_value("do not test"), "Path of root directory of wine drive")
+    //            ("wine-drive-letter,g", po::value<std::string>(&params.wine_drive_letter), "Letter of drive to make symlink for - i.e. C for 'C:' or Z for 'Z:' etc ")
+    //    ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
+        ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj), "name of geoproject file (without full path), relative to template geoproject directory. Needs to be in top level at the moment")
+        ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map), "name of zonal map (without full path), relative to template geoproject directory. This needs to be GDAL create writable, so NOT ASCII grid format")
+        ("obj-maps,o",po::value<std::vector<std::string> >(&params.rel_path_obj_maps)->multitoken(), "relative paths wrt template geoproject directory of objective maps")
+        ("min-or-max,n",po::value<std::vector<std::string> >(&params.min_or_max_str)->multitoken(), "whether the aggregated value in the obj-maps are to be minimised (specify MIN) or maximised (specify MAX)")
+        ("zone-delineation,e", po::value<std::string>(&params.rel_path_zones_delineation_map), "name of zonal delineation map (without full path), relative to template geoproject directory")
+        ("log-spec,l", po::value<std::string>(&params.rel_path_log_specification), "path of the log settings xml file (relative to template geoproject directory in in wine format)")
+        ("is-logging,s", po::value<bool>(&params.is_logging), "TRUE or FALSE whether to log the evaluation")
+        ("save-dir,v", po::value<std::string>(&params.save_dir.first)->default_value(boost::filesystem::current_path().string()), "path of the directory for writing results and outputs to")
+        ("pop-size,p", po::value<int>(&params.pop_size)->default_value(415), "Population size of the NSGAII")
+        ("max-gen-no-hvol-improve,x", po::value<int>(&params.max_gen_hvol)->default_value(50), "maximum generations with no improvement in the hypervolume metric - terminaation condition")
+        ("max-gen,y", po::value<int>(&params.max_gen)->default_value(500), "Maximum number of generations - termination condition")
+        ("save-freq,q", po::value<int>(&params.save_freq)->default_value(1), "how often to save first front, hypervolume metric and population")
+        ("replicates,i", po::value<int>(&params.replicates)->default_value(10), "Number of times to rerun Metronamica to account for stochasticity of model for each objective function evaluation")
+        ("reseed,r", po::value<std::string>(&params.restart_pop_file.first)->default_value("no_seed"), "File with saved population as initial seed population for GA")
+        ("year-start,a",po::value<int>(&params.year_start),"Start year for objective map logging - only valid if objective logging file stem is only given and not full filename")
+        ("year-end,b",po::value<int>(&params.year_end),"End year for objective map logging - only valid if objective logging file stem is only given and not full filename")
+        ("discount-rate,d",po::value<double>(&params.discount_rate)->default_value(0.0),"discount rate for objectives (applies to all of them)")
+        ("cfg-file,c", po::value<std::string>(), "can be specified with '@name', too");
+
+        po::variables_map vm;
+        po::store(po::command_line_parser(argc, argv).options(desc).extra_parser(at_option_parser).run(), vm);
+
+        if (vm.count("help"))
+        {
+            std::cout << desc << "\n";
             return 1;
         }
-        po::store(po::parse_config_file(ifs, desc), vm);
+
+        if (vm.count("cfg-file")) {
+            // Load the file and tokenize it
+            std::ifstream ifs(vm["cfg-file"].as<std::string>().c_str());
+            if (!ifs) {
+                std::cout << "Could not open the cfg file\n";
+                return 1;
+            }
+            po::store(po::parse_config_file(ifs, desc), vm);
+        }
+
+
+        po::notify(vm);
+
+    //    pathify(params.geonamica_cmd); //.second = boost::filesystem::path(metro_exe.first);
+
+
+
+            pathify_mk(params.working_dir);
+
+
+
+    //        boost::filesystem::path symlinkpath_ext = symlinkpath / drive_option;
+    //        //Check if symbolic link for wine J: exists.
+    //        boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(symlinkpath_ext);
+    //        if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(symlinkpath_ext)))
+    //        {
+    //            boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
+    //        }
+    //        system(("ls " + symlinkpath.string()).c_str());
+
+
+        pathify(params.template_project_dir);
+
+        //pathify(params.log_dir);
+        pathify_mk(params.save_dir);
+
+        if (params.restart_pop_file.first != "no_seed")
+        {
+            pathify(params.restart_pop_file);
+        }
+
+
     }
-    
-    
-    po::notify(vm);
-    
-//    pathify(params.geonamica_cmd); //.second = boost::filesystem::path(metro_exe.first);
-
-
-
-        pathify_mk(params.working_dir);
-
-
-
-//        boost::filesystem::path symlinkpath_ext = symlinkpath / drive_option;
-//        //Check if symbolic link for wine J: exists.
-//        boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(symlinkpath_ext);
-//        if (!(boost::filesystem::is_symlink(lnk_status)) || !(boost::filesystem::exists(symlinkpath_ext)))
-//        {
-//            boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
-//        }
-//        system(("ls " + symlinkpath.string()).c_str());
-
-
-    pathify(params.template_project_dir);
-
-    //pathify(params.log_dir);
-    pathify_mk(params.save_dir);
-
-    if (params.restart_pop_file.first != "no_seed")
+    catch(std::exception& e)
     {
-        pathify(params.restart_pop_file);
+      std::cerr << "Error: " << e.what() << "\n";
+      return -1;
     }
-    
-    
-
+    catch(...)
+    {
+      std::cerr << "Unknown error!" << "\n";
+      return -1;
+    }
     
     return (0);
     
