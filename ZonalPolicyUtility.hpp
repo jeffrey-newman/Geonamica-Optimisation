@@ -184,12 +184,12 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
     catch(std::exception& e)
     {
       std::cerr << "Error: " << e.what() << "\n";
-      return -1;
+      return 1;
     }
     catch(...)
     {
       std::cerr << "Unknown error!" << "\n";
-      return -1;
+      return 1;
     }
     
     return (0);
