@@ -122,5 +122,5 @@ int main(int argc, char * argv[]) {
     }
 
     //Cleanup
-    cleanup(params);
+//    cleanup(params);
 }

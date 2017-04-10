@@ -254,26 +254,26 @@ postProcessResults(ZonalOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyP
 }
 
 
-void
-cleanup(ZonalPolicyParameters & params)
-{
-    if (params.wine_prefix_path.first != "do not test") {
+//void
+//cleanup(ZonalPolicyParameters & params)
+//{
+//    if (params.wine_prefix_path.first != "do not test") {
+//
+//        boost::filesystem::path symlinkpath("~/.wine/dosdevices");
+//        symlinkpath = symlinkpath / params.wine_drive_letter;
+////Check is symbolic link for wine J: exists.
+//        boost::filesystem::file_status lnk_status = boost::filesystem::status(symlinkpath);
+//        if ((boost::filesystem::exists(lnk_status)))
+//        {
+//            boost::filesystem::remove_all(symlinkpath);
+//        }
+//    }
+//
+//    if (boost::filesystem::exists(params.working_dir.second))
+//    {
+//        boost::filesystem::remove_all(params.working_dir.second);
+//    }
 
-        boost::filesystem::path symlinkpath("~/.wine/dosdevices");
-        symlinkpath = symlinkpath / params.wine_drive_letter;
-//Check is symbolic link for wine J: exists.
-        boost::filesystem::file_status lnk_status = boost::filesystem::status(symlinkpath);
-        if ((boost::filesystem::exists(lnk_status)))
-        {
-            boost::filesystem::remove_all(symlinkpath);
-        }
-    }
-
-    if (boost::filesystem::exists(params.working_dir.second))
-    {
-        boost::filesystem::remove_all(params.working_dir.second);
-    }
-
-}
+//}
 
 #endif /* ZonalPolicyUtility_hpp */
