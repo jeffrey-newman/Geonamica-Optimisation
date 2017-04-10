@@ -442,8 +442,10 @@ public:
     ~ZonalOptimiser()
     {
         //        boost::filesystem::remove_all(worker_dir);
+
         if (delete_wine_dir_on_exit)
         {
+            std::this_thread::sleep_for (std::chrono::seconds(1));
             //Check if symbolic link for wine J: exists.
             boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(params.wine_drive_path.second);
             if ((boost::filesystem::is_symlink(lnk_status)) && (boost::filesystem::exists(params.wine_drive_path.second)))
@@ -454,7 +456,7 @@ public:
 
         if (delete_wine_prefix_on_exit)
         {
-
+            std::this_thread::sleep_for (std::chrono::seconds(1));
             if (!(boost::filesystem::exists(params.wine_prefix_path.second)))
             {
                 boost::filesystem::remove_all(params.wine_prefix_path.second);
@@ -463,6 +465,7 @@ public:
 
         if (boost::filesystem::exists(params.working_dir.second))
         {
+            std::this_thread::sleep_for (std::chrono::seconds(1));
             boost::filesystem::remove_all(params.working_dir.second);
         }
 
