@@ -575,11 +575,14 @@ public:
     
     
     void
-    calculate(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars, bool do_save = false, boost::filesystem::path save_path = "no_path")
+    calculate(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
+              bool do_save = false, boost::filesystem::path save_path = "no_path")
     {
         boost::filesystem::path initial_path = boost::filesystem::current_path();
         boost::filesystem::current_path(params.working_dir.second);
-        std::string filename = "logWorker" + std::to_string(params.evaluator_id) + "_EvalNo" + std::to_string(eval_count) + "_" + boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time()) + ".log";
+        std::string filename = "logWorker" + std::to_string(params.evaluator_id)
+                               + "_EvalNo" + std::to_string(eval_count) + "_"
+                               + boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time()) + ".log";
         logfile = params.save_dir.second / filename;
         std::ofstream logging_file;
         if (params.is_logging)
@@ -614,7 +617,7 @@ public:
                     {
                         int & zone_policy = zone_policies_vec[int_decision_vars[(zone-1)] ]; // zone map index starts at 1; while c++ vectors index starts at 0.
                         std::get<1>(i) = zone_policy;
-                        if (zone_policy != 0 or zone_policy != 2)
+                        if (not(zone_policy == 0 or zone_policy == 2))
                         {
                             objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
                         }
@@ -624,7 +627,7 @@ public:
                 {
                     int & zone_policy = zone_policies_vec[int_decision_vars[(zone-1)] ]; // zone map index starts at 1; while c++ vectors index starts at 0.
                     std::get<1>(i) = zone_policy;
-                    if (zone_policy != 0 or zone_policy != 2)
+                    if (not(zone_policy == 0 or zone_policy == 2))
                     {
                         objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
                     }
