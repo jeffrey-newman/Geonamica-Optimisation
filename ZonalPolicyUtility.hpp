@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <csignal>
 #include <boost/program_options.hpp>
 #include <boost/foreach.hpp>
 #include "Pathify.hpp"
@@ -27,6 +28,7 @@
 #include "Checkpoints/MaxGenCheckpoint.hpp"
 #include "Checkpoints/MailCheckpoint.hpp"
 #include "Checkpoints/SaveFirstFrontCheckpoint.hpp"
+#include "Checkpoints/SignalCheckpoint.hpp"
 
 
 
@@ -209,15 +211,17 @@ createCheckpoints(NSGAII<RNG> & optimiser, ZonalPolicyParameters & params)
     boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(10, hvol, mail_subj));
     std::string jeffs_address("jeffrey.newman@adelaide.edu.au");
     mail->addAddress(jeffs_address);
+    boost::shared_ptr<SignalCheckpoint> signal_handler(new SignalCheckpoint(SIGINT));
     
 //    boost::shared_ptr<PlotFrontVTK> plotfront(new PlotFrontVTK);
     optimiser.add_checkpoint(save_pop);
     optimiser.add_checkpoint(save_front);
     optimiser.add_checkpoint(hvol);
-//    optimiser.add_checkpoint(mail);
+    optimiser.add_checkpoint(mail);
 //    optimiser.add_checkpoint(hvol_plot);
 //    optimiser.add_checkpoint(plotfront);
     optimiser.add_checkpoint(maxgen);
+    optimiser.add_checkpoint(signal_handler);
 }
 
 
