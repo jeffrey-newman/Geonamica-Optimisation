@@ -10,7 +10,7 @@ Decision variables:
 2. Any geoproject defined variable (or vector of variables) which is obtainable using a PUGI-compatible xpath statement 
 
 Dependancies:
-My fork of AHHZ's raster repositories
-Boost
-Pugixml - included in source tree
+1. My fork of AHHZ's raster repositories
+2. Boost
+3. Pugixml - included in source tree
 
