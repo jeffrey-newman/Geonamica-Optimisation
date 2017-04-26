@@ -23,6 +23,11 @@
 #include <boost/date_time.hpp>
 #include <boost/optional.hpp>
 #include <boost/timer/timer.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_stl.hpp>
 #include "Evaluation.hpp"
 //#include <blink/raster/PngPlotter.h>
 #include <blink/raster/utility.h>
@@ -288,11 +293,12 @@ public:
             {
                 params.wine_prefix_path.second = boost::filesystem::path(userHomeDir()) / ".wine";
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
-            }
-            else if (params.wine_prefix_path.first.substr(0,8) == "generate")
+            } else if (params.wine_prefix_path.first.substr(0, 8) == "generate")
             {
-                std::string prefix_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_wine_prefix_%%%%-%%%%";
-                params.wine_prefix_path.second = boost::filesystem::unique_path(params.working_dir.second / prefix_template);
+                std::string prefix_template =
+                        "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_wine_prefix_%%%%-%%%%";
+                params.wine_prefix_path.second = boost::filesystem::unique_path(
+                        params.working_dir.second / prefix_template);
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
                 std::stringstream cmd;
                 cmd << "WINEPREFIX=" << params.wine_prefix_path.second.c_str() << " " << params.wine_cmd << " winecfg";
@@ -301,16 +307,17 @@ public:
 
                 //Copy model into prefix
                 boost::filesystem::path template_geonamica_binary_root = params.wine_prefix_path.first.substr(9);
-                boost::filesystem::path copy_geonamica_binary_root = params.wine_prefix_path.second / "drive_c/Program Files (x86)/Geonamica";
+                boost::filesystem::path copy_geonamica_binary_root =
+                        params.wine_prefix_path.second / "drive_c/Program Files (x86)/Geonamica";
                 copyDir(template_geonamica_binary_root, copy_geonamica_binary_root);
 
 
-
-            }
-            else if (params.wine_prefix_path.first.substr(0,4) == "copy")
+            } else if (params.wine_prefix_path.first.substr(0, 4) == "copy")
             {
-                std::string prefix_copy_template = "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_wine_prefix_%%%%-%%%%";
-                boost::filesystem::path prefix_copied_path = boost::filesystem::unique_path(params.working_dir.second / prefix_copy_template);
+                std::string prefix_copy_template =
+                        "Metro_Cal_OF_worker" + std::to_string(params.evaluator_id) + "_wine_prefix_%%%%-%%%%";
+                boost::filesystem::path prefix_copied_path = boost::filesystem::unique_path(
+                        params.working_dir.second / prefix_copy_template);
                 boost::filesystem::path prefix_template_path = params.wine_prefix_path.first.substr(5);
                 boost::filesystem::create_directories(prefix_copied_path);
                 copyFilesInDir(prefix_template_path, prefix_copied_path);
@@ -319,7 +326,8 @@ public:
                 boost::filesystem::path drive_c_template_path = prefix_template_path / "drive_c";
                 copyDir(drive_c_template_path, drive_c_copied_path);
 
-                boost::filesystem::copy_directory(prefix_template_path / "dosdevices", prefix_copied_path / "dosdevices");
+                boost::filesystem::copy_directory(prefix_template_path / "dosdevices",
+                                                  prefix_copied_path / "dosdevices");
                 boost::filesystem::path drive_c_link = prefix_copied_path / "dosdevices/c:";
                 boost::filesystem::create_directory_symlink(drive_c_copied_path, drive_c_link);
                 boost::filesystem::path drive_z_link = prefix_copied_path / "dosdevices/z:";
@@ -328,8 +336,7 @@ public:
                 params.wine_prefix_path.second = prefix_copied_path;
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
                 this->delete_wine_prefix_on_exit = true;
-            }
-            else
+            } else
             {
                 pathify_mk(params.wine_prefix_path); //although should really already exist....
             }
@@ -367,7 +374,7 @@ public:
                                 !(boost::filesystem::exists(symlinkpath_ext)))
                             {
                                 boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
-                                params.wine_drive_letter = drive_option;
+//                                params.wine_drive_letter = drive_option;
                                 params.wine_working_dir = drive_option;
                                 params.wine_drive_path.second = params.wine_drive_path.second / drive_option;
                                 delete_wine_dir_on_exit = true;
@@ -386,24 +393,39 @@ public:
 
         // get paths of important files in working directory.
         working_project = params.working_dir.second / params.rel_path_geoproj;
-        wine_working_project =  params.wine_working_dir + "\\" + params.rel_path_geoproj;
+        wine_working_project = params.wine_working_dir + "\\" + params.rel_path_geoproj;
         zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
 
-        // Get min or max objectives.
-        BOOST_FOREACH(std::string & str, params.min_or_max_str)
-                    {
-                        if (str == "MIN") params.min_or_max.push_back(MINIMISATION);
-                        if (str == "MAX") params.min_or_max.push_back(MAXIMISATION);
 
-                    }
-        params.min_or_max.push_back(MINIMISATION);  // For minimising the number of zonal policies.
+        // Set up formulation of optimisation problem.
+        // Work out maximisatino or minisation for objectives for maps, and the path to the maps]
+        auto obj_map_parser =  ( boost::spirit::qi::lit("MAX:")[boost::phoenix::push_back(boost::phoenix::ref(params.min_or_max), MAXIMISATION)]
+                            | boost::spirit::qi::lit("MIN:")[boost::phoenix::push_back(boost::phoenix::ref(params.min_or_max), MINIMISATION)]
+                        ) >>  (+boost::spirit::qi::char_)[boost::phoenix::push_back(boost::phoenix::ref(obj_map_paths), (params.working_dir.second / boost::spirit::qi::_1))];
         BOOST_FOREACH(std::string & rel_path, params.rel_path_obj_maps)
         {
-            obj_map_paths.push_back(params.working_dir.second / rel_path);
+            boost::spirit::qi::parse(rel_path.begin(), rel_path.end(), obj_map_parser);
+//            obj_map_paths.push_back(params.working_dir.second / rel_path);
         }
+
+        if (obj_map_paths.size() > 0)
+        {
+            params.min_or_max.push_back(MINIMISATION);  // For minimising the number of zonal policies.
+        }
+
+
+        // Get min or max objectives.
+//        BOOST_FOREACH(std::string & str, params.min_or_max_str)
+//                    {
+//                        if (str == "MIN") params.min_or_max.push_back(MINIMISATION);
+//                        if (str == "MAX") params.min_or_max.push_back(MAXIMISATION);
+//
+//                    }
+
+
         zones_delineation_map_path = params.working_dir.second / params.rel_path_zones_delineation_map;
-        working_logging = params.working_dir.second / params.rel_path_log_specification;
-        wine_working_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification;
+        working_logging = params.working_dir.second / params.rel_path_log_specification_obj;
+        wine_working_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_obj;
         
         // Load maps into memory
         zones_delineation_map = blink::raster::open_gdal_raster<int>(zones_delineation_map_path, GA_ReadOnly);
