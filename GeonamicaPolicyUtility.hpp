@@ -126,7 +126,7 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
 
                 ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map), "name of zonal map (without full path), relative to template geoproject directory. This needs to be GDAL create writable, so NOT ASCII grid format")
                 ("zone-delineation,e", po::value<std::string>(&params.rel_path_zones_delineation_map), "name of zonal delineation map (without full path), relative to template geoproject directory")
-                ("xpath-dv,j", po::value<std::vector<std::string> >(&params.xpath_dvs)->multitoken(), "xpath for decision variable, in format [MAX or MIN]:[xpath_string]")
+                ("xpath-dv,j", po::value<std::vector<std::string> >(&params.xpath_dvs)->multitoken(), "xpath for decision variable, in format [INT or INT_VEC or REAL or REAL_VEC]:[PROPORTIONAL_DISCRETE or SEPERATE_DVS]:[(lower_bound, upper_bound).... or (proportion1, proportion2,...)]:[xpath_string]")
 
                 ("is-logging,s", po::value<bool>(&params.is_logging), "TRUE or FALSE whether to log the evaluation")
                 ("save-dir,v", po::value<std::string>(&params.save_dir.first)->default_value(boost::filesystem::current_path().string()), "path of the directory for writing results and outputs to")
@@ -240,7 +240,7 @@ createCheckpoints(NSGAII<RNG> & optimiser, ZonalPolicyParameters & params)
 #include "GeonamicaPolicyOptimiser.hpp"
 
 void
-postProcessResults(ZonalOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyParameters & params)
+postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyParameters & params)
 {
     Population & first_front = pop->getFronts()->at(0);
     

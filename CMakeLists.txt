@@ -185,8 +185,8 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 SET(Metro_calib_parallel_Src
         MainPar.cpp
-        ZonalPolicyOptimiser.hpp
-        ZonalPolicyUtility.hpp
+        GeonamicaPolicyOptimiser.hpp
+        GeonamicaPolicyUtility.hpp
         Pathify.hpp
 
     )
@@ -213,8 +213,8 @@ ENDIF()
 
 SET(Metro_calib_serial_Src
        MainSer.cpp
-       ZonalPolicyOptimiser.hpp
-        ZonalPolicyUtility.hpp
+        GeonamicaPolicyOptimiser.hpp
+        GeonamicaPolicyUtility.hpp
         Pathify.hpp
     )
 

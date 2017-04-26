@@ -1,6 +1,6 @@
 //
 //  ZonalPolicyOptimiser.hpp
-//  ZonalOptimiser
+//  GeonamicaOptimiser
 //
 //  Created by a1091793 on 4/10/2016.
 //  Copyright © 2016 University of Adelaide and Bushfire and Natural Hazards CRC. All rights reserved.
@@ -38,9 +38,9 @@
 
 #include <stdio.h>
 
-#include "ZonalPolicyUtility.hpp"
+#include "GeonamicaPolicyUtility.hpp"
 
-class ZonalOptimiser : public ObjectivesAndConstraintsBase
+class GeonamicaOptimiser : public ObjectivesAndConstraintsBase
 {
 private:
     
@@ -72,12 +72,10 @@ private:
     int eval_count;
     
     int num_objectives;
-    int num_real_decision_vars = 0;
-    int num_int_decision_vars;
     int num_constraints = 0;
 
-    int min_dv_values  = 0; //lower bounds
-    int max_dv_values = 3; // upper bound of x
+    int min_zonal_dv_values  = 0; //lower bounds
+    int max_zonal_dv_values = 3; // upper bound of x
     // Decision variable mapping:
     // 0 -- 0 Strictly restrict
     // 1 -- 0.5 Weakly restrict
@@ -85,7 +83,15 @@ private:
     // 3 -- 1.5 Stimulate
     std::map<int, float> zone_policies = {{0, 1}, {1, 2}, {2, 3}, {3, 4}};
     std::vector<int> zone_policies_vec = {1,2,3,4};
-    
+
+    std::vector<std::string> int_dv_xpaths;
+    std::vector<std::string> real_dv_xpaths;
+
+    std::vector<int> int_lowerbounds;
+    std::vector<int> int_upperbounds;
+    std::vector<double > real_lowerbounds;
+    std::vector<double > real_upperbounds;
+
     ProblemDefinitionsSPtr prob_defs;
     std::pair<std::vector<double>, std::vector<double> > objectives_and_constrataints;
 
@@ -275,7 +281,7 @@ private:
     
     
 public:
-    ZonalOptimiser( ZonalPolicyParameters & _params)
+    GeonamicaOptimiser( ZonalPolicyParameters & _params)
     :
     params(_params),
     eval_count(0),
@@ -397,16 +403,51 @@ public:
         zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
 
 
+        namespace qi = boost::spirit::qi;
+        namespace ph = boost::phoenix;
+
         // Set up formulation of optimisation problem.
         // Work out maximisatino or minisation for objectives for maps, and the path to the maps]
-        auto obj_map_parser =  ( boost::spirit::qi::lit("MAX:")[boost::phoenix::push_back(boost::phoenix::ref(params.min_or_max), MAXIMISATION)]
-                            | boost::spirit::qi::lit("MIN:")[boost::phoenix::push_back(boost::phoenix::ref(params.min_or_max), MINIMISATION)]
-                        ) >>  (+boost::spirit::qi::char_)[boost::phoenix::push_back(boost::phoenix::ref(obj_map_paths), (params.working_dir.second / boost::spirit::qi::_1))];
+        auto obj_map_parser =  ( qi::lit("MAX:")[ph::push_back(ph::ref(params.min_or_max), MAXIMISATION)]
+                            | qi::lit("MIN:")[ph::push_back(ph::ref(params.min_or_max), MINIMISATION)]
+                        ) >>  (+qi::char_)[ph::push_back(ph::ref(obj_map_paths), (params.working_dir.second / qi::_1))];
         BOOST_FOREACH(std::string & rel_path, params.rel_path_obj_maps)
         {
             boost::spirit::qi::parse(rel_path.begin(), rel_path.end(), obj_map_parser);
 //            obj_map_paths.push_back(params.working_dir.second / rel_path);
         }
+        // Calculate number of zones (this will be equal to the number of decision variables related to the zonal policy)
+        auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map));
+        zones_delineation_no_data_val = zones_delineation_map.noDataVal();
+        for (auto i : zip)
+        {
+            int val_i = std::get<0>(i);
+            if (zones_delineation_no_data_val)
+            {
+                if (val_i != zones_delineation_no_data_val.get())
+                {
+                    zones.emplace(val_i);
+                }
+            }
+            else
+            {
+                zones.emplace(val_i);
+            }
+//            if (val != no_data_val)
+        }
+
+        int_lowerbounds.resize(zones.size(), min_zonal_dv_values);
+        int_upperbounds.resize(zones.size(), max_zonal_dv_values);
+
+        auto xpath_policy_dv_parser =  ( qi::lit("INT") >> qi::lit("(") >> qi::int_[ph::push_back(ph::ref(int_lowerbounds), qi::_1)] >>  qi::lit(",") >> qi::int_[ph::push_back(ph::ref(int_upperbounds), qi::_1)] >>  qi::lit(")") >>  (+qi::char_)[ph::push_back(ph::ref(this->int_dv_xpaths), qi::_1)])
+                                        | ( qi::lit("REAL") >> qi::lit("(") >> qi::int_[ph::push_back(ph::ref(real_lowerbounds), qi::_1)] >>  qi::lit(",") >> qi::int_[ph::push_back(ph::ref(real_upperbounds), qi::_1)] >>  qi::lit(")") >>  (+qi::char_)[ph::push_back(ph::ref(this->real_dv_xpaths), qi::_1)]);
+
+
+        BOOST_FOREACH(std::string & xpath, params.xpath_dvs)
+                    {
+                        boost::spirit::qi::parse(xpath.begin(), xpath.end(), xpath_policy_dv_parser);
+//            obj_map_paths.push_back(params.working_dir.second / rel_path);
+                    }
 
         if (obj_map_paths.size() > 0)
         {
@@ -431,29 +472,10 @@ public:
         zones_delineation_map = blink::raster::open_gdal_raster<int>(zones_delineation_map_path, GA_ReadOnly);
         
         
-        // Calculate number of zones (this will be equal to the number of decision variables)
-        auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map));
-        zones_delineation_no_data_val = zones_delineation_map.noDataVal();
-        for (auto i : zip)
-        {
-            int val_i = std::get<0>(i);
-            if (zones_delineation_no_data_val)
-            {
-                if (val_i != zones_delineation_no_data_val.get())
-                {
-                    zones.emplace(val_i);
-                }
-            }
-            else
-            {
-                zones.emplace(val_i);
-            }
-//            if (val != no_data_val)
-        }
-        num_int_decision_vars = zones.size();
+
         
         // Make the problem defintions and intialise the objectives and constraints struct.
-        prob_defs.reset(new ProblemDefinitions(num_real_decision_vars, 0.0,  1.0, num_int_decision_vars, min_dv_values, max_dv_values, params.min_or_max, num_constraints));
+        prob_defs.reset(new ProblemDefinitions(real_lowerbounds, real_upperbounds, int_lowerbounds, int_upperbounds, params.min_or_max, num_constraints));
         objectives_and_constrataints = std::pair<std::vector<double>, std::vector<double> >(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
 //        objectives_and_constrataints = std::make_pair(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
 
@@ -461,7 +483,7 @@ public:
         
     }
     
-    ~ZonalOptimiser()
+    ~GeonamicaOptimiser()
     {
         //        boost::filesystem::remove_all(worker_dir);
 
@@ -657,12 +679,26 @@ public:
             }
         }
 
+        pugi::xml_document doc;
+        pugi::xml_parse_result result = doc.load_file(working_project.c_str());
+
+        // Manipulate geoproject with xpath dvs
+        {
+            for (int j = 0; j < int_dv_xpaths.size(); ++j)
+            {
+                setAllValuesXMLNode(doc, int_dv_xpaths[j], int_decision_vars[zones.size() + j]);
+            }
+            for (int k = 0; k < real_dv_xpaths.size(); ++k)
+            {
+                setAllValuesXMLNode(doc, real_dv_xpaths[k], int_decision_vars[k]);
+            }
+        }
+
         std::vector<std::vector<double> > obj_vals_across_replicates;
         for (int j = 0; j < params.replicates; ++j)
         {
             // If geoproject manipulation needed, do it now, here.
-            pugi::xml_document doc;
-            pugi::xml_parse_result result = doc.load_file(working_project.c_str());
+
             setAllValuesXMLNode(doc, "/GeonamicaSimulation/model/modelBlocks/modelBlock[@library=\"\" and @name=\"MB_Land_use_model\"]/CompositeModelBlock/modelBlocks/modelBlock[@library=\"CAModel.dll\" and @name=\"MB_Total_potential\"]/TotalPotentialBlock/Seed", params.rand_seeds[j]);
             doc.save_file(working_project.c_str());
             
