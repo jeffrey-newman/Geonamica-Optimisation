@@ -8,6 +8,7 @@ FIND_PACKAGE(Boost REQUIRED COMPONENTS filesystem system program_options mpi ser
 find_package(GDAL)
 find_package(MPI REQUIRED)
 include_directories(${MPI_CXX_INCLUDE_PATH})
+find_package(ImageMagick COMPONENTS Magick++ MagickWand MagickCore)
 
 SET(USE_VTK CACHE BOOL "Set to on to use vtk visualisation")
 IF (USE_VTK)
@@ -21,12 +22,26 @@ ENDIF()
 set(AHHZ_RASTER_UTIL "Not Specified" CACHE PATH "Path to Alex Hagen-Zanker's Raster Utility Include direction (select above blink)")
 set(AHHZ_RASTER_ITERATOR "Not Specified" CACHE PATH "Path to Alex Hagen-Zanker's Raster Iterator Include direction (select folder above blink)")
 set(PARALLEL-NSGAII "Not Specified" CACHE PATH "Path to Jeff's parallel NSGAII code")
+set(RASTER2IMAGE "Not specified" CACHE PATH "Path to the Raster2Image code")
 #set(MCL "Not Specified" CACHE PATH "Path to MCL code")
 set(MAC_FRAMEWORK_PATHS "FALSE" CACHE BOOL "Whether to use header paths in include statements for mac gdal framework")
 
 if(MAC_FRAMEWORK_PATHS)
     add_definitions(-DWITH_MAC_FRAMEWORK)
 ENDIF()
+
+
+# Find where Magick++-config lives
+find_program(MAGICK_CONFIG "Magick++-config")
+# Ask about CXX and lib flags/locations
+execute_process(COMMAND "${MAGICK_CONFIG}" "--cxxflags" OUTPUT_VARIABLE MAGICK_CXX_FLAGS)
+execute_process(COMMAND "${MAGICK_CONFIG}" "--libs" OUTPUT_VARIABLE MAGICK_LD_FLAGS)
+#message(STATUS "${MAGICK_CXX_FLAGS}")
+#message(STATUS "${MAGICK_LD_FLAGS}")
+# Remove trailing whitespace (CMAKE warns about this)
+string(STRIP "${MAGICK_CXX_FLAGS}" MAGICK_CXX_FLAGS)
+string(STRIP "${MAGICK_LD_FLAGS}" MAGICK_LD_FLAGS)
+
 
 # Define required for how hypervolume is calculated.
 add_definitions(-DVARIANT=4)
@@ -40,6 +55,8 @@ INCLUDE_DIRECTORIES(${AHHZ_RASTER_UTIL} )
 INCLUDE_DIRECTORIES(${AHHZ_RASTER_ITERATOR})
 INCLUDE_DIRECTORIES(${PARALLEL-NSGAII})
 include_directories("${CMAKE_SOURCE_DIR}/pugixml-1.7/src/")
+include_directories(${ImageMagick_Magick++_INCLUDE_DIR})
+include_directories(${RASTER2IMAGE})
 #INCLUDE_DIRECTORIES(${MCL})
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -76,6 +93,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 # ...
 # target_link_libraries(yourBinary ${LIBS})
 
+SET(MagickLibs
+        ${ImageMagick_Magick++_LIBRARY}
+        ${ImageMagick_MagickWand_LIBRARY}
+        ${ImageMagick_MagickCore_LIBRARY}
+        )
 
 
 file(GLOB_RECURSE AHHZ_Raster
@@ -137,6 +159,14 @@ SET(prll-nsga-src
         "${PARALLEL-NSGAII}/Metrics/Hypervolume.hpp"
     )
 
+#SET(Rst2ImgSrc
+#        "${RASTER2IMAGE}/MagickWriterClassified.cpp"
+#        "${RASTER2IMAGE}/MagickWriterClassified.h"
+#        "${RASTER2IMAGE}/MagickWriterLinearGradient.cpp"
+#        "${RASTER2IMAGE}/MagickWriterLinearGradient.h"
+#    )
+
+
 #SET (MCL_HEADERS
 #        "${MCL}/MapComparison_0_4.h"
 #                "${MCL}/Map_Matrix.h"
@@ -183,7 +213,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 #                                                                                                                #
 ##################################################################################################################
 
-SET(Metro_calib_parallel_Src
+SET(Geonamica_optimiser_parallel_Src
         MainPar.cpp
         GeonamicaPolicyOptimiser.hpp
         GeonamicaPolicyUtility.hpp
@@ -191,16 +221,16 @@ SET(Metro_calib_parallel_Src
 
     )
 
-add_executable(metrocalpar ${Metro_calib_parallel_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility} ${MCL_SOURCES} ${PUGIXML-SRC})
-target_link_libraries(metrocalpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES})
-
+add_executable(geooptpar ${Geonamica_optimiser_parallel_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility} ${MCL_SOURCES} ${PUGIXML-SRC} )
+target_link_libraries(geooptpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} ${MagickLibs})
 IF(USE_VTK)
     if(VTK_LIBRARIES)
-        target_link_libraries(metrocalpar ${VTK_LIBRARIES})
+        target_link_libraries(geooptpar ${VTK_LIBRARIES} )
     else()
-        target_link_libraries(metrocalpar vtkHybrid vtkWidgets)
+        target_link_libraries(geooptpar vtkHybrid vtkWidgets )
     endif()
 ENDIF()
+target_compile_definitions(geooptpar PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
 ##################################################################################################################
@@ -211,7 +241,7 @@ ENDIF()
 ##################################################################################################################
 
 
-SET(Metro_calib_serial_Src
+SET(Geonamica_optimiser_serial_Src
        MainSer.cpp
         GeonamicaPolicyOptimiser.hpp
         GeonamicaPolicyUtility.hpp
@@ -220,99 +250,45 @@ SET(Metro_calib_serial_Src
 
 
 
-add_executable(metrocalser ${Metro_calib_serial_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES}  ${PUGIXML-SRC})
-target_link_libraries(metrocalser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES})
-
+add_executable(geooptser ${Geonamica_optimiser_serial_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES}  ${PUGIXML-SRC} )
+target_link_libraries(geooptser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} ${MagickLibs})
 IF(USE_VTK)
     if(VTK_LIBRARIES)
-        target_link_libraries(metrocalser ${VTK_LIBRARIES})
+        target_link_libraries(geooptser ${VTK_LIBRARIES} )
     else()
-        target_link_libraries(metrocalser vtkHybrid vtkWidgets)
+        target_link_libraries(geooptser vtkHybrid vtkWidgets )
     endif()
 ENDIF()
+target_compile_definitions(geooptser PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
+
+
+##################################################################################################################
+#                                                                                                                #
+#                 Test ZonalOF on zonal areas all restrict or all stimulate, or all nothing                      #
+#                                                                                                                #
+#                                                                                                                #
+##################################################################################################################
+
+
+SET(zonal_opt_tst_src
+        TestZoneDVs.cpp
+        GeonamicaPolicyOptimiser.hpp
+        GeonamicaPolicyUtility.hpp
+        Pathify.hpp
+        )
 
 
 
-###################################################################################################################
-##                                                                                                                #
-##                 Test GeonamicalZonalOF on one random DV string                                                 #
-##                                                                                                                #
-##                                                                                                                #
-###################################################################################################################
-#
-#
-#SET(Metro_calib_test_Src
-#        TestMetroCalOF.cpp
-#        MetronamicaOF2.hpp
-#        Pathify.hpp
-#    )
-#
-#
-#
-#add_executable(metrocaltest ${Metro_calib_test_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES})
-#target_link_libraries(metrocaltest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES})
-#
-#IF(USE_VTK)
-#    if(VTK_LIBRARIES)
-#        target_link_libraries(metrocaltest ${VTK_LIBRARIES})
-#    else()
-#        target_link_libraries(metrocaltest vtkHybrid vtkWidgets)
-#    endif()
-#ENDIF()
-#
-#
-#
-#
-#
-###################################################################################################################
-##                                                                                                                #
-##                 test GeonamicalZonalOF on a complete population of solutions                                       #
-##                                                                                                                #
-##                                                                                                                #
-###################################################################################################################
-#
-#SET(Evaluation_test_Src
-#        EvaluationTester.cpp
-#        MetronamicaOF2.hpp
-#        Pathify.hpp
-#    )
-#
-#add_executable(testevaluation ${Evaluation_test_Src} ${MCL_HEADERS} ${MCL_SOURCES} ${AHHZ_Raster_Utility} )
-#target_link_libraries(testevaluation ${Boost_LIBRARIES} ${GDAL_LIBRARY} ${PNGwriter_LIBRARIES})
-#IF(USE_VTK)
-#    if(VTK_LIBRARIES)
-#        target_link_libraries(testevaluation ${VTK_LIBRARIES})
-#    else()
-#        target_link_libraries(testevaluation vtkHybrid vtkWidgets)
-#    endif()
-#ENDIF()
-#
-#
-###################################################################################################################
-##                                                                                                                #
-##                 Read in a population, get the first front, and....                                             #
-##                                                                                                                #
-##                                                                                                                #
-###################################################################################################################
-#
-#
-#SET(GetFirstFront_Src
-#        GetFirstFront.cpp
-#        MetronamicaOF2.hpp
-#        Pathify.hpp
-#    )
-#
-#
-#add_executable(getfirstfront ${GetFirstFront_Src} ${MCL_HEADERS} ${MCL_SOURCES} ${AHHZ_Raster_Utility} )
-#target_link_libraries(getfirstfront ${Boost_LIBRARIES} ${GDAL_LIBRARY} ${PNGwriter_LIBRARIES})
-#IF(USE_VTK)
-#    if(VTK_LIBRARIES)
-#        target_link_libraries(getfirstfront ${VTK_LIBRARIES})
-#    else()
-#        target_link_libraries(getfirstfront vtkHybrid vtkWidgets)
-#    endif()
-#ENDIF()
-#
+add_executable(zonalopttest ${zonal_opt_tst_src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES}  ${PUGIXML-SRC} )
+target_link_libraries(zonalopttest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} ${MagickLibs})
+IF(USE_VTK)
+    if(VTK_LIBRARIES)
+        target_link_libraries(zonalopttest ${VTK_LIBRARIES} )
+    else()
+        target_link_libraries(zonalopttest vtkHybrid vtkWidgets )
+    endif()
+ENDIF()
+target_compile_definitions(zonalopttest PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
 

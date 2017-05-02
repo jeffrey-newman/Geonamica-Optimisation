@@ -52,7 +52,7 @@ struct ZonalPolicyParameters
     std::string rel_path_log_specification_obj;  // relative path of logging file from geoproject directory (head/root directory)  - should be in wine format.
     std::string rel_path_log_specification_save;  // relative path of logging file from geoproject directory (head/root directory)  - should be in wine format.
     std::string rel_path_zones_delineation_map;  // relative path of a map which delineates the project area into regions wherein zonal policiy is optimised.
-    std::vector<std::string> save_map;
+    std::vector<std::string> save_maps;
     bool is_logging = false;
     int replicates = 10;
     int pop_size; // For the GA
@@ -118,7 +118,7 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
 
                 ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj), "name of geoproject file (without full path), relative to template geoproject directory. Needs to be in top level at the moment")
                 ("log-file-objectives,l", po::value<std::string>(&params.rel_path_log_specification_obj), "path of the log settings xml file (relative to template geoproject directory in in wine format for use during optimisation process)")
-                ("log-file-save,n", po::value<std::string>(&params.rel_path_log_specification_save), "path of the log settings xml file (relative to template geoproject directory in in wine format), but for saving outputs")
+                ("log-file-save,n", po::value<std::string>(&params.rel_path_log_specification_save)->default_value("unspecified"), "path of the log settings xml file (relative to template geoproject directory in in wine format), but for saving outputs")
                 ("replicates,i", po::value<int>(&params.replicates)->default_value(10), "Number of times to rerun Metronamica to account for stochasticity of model for each objective function evaluation")
 
                 ("obj-maps,o",po::value<std::vector<std::string> >(&params.rel_path_obj_maps)->multitoken(), "relative paths wrt template geoproject directory of objective maps")
@@ -128,9 +128,9 @@ processOptions(int argc, char * argv[], ZonalPolicyParameters & params)
                 ("zone-delineation,e", po::value<std::string>(&params.rel_path_zones_delineation_map), "name of zonal delineation map (without full path), relative to template geoproject directory")
                 ("xpath-dv,j", po::value<std::vector<std::string> >(&params.xpath_dvs)->multitoken(), "xpath for decision variable, in format [INT or INT_VEC or REAL or REAL_VEC]:[PROPORTIONAL_DISCRETE or SEPERATE_DVS]:[(lower_bound, upper_bound).... or (proportion1, proportion2,...)]:[xpath_string]")
 
-                ("is-logging,s", po::value<bool>(&params.is_logging), "TRUE or FALSE whether to log the evaluation")
+                ("is-logging,s", po::value<bool>(&params.is_logging)->default_value(false), "TRUE or FALSE whether to log the evaluation")
                 ("save-dir,v", po::value<std::string>(&params.save_dir.first)->default_value(boost::filesystem::current_path().string()), "path of the directory for writing results and outputs to")
-                ("save-map,k", po::value<std::vector<std::string> >(&params.save_map)->multitoken(), "relative path to geoproject directory for maps to save when optimisation completes. Format: [CATEGORISED/CONTINUOUS]:[legend_specification_file_relative_to_geoproject]:[path_of_map_relative_to_geoproject]")
+                ("save-map,k", po::value<std::vector<std::string> >(&params.save_maps)->multitoken(), "relative path to geoproject directory for maps to save when optimisation completes. Format: [CATEGORISED/LINEAR_GRADIENT]:\"[legend_specification_file_relative_to_geoproject]\":[\"path_of_map_relative_to_geoproject\"]")
 
                 ("pop-size,p", po::value<int>(&params.pop_size)->default_value(415), "Population size of the NSGAII")
                 ("max-gen-no-hvol-improve,x", po::value<int>(&params.max_gen_hvol)->default_value(50), "maximum generations with no improvement in the hypervolume metric - terminaation condition")
@@ -262,11 +262,11 @@ postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, ZonalPol
     assert(ofs.good());
     boost::archive::xml_oarchive oa(ofs);
     oa << BOOST_SERIALIZATION_NVP(first_front);
-    
+
     boost::filesystem::path save_file2 = params.save_dir.second /  "final_front.txt";
     std::ofstream ofs2(save_file2.c_str());
     assert(ofs2.good());
-    ofs2 << pop;
+    ofs2 << first_front;
 }
 
 
