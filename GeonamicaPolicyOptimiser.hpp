@@ -313,7 +313,7 @@ public:
                         params.working_dir.second / prefix_template);
                 params.wine_prefix_path.first = params.wine_prefix_path.second.string();
                 std::stringstream cmd;
-                cmd << "WINEPREFIX=" << params.wine_prefix_path.second.c_str() << " " << params.wine_cmd << " winecfg";
+                cmd << "WINEPREFIX=" << params.wine_prefix_path.second.string().c_str() << " " << params.wine_cmd << " winecfg";
                 int return_val = system(cmd.str().c_str());
                 this->delete_wine_prefix_on_exit = true;
 
@@ -587,29 +587,46 @@ public:
     void
     runGeonamica(std::ofstream & logging_file)
     {
+        boost::scoped_ptr<boost::timer::auto_cpu_timer> t(nullptr);
+        if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
         std::stringstream cmd1, cmd2;
         //Call the model
-        if (using_wine) cmd1 << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.c_str() << "\"" << " ";
+        if (using_wine) cmd1 << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
         if (using_timeout) cmd1 << params.timout_cmd << " ";
         if (using_wine) cmd1 << params.wine_cmd << " ";
         cmd1 << params.geonamica_cmd << " --Reset --Save " << "\"" << wine_working_project << "\"" ;
-        if (params.is_logging) cmd1 << " >> \"" << logfile.c_str() << "\" 2>&1";
-        if (params.is_logging) logging_file << "Running: " << cmd1.str() << std::endl;
-        if (params.is_logging)  logging_file.close();
+        if (params.is_logging)
+        {
+            cmd1 << " >> \"" << logfile.string().c_str() << "\" 2>&1";
+            logging_file << "Running: " << cmd1.str() << std::endl;
+            logging_file.close();
+        }
+
         int i1 = system(cmd1.str().c_str());
-        if (params.is_logging) logging_file.open(logfile.c_str(), std::ios_base::app);
+        if (params.is_logging) logging_file.open(logfile.string().c_str(), std::ios_base::app);
         if (!logging_file.is_open()) params.is_logging = false;
 
-        if (using_wine) cmd2 << "WINEPREFIX=" << "\""  << params.wine_prefix_path.second.c_str() << "\""  << " ";
+        if (using_wine) cmd2 << "WINEPREFIX=" << "\""  << params.wine_prefix_path.second.string().c_str() << "\""  << " ";
         if (using_timeout) cmd2 << params.timout_cmd << " ";
         if (using_wine) cmd2 << params.wine_cmd << " ";
         cmd2 << params.geonamica_cmd << " --Run --Save --LogSettings " << "\"" << wine_working_logging << "\"" << " " << "\"" << wine_working_project << "\"";
-        if (params.is_logging) cmd2 << " >> \"" << logfile.c_str() << "\" 2>&1";
-        if (params.is_logging) logging_file << "Running: " << cmd2.str() << std::endl;
-        if (params.is_logging) logging_file.close();
+        if (params.is_logging)
+        {
+            cmd2 << " >> \"" << logfile.string().c_str() << "\" 2>&1";
+            logging_file << "Running: " << cmd2.str() << std::endl;
+            logging_file.close();
+        }
+
         int i2 = system(cmd2.str().c_str());
-        if (params.is_logging) logging_file.open(logfile.c_str(), std::ios_base::app);
+        if (params.is_logging) logging_file.open(logfile.string().c_str(), std::ios_base::app);
         if (!logging_file.is_open()) params.is_logging = false;
+        if (params.is_logging)
+        {
+            logging_file << "Geonamica run time:\n";
+            t->stop();
+            t->report();
+        }
+
     }
     
     
@@ -658,7 +675,8 @@ public:
     std::vector<double>
     calcObjectives(std::ofstream & logging_file)
     {
-        
+        boost::scoped_ptr<boost::timer::auto_cpu_timer> t(nullptr);
+        if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
         // For each map, sum the metric.
         int metric_num = 0;
         std::vector<double> obj_vals(num_objectives-1, 0);
@@ -716,6 +734,13 @@ public:
                         }
                         ++metric_num;
                     }
+
+        if (params.is_logging)
+        {
+            logging_file << "Calculating objectives (i.e. aggregation external to Geonamica) run time:\n";
+            t->stop();
+            t->report();
+        }
         return obj_vals;
     }
     
@@ -724,35 +749,44 @@ public:
     calculate(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
               boost::filesystem::path save_path = "no_path", boost::filesystem::path _logfile = "unspecified")
     {
+
+
         boost::filesystem::path initial_path = boost::filesystem::current_path();
         boost::filesystem::current_path(params.working_dir.second);
 
         bool do_save = false;
         if (save_path != "no_path") do_save = true;
 
-        if (_logfile == "unspecified")
-        {
-            std::string filename = "logWorker" + std::to_string(params.evaluator_id)
-                                   + "_EvalNo" + std::to_string(eval_count) + "_"
-                                   +
-                                   boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time()) +
-                                   ".log";
-            logfile = params.save_dir.second / filename;
-        }
-        else
-        {
-            logfile = _logfile;
-        }
         std::ofstream logging_file;
         if (params.is_logging)
         {
-            logging_file.open(logfile.c_str(), std::ios_base::app);
-            if (!logging_file.is_open())
+            if (_logfile == "unspecified")
             {
-                params.is_logging = false;
-                std::cout << "attempt to log failed\n";
+                std::string filename = "logWorker" + std::to_string(params.evaluator_id)
+                                       + "_EvalNo" + std::to_string(eval_count) + "_"
+                                       +
+                                       boost::posix_time::to_simple_string(
+                                               boost::posix_time::second_clock::local_time()) +
+                                       ".log";
+                this->logfile = params.save_dir.second / filename;
+            }
+            else
+            {
+                this->logfile = _logfile;
+            }
+
+            if (params.is_logging)
+            {
+                logging_file.open(this->logfile.string().c_str(), std::ios_base::app);
+                if (!logging_file.is_open())
+                {
+                    params.is_logging = false;
+                    std::cout << "attempt to log failed\n";
+                }
             }
         }
+        boost::scoped_ptr<boost::timer::auto_cpu_timer> t(nullptr);
+        if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
         
         std::vector<double> & objectives = objectives_and_constraints.first;
         BOOST_FOREACH(double & obj_val, objectives)
@@ -809,7 +843,7 @@ public:
         }
 
         pugi::xml_document doc;
-        pugi::xml_parse_result result = doc.load_file(working_project.c_str());
+        pugi::xml_parse_result result = doc.load_file(working_project.string().c_str());
 
         // Manipulate geoproject with xpath dvs
         {
@@ -829,8 +863,17 @@ public:
             // If geoproject manipulation needed, do it now, here.
             if (params.is_logging) logging_file << "Replicate " << j << "\n";
             setAllValuesXMLNode(doc, "/GeonamicaSimulation/model/modelBlocks/modelBlock[@library=\"\" and @name=\"MB_Land_use_model\"]/CompositeModelBlock/modelBlocks/modelBlock[@library=\"CAModel.dll\" and @name=\"MB_Total_potential\"]/TotalPotentialBlock/Seed", params.rand_seeds[j]);
-            doc.save_file(working_project.c_str());
-            
+            doc.save_file(working_project.string().c_str());
+
+            if (do_save)
+            {
+                // Save a copy of the geoproject file as the current Cmd line runner mangles the GUI aspects preventing it from being loadable in the HGUI interface of Metronamica
+                std::string extnsn = working_project.extension().string();
+                std::string filename = working_project.stem().string();
+                boost::filesystem::path prerun_bck_geoproj = working_project.parent_path() / (filename + "_prerunbck" + extnsn);
+                doc.save_file(prerun_bck_geoproj.string().c_str());
+            }
+
             runGeonamica(logging_file);
             std::vector<double> obj_vals = calcObjectives(logging_file);
 
@@ -912,6 +955,12 @@ public:
         previous_logfile = logfile;
         
         boost::filesystem::current_path(initial_path);
+        if (params.is_logging)
+        {
+            logging_file << "Net time for calculating objectives and constraints across all replicates:\n";
+            t->stop();
+            t->report();
+        }
     }
     
     
