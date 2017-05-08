@@ -14,8 +14,8 @@
 #include <boost/timer/timer.hpp>
 #include "ParallelEvaluator.hpp"
 #include "NSGAII.hpp"
-#include "ZonalPolicyUtility.hpp"
-#include "ZonalPolicyOptimiser.hpp"
+#include "GeonamicaPolicyUtility.hpp"
+#include "GeonamicaPolicyOptimiser.hpp"
 
 int main(int argc, char * argv[]) {
     boost::mpi::environment env(argc, argv);
@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
     }
 
     params.evaluator_id = world.rank();
-    ZonalOptimiser zonal_eval(params);
+    GeonamicaOptimiser zonal_eval(params);
 ;
     
     

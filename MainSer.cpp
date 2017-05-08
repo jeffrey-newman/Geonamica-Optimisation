@@ -9,14 +9,14 @@
 
 
 #include "NSGAII.hpp"
-#include "ZonalPolicyUtility.hpp"
+#include "GeonamicaPolicyUtility.hpp"
 
 
 int main(int argc, char * argv[]) {
 
     ZonalPolicyParameters params;
     processOptions(argc, argv, params);
-    ZonalOptimiser zonal_eval(params);
+    GeonamicaOptimiser zonal_eval(params);
     
     // The random number generator
     typedef std::mt19937 RNG;
