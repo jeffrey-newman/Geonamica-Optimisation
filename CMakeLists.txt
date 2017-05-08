@@ -1,6 +1,6 @@
  
 cmake_minimum_required(VERSION 3.0)
-PROJECT(Geon-Zonal-Opt)
+PROJECT(Geon-Opt)
 set (CMAKE_CXX_STANDARD 11)
 #Variable for location of parallel-nsgaII-backend
 
