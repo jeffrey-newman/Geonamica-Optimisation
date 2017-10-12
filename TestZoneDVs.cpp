@@ -9,13 +9,15 @@
 
 
 //#include "NSGAII.hpp"
-#include "GeonamicaPolicyUtility.hpp"
+#include "GeonamicaPolicyParameters.hpp"
+#include "GeonamicaPolicyOptimiser.hpp"
 
 
 int main(int argc, char * argv[]) {
 
     ZonalPolicyParameters params;
-    processOptions(argc, argv, params);
+    LoadParameters parameter_loader;
+    parameter_loader.processOptions(argc, argv, params);
     GeonamicaOptimiser zonal_eval(params);
 
 

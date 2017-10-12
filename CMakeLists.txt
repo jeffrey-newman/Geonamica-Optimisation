@@ -9,15 +9,17 @@ find_package(GDAL)
 find_package(MPI REQUIRED)
 include_directories(${MPI_CXX_INCLUDE_PATH})
 find_package(ImageMagick COMPONENTS Magick++ MagickWand MagickCore)
+find_package( OpenCV REQUIRED )
 
-SET(USE_VTK CACHE BOOL "Set to on to use vtk visualisation")
-IF (USE_VTK)
-        find_package(VTK REQUIRED)
-                IF(VTK_FOUND)
-                include(${VTK_USE_FILE})
-                add_definitions(-DWITH_VTK)
-                ENDIF()
-ENDIF()
+
+#SET(USE_VTK CACHE BOOL "Set to on to use vtk visualisation")
+#IF (USE_VTK)
+#        find_package(VTK REQUIRED)
+#                IF(VTK_FOUND)
+#                include(${VTK_USE_FILE})
+#                add_definitions(-DWITH_VTK)
+#                ENDIF()
+#ENDIF()
 
 set(AHHZ_RASTER_UTIL "Not Specified" CACHE PATH "Path to Alex Hagen-Zanker's Raster Utility Include direction (select above blink)")
 set(AHHZ_RASTER_ITERATOR "Not Specified" CACHE PATH "Path to Alex Hagen-Zanker's Raster Iterator Include direction (select folder above blink)")
@@ -134,10 +136,10 @@ SET(prll-nsga-src
         "${PARALLEL-NSGAII}/NSGAII.hpp"
         "${PARALLEL-NSGAII}/ParallelEvaluator.hpp"
         "${PARALLEL-NSGAII}/Population.hpp"
-        "${PARALLEL-NSGAII}/Population.cpp"
+        "${PARALLEL-NSGAII}/Population.hpp"
         "${PARALLEL-NSGAII}/ProblemDefinitions.hpp"
         "${PARALLEL-NSGAII}/Selection.hpp"
-        "${PARALLEL-NSGAII}/Types.hpp"
+#        "${PARALLEL-NSGAII}/Types.hpp"
 
         "${PARALLEL-NSGAII}/Checkpoints/MaxGenCheckpoint.hpp"
         "${PARALLEL-NSGAII}/Checkpoints/SavePopCheckpoint.hpp"
@@ -162,8 +164,8 @@ SET(prll-nsga-src
 #SET(Rst2ImgSrc
 #        "${RASTER2IMAGE}/MagickWriterClassified.cpp"
 #        "${RASTER2IMAGE}/MagickWriterClassified.h"
-#        "${RASTER2IMAGE}/MagickWriterLinearGradient.cpp"
-#        "${RASTER2IMAGE}/MagickWriterLinearGradient.h"
+#        "${RASTER2IMAGE}/MagickWriterGradient.cpp"
+#        "${RASTER2IMAGE}/MagickWriterGradient.h"
 #    )
 
 
@@ -205,6 +207,29 @@ SET(prll-nsga-src
 
 link_directories(${Boost_LIBRARY_DIRS})
 
+SET(OptCommon_Srcs
+        GeonamicaPolicyOptimiser.hpp
+        GeonamicaPolicyOptimiser.cpp
+        GeonamicaPolicyParameters.hpp
+        GeonamicaPolicyParameters.cpp
+        GeonamicaPolicyPostProcess.cpp
+        GeonamicaPolicyPostProcess.hpp
+        GeonamicaPolicyCheckpoints.cpp
+        GeonamicaPolicyCheckpoints.hpp
+        Pathify.hpp
+        Pathify.cpp
+        ${prll-nsga-src}
+        ${MCL_HEADERS}
+        ${AHHZ_Raster}
+        ${AHHZ_Raster_Utility}
+        ${MCL_SOURCES}
+        ${PUGIXML-SRC}
+        GeonamicaNSGAII.cpp
+        GeonamicaNSGAII.hpp
+        )
+
+add_library(geonoptcommon STATIC ${OptCommon_Srcs})
+target_compile_definitions(geonoptcommon PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 ##################################################################################################################
 #                                                                                                                #
@@ -215,21 +240,18 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 SET(Geonamica_optimiser_parallel_Src
         MainPar.cpp
-        GeonamicaPolicyOptimiser.hpp
-        GeonamicaPolicyUtility.hpp
-        Pathify.hpp
-
     )
 
-add_executable(geooptpar ${Geonamica_optimiser_parallel_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility} ${MCL_SOURCES} ${PUGIXML-SRC} )
-target_link_libraries(geooptpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} ${MagickLibs})
-IF(USE_VTK)
-    if(VTK_LIBRARIES)
-        target_link_libraries(geooptpar ${VTK_LIBRARIES} )
-    else()
-        target_link_libraries(geooptpar vtkHybrid vtkWidgets )
-    endif()
-ENDIF()
+add_executable(geooptpar ${Geonamica_optimiser_parallel_Src})
+target_link_libraries(geooptpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
+        ${MagickLibs} geonoptcommon)
+#IF(USE_VTK)
+#    if(VTK_LIBRARIES)
+#        target_link_libraries(geooptpar ${VTK_LIBRARIES} )
+#    else()
+#        target_link_libraries(geooptpar vtkHybrid vtkWidgets )
+#    endif()
+#ENDIF()
 target_compile_definitions(geooptpar PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
@@ -243,22 +265,20 @@ target_compile_definitions(geooptpar PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBL
 
 SET(Geonamica_optimiser_serial_Src
        MainSer.cpp
-        GeonamicaPolicyOptimiser.hpp
-        GeonamicaPolicyUtility.hpp
-        Pathify.hpp
     )
 
 
 
-add_executable(geooptser ${Geonamica_optimiser_serial_Src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES}  ${PUGIXML-SRC} )
-target_link_libraries(geooptser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} ${MagickLibs})
-IF(USE_VTK)
-    if(VTK_LIBRARIES)
-        target_link_libraries(geooptser ${VTK_LIBRARIES} )
-    else()
-        target_link_libraries(geooptser vtkHybrid vtkWidgets )
-    endif()
-ENDIF()
+add_executable(geooptser ${Geonamica_optimiser_serial_Src} )
+target_link_libraries(geooptser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
+        ${MagickLibs} geonoptcommon)
+#IF(USE_VTK)
+#    if(VTK_LIBRARIES)
+#        target_link_libraries(geooptser ${VTK_LIBRARIES} )
+#    else()
+#        target_link_libraries(geooptser vtkHybrid vtkWidgets )
+#    endif()
+#ENDIF()
 target_compile_definitions(geooptser PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
@@ -272,23 +292,27 @@ target_compile_definitions(geooptser PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBL
 
 SET(zonal_opt_tst_src
         TestZoneDVs.cpp
-        GeonamicaPolicyOptimiser.hpp
-        GeonamicaPolicyUtility.hpp
-        Pathify.hpp
         )
 
 
 
-add_executable(zonalopttest ${zonal_opt_tst_src} ${prll-nsga-src} ${MCL_HEADERS} ${AHHZ_Raster} ${AHHZ_Raster_Utility}  ${MCL_SOURCES}  ${PUGIXML-SRC} )
-target_link_libraries(zonalopttest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} ${MagickLibs})
-IF(USE_VTK)
-    if(VTK_LIBRARIES)
-        target_link_libraries(zonalopttest ${VTK_LIBRARIES} )
-    else()
-        target_link_libraries(zonalopttest vtkHybrid vtkWidgets )
-    endif()
-ENDIF()
+add_executable(zonalopttest ${zonal_opt_tst_src})
+target_link_libraries(zonalopttest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
+        ${MagickLibs} geonoptcommon)
+#IF(USE_VTK)
+#    if(VTK_LIBRARIES)
+#        target_link_libraries(zonalopttest ${VTK_LIBRARIES} )
+#    else()
+#        target_link_libraries(zonalopttest vtkHybrid vtkWidgets )
+#    endif()
+#ENDIF()
 target_compile_definitions(zonalopttest PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
 
+SET(USE_QT CACHE BOOL "Set to on to build qt gui with chart visualisation")
+IF (USE_QT)
+    add_subdirectory(GUI)
+ENDIF()
+
+add_subdirectory(EvaluatorModules)

@@ -9,13 +9,17 @@
 
 
 #include "NSGAII.hpp"
-#include "GeonamicaPolicyUtility.hpp"
+#include "GeonamicaPolicyParameters.hpp"
+#include "GeonamicaPolicyOptimiser.hpp"
+#include "GeonamicaPolicyCheckpoints.hpp"
+#include "GeonamicaPolicyPostProcess.hpp"
 
 
 int main(int argc, char * argv[]) {
 
     ZonalPolicyParameters params;
-    processOptions(argc, argv, params);
+    LoadParameters parameter_loader;
+    parameter_loader.processOptions(argc, argv, params);
     GeonamicaOptimiser zonal_eval(params);
     
     // The random number generator
@@ -35,7 +39,8 @@ int main(int argc, char * argv[]) {
     optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
     
     // Run the optimisation
-    optimiser(pop);
+    optimiser.initialisePop(pop);
+    optimiser.run();
     
     //Postprocess the results
     postProcessResults(zonal_eval, pop, params);

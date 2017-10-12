@@ -14,8 +14,12 @@
 #include <boost/timer/timer.hpp>
 #include "ParallelEvaluator.hpp"
 #include "NSGAII.hpp"
-#include "GeonamicaPolicyUtility.hpp"
+#include "NSGAII.hpp"
+#include "GeonamicaPolicyParameters.hpp"
 #include "GeonamicaPolicyOptimiser.hpp"
+#include "GeonamicaPolicyCheckpoints.hpp"
+#include "GeonamicaPolicyPostProcess.hpp"
+#include <thread>
 
 int main(int argc, char * argv[]) {
     boost::mpi::environment env(argc, argv);
@@ -23,7 +27,8 @@ int main(int argc, char * argv[]) {
     ZonalPolicyParameters params;
     //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
     std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
-    int ret = processOptions(argc, argv, params);
+    LoadParameters parameter_loader;
+    int ret = parameter_loader.processOptions(argc, argv, params);
     if (ret == 1)
     {
         return 1;
@@ -85,7 +90,8 @@ int main(int argc, char * argv[]) {
             pop = restore_population(params.restart_pop_file.second);
         }
 
-        optimiser(pop);
+        optimiser.initialisePop(pop);
+        optimiser.run();
 
 
         //Postprocess the results

@@ -1,0 +1,16 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>images/copy.png</file>
+    <file>images/cut.png</file>
+    <file>images/new.png</file>
+    <file>images/open.png</file>
+    <file>images/paste.png</file>
+    <file>images/save.png</file>
+    <file>images/config.png</file>
+    <file>images/query.png</file>
+    <file>images/update.png</file>
+    <file>Help/ObjMap.html</file>
+    <file>Help/EvalModules.html</file>
+    <file>Help/XPathDVs.html</file>
+</qresource>
+</RCC>
