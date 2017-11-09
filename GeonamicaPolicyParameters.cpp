@@ -63,7 +63,7 @@ LoadParameters::LoadParameters() :
                 //            ("wine-drive-path,f", po::value<std::string>(&params.wine_prefix_path.first)->default_value("do not test"), "Path of root directory of wine drive")
                 //            ("wine-drive-letter,g", po::value<std::string>(&params.wine_drive_letter), "Letter of drive to make symlink for - i.e. C for 'C:' or Z for 'Z:' etc ")
                 //    ("wine-work-dir,w", po::value<std::string>(&params.wine_working_dir), "path to working directory (working-dir,d), but in wine path format - e.g. Z:\\path\\to\\working\\dir")
-
+                ("set-windows-env-var", po::value<std::string>(&params.windows_env_var)->default_value("unspecified"), "Set windows environment variables which may affect the way Geonamica runs")
                 ("geoproj-file,g", po::value<std::string>(&params.rel_path_geoproj),
                  "name of geoproject file (without full path), relative to template geoproject directory. Needs to be in top level at the moment")
                 ("log-file-objectives,l", po::value<std::string>(&params.rel_path_log_specification_obj),
@@ -85,6 +85,14 @@ LoadParameters::LoadParameters() :
                  "name of zonal delineation map (without full path), relative to template geoproject directory")
                 ("xpath-dv,j", po::value<std::vector<std::string> >(&params.xpath_dvs)->multitoken(),
                  "xpath for decision variable, See documentation for format")
+//                ("discount-rate,d", po::value<double>(&params.discount_rate)->default_value(0.0),
+//                     "discount rate for objectives (applies to all of them)")
+//                ("discount-year-zero", po::value<int>(&params.discount_start_year), "Year in which we are calculating the present value for format:XXXX")
+//                ("metric-calc-year", po::value<std::vector<int> >(&params.years_metric_calc)->multitoken(), "Years in which to aggregate maps to calculate metrics format:XXXX")
+//                ("year-start-metrics,a", po::value<int>(&params.year_start_metrics),
+//                     "Start year for objective map aggregation - only valid if objective logging file stem is only given and not full filename")
+//                ("year-end-metrics,b", po::value<int>(&params.year_end_metrics),
+//                     "End year for objective map aggregation - only valid if objective logging file stem is only given and not full filename")
 
                 ("is-logging,s", po::value<bool>(&params.is_logging)->default_value(false),
                  "TRUE or FALSE whether to log the evaluation")
@@ -93,6 +101,11 @@ LoadParameters::LoadParameters() :
                  "path of the directory for writing results and outputs to")
                 ("save-map,k", po::value<std::vector<std::string> >(&params.save_maps)->multitoken(),
                  "relative path to geoproject directory for maps to save when optimisation completes. Format: [CATEGORISED/LINEAR_GRADIENT]:LEGEND=\"[legend_specification_file_relative_to_geoproject]\":PATH=[\"path_of_map_relative_to_geoproject\"]:DIFF=[\"opt_path_of_differencing_map_relative_to_geoproject\"]:SAVE_AS=[\"file_name\"]")
+//                ("save-map-year", po::value<std::vector<int> >(&params.years_save)->multitoken(), "Years in which to save maps to image files")
+//                ("year-start-saving,a", po::value<int>(&params.year_start_saving),
+//                     "Start year for objective map logging - only valid if saving logging file stem is only given and not full filename")
+//                ("year-end-saving,b", po::value<int>(&params.year_end_saving),
+//                     "End year for objective map logging - only valid if saving logging file stem is only given and not full filename")
 
                 ("pop-size,p", po::value<int>(&params.pop_size)->default_value(415), "Population size of the NSGAII")
                 ("max-gen-no-hvol-improve,x", po::value<int>(&params.max_gen_hvol)->default_value(50),
@@ -104,13 +117,8 @@ LoadParameters::LoadParameters() :
 
                 ("reseed,r", po::value<std::string>(&params.restart_pop_file.first)->default_value("no_seed"),
                  "File with saved population as initial seed population for GA")
-                ("year-start,a", po::value<int>(&params.year_start),
-                 "Start year for objective map logging - only valid if objective logging file stem is only given and not full filename")
-                ("year-end,b", po::value<int>(&params.year_end),
-                 "End year for objective map logging - only valid if objective logging file stem is only given and not full filename")
-                ("discount-rate,d", po::value<double>(&params.discount_rate)->default_value(0.0),
-                 "discount rate for objectives"
-                         "es (applies to all of them)")
+        
+        
                 ("cfg-file,c", po::value<std::string>(), "can be specified with '@name', too");
     }
         catch(std::exception& e)
@@ -247,6 +255,7 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         ofs << "working-dir = " << _params.working_dir.first << "\n";
         ofs << "wine-prefix-path = " << _params.wine_prefix_path.first << "\n";
         ofs << "set-prefix-env-var = " << _params.set_prefix_path << "\n";
+        ofs << "set-windows-env-var = " << _params.windows_env_var << "\n";
         ofs << "geoproj-file = " << _params.rel_path_geoproj << "\n";
         ofs << "log-file-objectives = " << _params.rel_path_log_specification_obj << "\n";
         ofs << "log-file-save = " << _params.rel_path_log_specification_save << "\n";
@@ -259,6 +268,15 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         objective_plugin_string) {
             ofs << "obj-plugins = " << objective_plugin_string << "\n";
         });
+//        ofs << "discount-rate = " << _params.discount_rate << "\n";
+//        ofs << "discount-year-zero = " << _params.discount_start_year << "\n";
+//        std::for_each(_params.years_metric_calc.begin(), _params.years_metric_calc.end(), [&ofs] (int &
+//                                                                                  year) {
+//            ofs << "metric-calc-year = " << year << "\n";
+//        });
+//        ofs << "year-start-metrics = " << _params.year_start_metrics << "\n";
+//        ofs << "year-end-metrics = " << _params.year_end_metrics << "\n";
+        
         ofs << "zonal-maps = " << _params.rel_path_zonal_map << "\n";
         ofs << "zone-delineation = " << _params.rel_path_zones_delineation_map << "\n";
         std::for_each(_params.xpath_dvs.begin(), _params.xpath_dvs.end(), [&ofs] (std::string &
@@ -276,9 +294,9 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         ofs << "max-gen = " << _params.max_gen << "\n";
         ofs << "save-freq = " << _params.save_freq << "\n";
         ofs << "reseed = " << _params.restart_pop_file.first << "\n";
-        ofs << "year-start = " << _params.year_start << "\n";
-        ofs << "year-end = " << _params.year_end << "\n";
-        ofs << "discount-rate = " << _params.discount_rate << "\n";
+//        ofs << "year-start-saving = " << _params.year_start_saving << "\n";
+//        ofs << "year-end-saving = " << _params.year_end_saving << "\n";
+        
 
     }
 

@@ -19,7 +19,7 @@ OptimiserController::OptimiserController(MainWindow * main_window)
     front_chart->resize(QSizeF(600,400));
 
 
-    OptimiserWorker* worker = new OptimiserWorker;
+    worker = new OptimiserWorker;
     worker->moveToThread(&optimiser_thread);
     QObject::connect(this, SIGNAL(testOptimisation()), worker, SLOT(test()));
     QObject::connect(this, SIGNAL(intialiseOptimisation(ZonalPolicyParameters)), worker, SLOT(initialise(ZonalPolicyParameters)));
@@ -40,14 +40,19 @@ OptimiserController::OptimiserController(MainWindow * main_window)
 
 OptimiserController::~OptimiserController()
 {
-
+    //TODO terminate optimisation.
+    worker->terminate();
+    optimiser_thread.quit();
+    optimiser_thread.wait();
 }
 
 void OptimiserController::onError(QString what)
 {
+    worker->terminate();
     QMessageBox msgBox;
     msgBox.setText( what);
     msgBox.exec();
+
 }
 
 void OptimiserController::initialise(ZonalPolicyParameters _params)

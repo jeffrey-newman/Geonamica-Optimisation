@@ -5,7 +5,7 @@
  */
 
 
-#include "OptimiserWorker.h"
+
 #include <iostream>
 #include "GeonamicaOptGUICheckpoints.h"
 #include "../GeonamicaPolicyPostProcess.hpp"
@@ -67,6 +67,7 @@ void OptimiserWorker::initialise(ZonalPolicyParameters _params)
     catch (std::runtime_error err)
     {
         emit error(QString(err.what()));
+        return;
     }
     is_initialised = true;
 }
@@ -85,7 +86,16 @@ OptimiserWorker::optimise()
     std::cout << "Running optimisation in thread\n";
 
         // Run the optimisation
-        nsgaii_obs->optimiser.run();
+        bool do_continue = true;
+        do {
+            nsgaii_obs->optimiser.step();
+            mutex.lock();
+            if (this->do_terminate) do_continue = false;
+            mutex.unlock();
+            if (nsgaii_obs->optimiser.isFinished()) do_continue = false;
+        } while (do_continue);
+
+//        nsgaii_obs->optimiser.run();
 
         //Postprocess the results
         if(nsgaii_obs->optimiser.isFinished()) postProcessResults(*geon_eval, pop, params);
@@ -139,6 +149,13 @@ void OptimiserWorker::test()
 
     IndividualSPtr ind = *(select_randomly(pop->begin(), pop->end()));
     (*geon_eval)(ind->getRealDVVector(), ind->getIntDVVector());
+}
+
+void OptimiserWorker::terminate()
+{
+    mutex.lock();
+    do_terminate = true;
+    mutex.unlock();
 }
 
 

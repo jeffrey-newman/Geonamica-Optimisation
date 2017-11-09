@@ -17,11 +17,20 @@
 #include <blink/raster/gdal_raster.h>
 #include <unordered_set>
 #include <vector>
-#include "MagickWriterClassified.h"
-#include "MagickWriterGradient.h"
+#include "OpenCVWriterClassified.hpp"
+#include "OpenCVWriterGradient.hpp"
 #include <pugixml.hpp>
 #include "EvaluatorModules/ModuleAPI.hpp"
 
+struct MapObj
+{
+    enum ObjType{MINIMISATION, MAXIMISATION};
+    ObjType type;
+    CmdLinePaths file_path;
+    std::vector<int> years;
+    double discount_rate;
+    int year_present_val;
+};
 
 struct XPathDV
 {
@@ -58,8 +67,9 @@ private:
     boost::filesystem::path zonal_map_path;
 
 //    std::vector<boost::filesystem::path> obj_map_paths;
-    std::vector<boost::filesystem::path> obj_map_paths_minisation;
-    std::vector<boost::filesystem::path> obj_map_paths_maximisation;
+//    std::vector<std::pair<boost::filesystem::path, std::vector<int> > > obj_map_paths_minisation;
+//    std::vector<boost::filesystem::path> obj_map_paths_maximisation;
+    std::vector<MapObj> map_objectives;
     std::vector<boost::shared_ptr<evalModuleAPI> > objective_modules;
     
     boost::filesystem::path zones_delineation_map_path;
@@ -105,14 +115,18 @@ private:
     std::pair<std::vector<double>, std::vector<double> > objectives_and_constraints;
 
 
-    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperClassified>,     boost::shared_ptr<MagickWriterClassified>, std::string > > classified_img_rqsts;
-    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperGradient>, boost::shared_ptr<MagickWriterGradient>, std::string > > lin_grdnt_img_rqsts;
+    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperClassified>,     boost::shared_ptr<OpenCVWriterClassified>, std::string > > classified_img_rqsts;
+    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperGradient>, boost::shared_ptr<OpenCVWriterGradient>, std::string > > lin_grdnt_img_rqsts;
 
     bool delete_wine_dir_on_exit = false;
     bool delete_wine_prefix_on_exit = false;
 
     bool using_wine;
     bool using_timeout;
+    bool setting_env_vars;
+
+    bool is_initialised;
+    std::string initialisation_error_msgs;
     
     //Copies entire directory - so that each geoproject is running in a different directory.
     bool

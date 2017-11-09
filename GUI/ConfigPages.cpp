@@ -52,7 +52,7 @@
 #include <QVector>
 #include <boost/foreach.hpp>
 
-#include "pages.h"
+#include "ConfigPages.h"
 
 void
 displayHelp(QString f, QTextEdit* help_box)
@@ -74,8 +74,12 @@ displayHelp(QString f, QTextEdit* help_box)
 ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _help_box, QWidget *parent)
     : QWidget(parent),
       objectives_List(new QListWidget),
+//      years_List(new QListWidget),
       xpath_List(new QListWidget),
-      rate_edit(new QLineEdit),
+//      rate_edit(new QLineEdit),
+//      discount_year_zero_edit(new QLineEdit),
+//      year_begin_metrics_edit(new QLineEdit),
+//      year_end_metrics_edit(new QLineEdit),
       zone_delineation_edit(new QLineEdit),
       zonal_layer_edit(new QLineEdit),
       evaluator_modules_list(new QListWidget),
@@ -86,21 +90,39 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     QLabel *objectives_Label = new QLabel(tr("Maps to aggregate to get objective values:"));
 //    QListWidget *objectives_List = new QListWidget;
     QPushButton* add_obj_button = new QPushButton(tr("Add new map"));
+//    QLabel *years_Label = new QLabel(tr("Years to aggregate to get objective values:"));
+//    QListWidget *objectives_List = new QListWidget;
+//    QPushButton* add_year_button = new QPushButton(tr("Add new year"));
+//    QLabel *rate_label = new QLabel(tr("Discount rate:"));
+//    QLabel *year_zero_label = new QLabel(tr("Year calculate present value at:"));
+    
     QLabel *evaluator_modules_Label = new QLabel(tr("Evaluator Modules for other objective values:"));
 //    QListWidget *objectives_List = new QListWidget;
     QPushButton* evaluator_modules_button = new QPushButton(tr("Add new evaluator module"));
-    QLabel *rate_label = new QLabel(tr("Discount rate:"));
+    
+//    QLabel *year_begin_label = new QLabel(tr("Start calculating map aggregation in year:"));
+//    QLabel *year_end_label = new QLabel(tr("End calculating map aggregation in year:"));
+    
 //    QLineEdit *rate_edit = new QLineEdit;
 
     QGridLayout *objectives_Layout = new QGridLayout;
     objectives_Layout->addWidget(objectives_Label,1,0,1,2);
     objectives_Layout->addWidget(objectives_List,2,0,1,2);
     objectives_Layout->addWidget(add_obj_button,3,0,1,2);
-    objectives_Layout->addWidget(evaluator_modules_Label,4,0,1,2);
-    objectives_Layout->addWidget(evaluator_modules_list,5,0,1,2);
-    objectives_Layout->addWidget(evaluator_modules_button,6,0,1,2);
-    objectives_Layout->addWidget(rate_label,7,0);
-    objectives_Layout->addWidget(rate_edit,7,1);
+//    objectives_Layout->addWidget(years_Label,4,0,1,2);
+//    objectives_Layout->addWidget(years_List,5,0,1,2);
+//    objectives_Layout->addWidget(add_year_button,6,0,1,2);
+//    objectives_Layout->addWidget(year_begin_label, 4, 0);
+//    objectives_Layout->addWidget(year_begin_metrics_edit, 4, 1);
+//    objectives_Layout->addWidget(year_end_label, 5, 0);
+//    objectives_Layout->addWidget(year_end_metrics_edit, 5, 1);
+    objectives_Layout->addWidget(evaluator_modules_Label,7,0,1,2);
+    objectives_Layout->addWidget(evaluator_modules_list,8,0,1,2);
+    objectives_Layout->addWidget(evaluator_modules_button,9,0,1,2);
+//    objectives_Layout->addWidget(rate_label,10,0);
+//    objectives_Layout->addWidget(rate_edit,10,1);
+//    objectives_Layout->addWidget(year_zero_label,11,0);
+//    objectives_Layout->addWidget(discount_year_zero_edit,11,1);
 
     objectives_Group->setLayout(objectives_Layout);
 
@@ -108,7 +130,17 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     connect(objectives_List, &QListWidget::itemChanged, this, &ProblemSpecPage::processObjectiveMapListChange);
     connect(this, &ProblemSpecPage::objectiveMapsChanged, config_dialogue, &ConfigDialog::changeObjectiveMaps);
     connect(add_obj_button, &QPushButton::clicked, this, &ProblemSpecPage::addObjectiveMap);
+
+    connect(years_List, &QListWidget::itemChanged, this, &ProblemSpecPage::processYearListChange);
+    connect(this, &ProblemSpecPage::yearsCalculatedChanged, config_dialogue, &ConfigDialog::changeMetricYears);
+    connect(add_obj_button, &QPushButton::clicked, this, &ProblemSpecPage::addYear);
+
     connect(rate_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDiscountRate);
+    connect(discount_year_zero_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDiscountRate);
+    
+//    connect(year_begin_metrics_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearStartMetrics);
+//    connect(year_end_metrics_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearEndMetrics);
+    
     connect(evaluator_modules_list, &QListWidget::itemChanged, this, &ProblemSpecPage::processObjModuleChange);
     connect(this, &ProblemSpecPage::objModulesChanged, config_dialogue, &ConfigDialog::changeObjModules);
     connect(evaluator_modules_button, &QPushButton::clicked, this, &ProblemSpecPage::addObjModule);
@@ -176,6 +208,14 @@ void ProblemSpecPage::addObjectiveMap()
 //    objectives_List->insert(new_item);
 }
 
+void ProblemSpecPage::addYear()
+{
+    QListWidgetItem * new_item = new QListWidgetItem(years_List);
+    new_item->setText(tr("New year to include in objective calculations"));
+    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
+    //    objectives_List->insert(new_item);
+}
+
 void ProblemSpecPage::addXPathDV()
 {
     QListWidgetItem * new_item = new QListWidgetItem(xpath_List);
@@ -189,6 +229,16 @@ void ProblemSpecPage::processObjectiveMapListChange()
     for (int j = 0; j < objectives_List->count() ; ++j)
     {
         items.append(objectives_List->item(j)->text());
+    }
+    emit yearsCalculatedChanged(items);
+}
+
+void ProblemSpecPage::processYearListChange()
+{
+    QVector<QString> items;
+    for (int j = 0; j < years_List->count() ; ++j)
+    {
+        items.append(years_List->item(j)->text());
     }
     emit objectiveMapsChanged(items);
 }
@@ -214,10 +264,10 @@ void ProblemSpecPage::updateObjectiveMaps(std::vector<std::string> obj_maps)
 //    std::for_each(obj_maps.begin(), obj_maps.end(), [*this](std::string& obj_map) {objectives_List->addItem(QString::fromStdString(obj_map));});
 }
 
-void ProblemSpecPage::updateDiscountRate(double rate)
-{
-    rate_edit->setText(QString::number(rate));
-}
+//void ProblemSpecPage::updateDiscountRate(double rate)
+//{
+//    rate_edit->setText(QString::number(rate));
+//}
 
 void ProblemSpecPage::updateZoneDelineationMap(QString path)
 {
@@ -254,6 +304,16 @@ void ProblemSpecPage::updateObjModules(std::vector<std::string> obj_modules)
                     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
                 }
 }
+
+//void ProblemSpecPage::updateStartYear(int year)
+//{
+//    year_begin_metrics_edit->setText(QString::number(year));
+//}
+//
+//void ProblemSpecPage::updateEndYear(int year)
+//{
+//    year_end_metrics_edit->setText(QString::number(year));
+//}
 
 void ProblemSpecPage::addObjModule()
 {
@@ -302,12 +362,13 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
       saving_dir_edit(new QLineEdit),
       log_checkbox(new QCheckBox(tr("Log the optimisation (i.e. for debugging)"))),
       prefix_env_var_CheckBox(new QCheckBox(tr("Set wine prefix environment variable on system call"))),
+      windows_env_var_edit(new QLineEdit),
       geoproj_directory_edit(new QLineEdit),
       geoproj_file_edit(new QLineEdit),
       obj_log_file_edit(new QLineEdit),
       plot_log_file_edit(new QLineEdit),
-      year_begin_edit(new QLineEdit),
-      year_end_edit(new QLineEdit),
+      year_begin_save_edit(new QLineEdit),
+      year_end_save_edit(new QLineEdit),
       replicates_SpinBox(new QSpinBox),
       help_box(_help_box)
 {
@@ -319,6 +380,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
 //    QLineEdit *wine_edit = new QLineEdit;
     QLabel *geon_label = new QLabel(tr("Geonamica command:"));
 //    QLineEdit *geon_edit = new QLineEdit;
+    QLabel *windows_env_var_label = new QLabel(tr("Windows environment variable to set:"));
 
     QGridLayout *system_calls_Layout = new QGridLayout;
     system_calls_Layout->addWidget(timeout_label, 0, 0);
@@ -334,6 +396,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(timeout_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeTimeoutCmd);
     connect(wine_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWineCmd);
     connect(geon_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeGeonCmd);
+
 
 
     //////
@@ -355,9 +418,11 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     geon_env_Layout->addWidget(wine_prefix_label, 1, 0);
     geon_env_Layout->addWidget(wine_prefix_edit, 1, 1);
     geon_env_Layout->addWidget(prefix_env_var_CheckBox, 2, 0, 1, 2);
-    geon_env_Layout->addWidget(saving_dir_label, 3, 0);
-    geon_env_Layout->addWidget(saving_dir_edit, 3, 1);
-    geon_env_Layout->addWidget(log_checkbox, 4, 0);
+    geon_env_Layout->addWidget(windows_env_var_label, 3, 0);
+    geon_env_Layout->addWidget(windows_env_var_edit, 3, 1);
+    geon_env_Layout->addWidget(saving_dir_label, 4, 0);
+    geon_env_Layout->addWidget(saving_dir_edit, 4, 1);
+    geon_env_Layout->addWidget(log_checkbox, 5, 0);
 
 
     geonamica_config_group->setLayout(geon_env_Layout);
@@ -365,7 +430,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(working_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWorkingDirectory);
     connect(wine_prefix_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changePrefixPath);
     connect(saving_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeSaveDir);
-
+    connect(windows_env_var_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWindowsEnvVar);
     connect(prefix_env_var_CheckBox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeWhetherPrefixEnvVarSet);
     connect(log_checkbox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeDoLog);
 
@@ -417,9 +482,9 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     save_files_Layout->addWidget(save_map_List, 1, 0 , 1, 2);
     save_files_Layout->addWidget(add_save_map_button, 2, 0, 1, 2);
     save_files_Layout->addWidget(year_begin_label, 3, 0);
-    save_files_Layout->addWidget(year_begin_edit, 3, 1);
+    save_files_Layout->addWidget(year_begin_save_edit, 3, 1);
     save_files_Layout->addWidget(year_end_label, 4, 0);
-    save_files_Layout->addWidget(year_end_edit, 4, 1);
+    save_files_Layout->addWidget(year_end_save_edit, 4, 1);
 
 
 
@@ -428,8 +493,8 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(save_map_List, &QListWidget::itemChanged, this, &GeonSettingsPage::processOutputLogMapListChange);
     connect(this, &GeonSettingsPage::outputLogMapsChanged, config_dialogue, &ConfigDialog::changeSaveMaps);
     connect(add_save_map_button, &QPushButton::clicked, this, &GeonSettingsPage::addOutputLogMap);
-    connect(year_begin_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearStart);
-    connect(year_end_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearEnd);
+    connect(year_begin_save_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearStartSave);
+    connect(year_end_save_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearEndSave);
 
     /////
 
@@ -519,6 +584,11 @@ void GeonSettingsPage::updateWhetherPrefixEnvVarSet(bool do_set)
 
 }
 
+void GeonSettingsPage::updateWindowsEnvVar(QString val)
+{
+    windows_env_var_edit->setText(val);
+}
+
 void GeonSettingsPage::updateWhetherLog(bool do_log)
 {
     if (do_log) log_checkbox->setCheckState(Qt::Checked);
@@ -547,12 +617,12 @@ void GeonSettingsPage::updatePostOptPrintLogFile(QString path)
 
 void GeonSettingsPage::updateStartYear(int year)
 {
-    year_begin_edit->setText(QString::number(year));
+    year_begin_save_edit->setText(QString::number(year));
 }
 
 void GeonSettingsPage::updateEndYear(int year)
 {
-    year_end_edit->setText(QString::number(year));
+    year_end_save_edit->setText(QString::number(year));
 }
 
 void GeonSettingsPage::updateNumberReplicates(int number)

@@ -26,6 +26,7 @@ public slots:
     void optimise();
     void step();
     void test();
+    void terminate();
 
 signals:
     void nextHypervolumeMetric(int gen, double hypervolume_val);
@@ -42,6 +43,7 @@ private:
     PopulationSPtr pop;
     double count;
     bool is_initialised;
+    bool do_terminate;
 
 //private slots:
 //    void relayNextHypervolumeMetric(int gen, double hypervolume_val);

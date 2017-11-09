@@ -52,7 +52,7 @@
 #define PAGES_H
 
 #include <QWidget>
-#include <configdialog.h>
+#include <ConfigDialog.h>
 
 class ProblemSpecPage : public QWidget
 {
@@ -64,7 +64,9 @@ public:
     private slots:
     void addObjectiveMap();
     void addXPathDV();
+    void addYear();
     void processObjectiveMapListChange();
+    void processYearListChange();
     void processOXPathDVListChange();
     void addObjModule();
     void processObjModuleChange();
@@ -74,22 +76,31 @@ public:
 
 public:
     void updateObjectiveMaps(std::vector<std::string> obj_maps);
-    void updateDiscountRate(double rate);
+//    void updateDiscountRate(double rate);
+//    void updateDiscountYearZero(int year);
     void updateZoneDelineationMap(QString path);
     void updateZonalLayerMap(QString path);
     void updateXpathDVs(std::vector<std::string> xpathDVs);
     void updateObjModules(std::vector<std::string> obj_modules);
+    void updateYearsCalculated(std::vector<int> years);
+//    void updateStartYear(int year);
+//    void updateEndYear(int year);
 
 signals:
     void objectiveMapsChanged(QVector<QString> objMapsLists);
+    void yearsCalculatedChanged(QVector<QString> yearsList);
     void xpathDVsChanged(QVector<QString> xpathDVLists);
     void objModulesChanged(QVector<QString> xpathDVLists);
 
 private:
     QListWidget *objectives_List;
+    QListWidget *years_List;
     QListWidget *evaluator_modules_list;
     QListWidget *xpath_List;
     QLineEdit *rate_edit;
+    QLineEdit *discount_year_zero_edit;
+//    QLineEdit *year_begin_metrics_edit;
+//    QLineEdit *year_end_metrics_edit;
     QLineEdit *zone_delineation_edit;
     QLineEdit *zonal_layer_edit;
     QTextEdit * help_box;
@@ -115,13 +126,14 @@ public:
     void updateWinePrefix(QString path);
     void updateSaveDir(QString path);
     void updateWhetherPrefixEnvVarSet(bool  do_set);
+    void updateWindowsEnvVar(QString val);
     void updateWhetherLog(bool do_log);
     void updateGeoprojDir(QString path);
     void updateGeoprojFile(QString path);
     void updateObjLogFile(QString path);
     void updatePostOptPrintLogFile(QString path);
-    void updateStartYear(int year);
-    void updateEndYear(int year);
+//    void updateStartYear(int year);
+//    void updateEndYear(int year);
     void updateNumberReplicates(int number);
     void updateOuputLogMaps(std::vector<std::string> ouput_maps);
 
@@ -137,13 +149,14 @@ private:
     QLineEdit *wine_prefix_edit;
     QLineEdit *saving_dir_edit;
     QCheckBox* prefix_env_var_CheckBox;
+    QLineEdit *windows_env_var_edit;
     QCheckBox* log_checkbox;
     QLineEdit *geoproj_directory_edit;
     QLineEdit *geoproj_file_edit;
     QLineEdit *obj_log_file_edit;
     QLineEdit *plot_log_file_edit;
-    QLineEdit *year_begin_edit;
-    QLineEdit *year_end_edit;
+    QLineEdit *year_begin_save_edit;
+    QLineEdit *year_end_save_edit;
     QSpinBox *replicates_SpinBox;
     QTextEdit * help_box;
 

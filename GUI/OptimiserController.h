@@ -11,6 +11,7 @@
 #include <QtCharts/QChartView>
 #include "GeonamicaPolicyParametersQtMetaTyping.hpp"
 #include "MainWindow.hpp"
+#include "OptimiserWorker.h"
 
 
 class OptimiserController : public QObject
@@ -36,6 +37,7 @@ signals:
     void testOptimisation();
     void intialiseOptimisation(ZonalPolicyParameters _params);
     void stepOptimisation();
+//    void terminateOptimisation();
 
 
 private:
@@ -43,6 +45,7 @@ private:
     ParetoFrontQtChart * front_chart;
     QtCharts::QChartView * hypervolume_chart_view;
     QtCharts::QChartView * paretofront_chart_view;
+    OptimiserWorker * worker;
 
 };
 

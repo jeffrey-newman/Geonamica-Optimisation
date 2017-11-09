@@ -51,8 +51,8 @@
 #include <QtWidgets>
 #include <Qt>
 
-#include "configdialog.h"
-#include "pages.h"
+#include "ConfigDialog.h"
+#include "ConfigPages.h"
 #include "MainWindow.hpp"
 
 ZonalPolicyParameters dummy_params;
@@ -246,7 +246,10 @@ bool ConfigDialog::loadFile(const QString &fileName)
     parameter_loader.processOptions(fileName.toStdString(), *params);
 
     problem_spec_page->updateObjectiveMaps(params->rel_path_obj_maps);
-    problem_spec_page->updateDiscountRate(params->discount_rate);
+//    problem_spec_page->updateDiscountRate(params->discount_rate);
+//    problem_spec_page->updateYearsCalculated(params->years_metric_calc);
+//    problem_spec_page->updateStartYear(params->year_start_metrics);
+//    problem_spec_page->updateEndYear(params->year_end_metrics);
     problem_spec_page->updateZoneDelineationMap(QString::fromStdString(params->rel_path_zones_delineation_map));
     problem_spec_page->updateZonalLayerMap(QString::fromStdString(params->rel_path_zonal_map));
     problem_spec_page->updateXpathDVs(params->xpath_dvs);
@@ -259,13 +262,14 @@ bool ConfigDialog::loadFile(const QString &fileName)
     geon_setting_page->updateWinePrefix(QString::fromStdString(params->wine_prefix_path.first));
     geon_setting_page->updateSaveDir(QString::fromStdString(params->save_dir.first));
     geon_setting_page->updateWhetherPrefixEnvVarSet(params->set_prefix_path);
+    geon_setting_page->updateWindowsEnvVar(QString::fromStdString(params->windows_env_var));
     geon_setting_page->updateWhetherLog(params->is_logging);
     geon_setting_page->updateGeoprojDir(QString::fromStdString(params->template_project_dir.first));
     geon_setting_page->updateGeoprojFile(QString::fromStdString(params->rel_path_geoproj));
     geon_setting_page->updateObjLogFile(QString::fromStdString(params->rel_path_log_specification_obj));
     geon_setting_page->updatePostOptPrintLogFile(QString::fromStdString(params->rel_path_log_specification_save));
-    geon_setting_page->updateStartYear(params->year_start);
-    geon_setting_page->updateEndYear(params->year_end);
+//    geon_setting_page->updateStartYear(params->year_start_saving);
+//    geon_setting_page->updateEndYear(params->year_end_saving);
     geon_setting_page->updateNumberReplicates(params->replicates);
     geon_setting_page->updateOuputLogMaps(params->save_maps);
 
@@ -432,6 +436,13 @@ void ConfigDialog::changeWhetherPrefixEnvVarSet(int state)
     opt_needs_initialisation = true;
 }
 
+void ConfigDialog::changeWindowsEnvVar(QString new_val)
+{
+    this->params->windows_env_var = new_val.toStdString();
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+
 void ConfigDialog::changeGeoprojectFile(QString new_val)
 {
     this->params->rel_path_geoproj = new_val.toStdString();
@@ -466,6 +477,16 @@ void ConfigDialog::changeObjectiveMaps(QVector<QString> new_vals)
     QVectorIterator<QString> i(new_vals);
     while (i.hasNext())
         this->params->rel_path_obj_maps.push_back(i.next().toStdString());
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+
+void ConfigDialog::changeMetricYears(QVector<QString> new_vals)
+{
+    this->params->years_metric_calc.clear();
+    QVectorIterator<QString> i(new_vals);
+    while (i.hasNext())
+        this->params->years_metric_calc.push_back(i.next().toInt());
     is_modified = true;
     opt_needs_initialisation = true;
 }
@@ -596,59 +617,115 @@ void ConfigDialog::changeRessed(QString new_val)
     opt_needs_initialisation = true;
 }
 
-void ConfigDialog::changeYearStart(QString new_val)
-{
-    bool ok;
-    double new_val_d = new_val.toDouble(&ok);
-    if (ok && new_val_d < 100000)
-    {
-        this->params->year_start = new_val_d;
-    }
-    else
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Year start needs to be a an integer <XXXX> year");
-        msgBox.exec();
-    }
-    is_modified = true;
-    opt_needs_initialisation = true;
-}
+//void ConfigDialog::changeYearStartSave(QString new_val)
+//{
+//    bool ok;
+//    double new_val_d = new_val.toDouble(&ok);
+//    if (ok && new_val_d < 100000)
+//    {
+//        this->params->year_start_saving = new_val_d;
+//    }
+//    else
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("Year start needs to be a an integer <XXXX> year");
+//        msgBox.exec();
+//    }
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
 
-void ConfigDialog::changeYearEnd(QString new_val)
-{
-    bool ok;
-    double new_val_d = new_val.toDouble(&ok);
-    if (ok && new_val_d < 100000)
-    {
-        this->params->year_end = new_val_d;
-    }
-    else
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Year start needs to be a an integer <XXXX> year");
-        msgBox.exec();
-    }
-    is_modified = true;
-    opt_needs_initialisation = true;
-}
+//void ConfigDialog::changeYearEndSave(QString new_val)
+//{
+//    bool ok;
+//    double new_val_d = new_val.toDouble(&ok);
+//    if (ok && new_val_d < 100000)
+//    {
+//        this->params->year_end_saving = new_val_d;
+//    }
+//    else
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("Year start needs to be a an integer <XXXX> year");
+//        msgBox.exec();
+//    }
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
 
-void ConfigDialog::changeDiscountRate(QString new_val)
-{
-    bool ok;
-    double new_val_d = new_val.toDouble(&ok);
-    if (ok && new_val_d >= 0 && new_val_d <= 1)
-    {
-        this->params->discount_rate = new_val_d;
-    }
-    else
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Discount rate needs to be an floating point number between 0 and 1");
-        msgBox.exec();
-    }
-    is_modified = true;
-    opt_needs_initialisation = true;
-}
+//void ConfigDialog::changeYearStartMetrics(QString new_val)
+//{
+//    bool ok;
+//    double new_val_d = new_val.toDouble(&ok);
+//    if (ok && new_val_d < 100000)
+//    {
+//        this->params->year_start_metrics = new_val_d;
+//    }
+//    else
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("Year start needs to be a an integer <XXXX> year");
+//        msgBox.exec();
+//    }
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
+
+//void ConfigDialog::changeYearEndMetrics(QString new_val)
+//{
+//    bool ok;
+//    double new_val_d = new_val.toDouble(&ok);
+//    if (ok && new_val_d < 100000)
+//    {
+//        this->params->year_end_metrics = new_val_d;
+//    }
+//    else
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("Year start needs to be a an integer <XXXX> year");
+//        msgBox.exec();
+//    }
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
+
+//void ConfigDialog::changeDiscountRate(QString new_val)
+//{
+//    bool ok;
+//    double new_val_d = new_val.toDouble(&ok);
+//    if (ok && new_val_d >= 0 && new_val_d <= 1)
+//    {
+//        this->params->discount_rate = new_val_d;
+//    }
+//    else
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("Discount rate needs to be an floating point number between 0 and 1");
+//        msgBox.exec();
+//    }
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
+
+//void ConfigDialog::changeDiscountYearZero(QString new_val)
+//{
+//    bool ok;
+//    int new_val_i = new_val.toInt(&ok);
+//    if (ok && new_val_i < 100000)
+//    {
+//        this->params->discount_start_year = new_val_d;
+//    }
+//    else
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("The year in which present value is counted for needs to be a an integer <XXXX> year");
+//        msgBox.exec();
+//    }
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
+
+
 
 void ConfigDialog::changeObjModules(QVector<QString> new_vals)
 {

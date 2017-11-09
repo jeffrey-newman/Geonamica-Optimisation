@@ -95,6 +95,7 @@ public slots:
     void changeWorkingDirectory(QString new_val);
     void changePrefixPath(QString new_val);
     void changeWhetherPrefixEnvVarSet(int new_val);
+    void changeWindowsEnvVar(QString new_val);
     void changeGeoprojectFile(QString new_val);
     void changeLogFileForObjective(QString new_val);
     void changeLogFileForPostOptimisationSave(QString new_val);
@@ -114,9 +115,13 @@ public slots:
     void changeMaxGen(int new_val);
     void changeSaveFreq(int new_val);
     void changeRessed(QString new_val);
-    void changeYearStart(QString new_val);
-    void changeYearEnd(QString new_val);
-    void changeDiscountRate(QString new_val);
+//    void changeYearStartSave(QString new_val);
+//    void changeYearEndSave(QString new_val);
+//    void changeMetricYears(QVector<QString> new_vals);
+//    void changeYearStartMetrics(QString new_val);
+//    void changeYearEndMetrics(QString new_val);
+//    void changeDiscountRate(QString new_val);
+//    void changeDiscountYearZero(QString new_val);
     void changeObjModules(QVector<QString> new_vals);
 
 

@@ -305,7 +305,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="year_start"/>
+       <widget class="QLineEdit" name="year_start_saving"/>
       </item>
       <item>
        <widget class="QLabel" name="label_26">
@@ -315,7 +315,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="year_end"/>
+       <widget class="QLineEdit" name="year_end_saving"/>
       </item>
       <item>
        <widget class="QLabel" name="label_27">

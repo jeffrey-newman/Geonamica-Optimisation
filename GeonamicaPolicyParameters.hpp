@@ -24,6 +24,7 @@ struct ZonalPolicyParameters
     CmdLinePaths working_dir;
     CmdLinePaths wine_prefix_path;
     bool set_prefix_path;
+    std::string windows_env_var;
     CmdLinePaths wine_drive_path;
 //    std::string wine_drive_letter;
     std::string  wine_working_dir;
@@ -48,9 +49,12 @@ struct ZonalPolicyParameters
     int evaluator_id = 0;
     std::vector<int> rand_seeds { 1000,1001,1002,1003,1004,1005,1006,1007,1008,1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020 };
     CmdLinePaths restart_pop_file;
-    int year_start;
-    int year_end;
-    double discount_rate;
+//    int year_start_saving;
+//    int year_end_saving;
+//    std::vector<int> years_metric_calc;
+//    std::vector<int> years_save;
+//    int discount_start_year;
+//    double discount_rate;
     
 };
 

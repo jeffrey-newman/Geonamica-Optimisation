@@ -46,10 +46,10 @@ SET(Geon_Optimiser_GUI_SRCS
         MainWindow.cpp
         MainWindow.hpp
         mdi.qrc
-        configdialog.h
-        configdialog.cpp
-        pages.cpp
-        pages.h
+        ConfigDialog.h
+        ConfigDialog.cpp
+        ConfigPages.cpp
+        ConfigPages.h
         GeonamicaPolicyParametersQtMetaTyping.cpp
         GeonamicaPolicyParametersQtMetaTyping.hpp
 
@@ -59,7 +59,7 @@ SET(Geon_Optimiser_GUI_SRCS
 
 add_executable(geonoptgui ${Geon_Optimiser_GUI_SRCS} )
 target_link_libraries(geonoptgui ${Boost_LIBRARIES} ${GDAL_LIBRARY}  ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} Qt5::Widgets Qt5::Gui Qt5::Charts geonoptcommon)
+        ${MagickLibs} Qt5::Widgets Qt5::Gui Qt5::Charts geonoptcommon ${OpenCV_LIBS})
 target_compile_definitions(geonoptgui PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 #IF(USE_VTK)
 #    if(VTK_LIBRARIES)

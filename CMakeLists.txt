@@ -8,8 +8,8 @@ FIND_PACKAGE(Boost REQUIRED COMPONENTS filesystem system program_options mpi ser
 find_package(GDAL)
 find_package(MPI REQUIRED)
 include_directories(${MPI_CXX_INCLUDE_PATH})
-find_package(ImageMagick COMPONENTS Magick++ MagickWand MagickCore)
-find_package( OpenCV REQUIRED )
+#find_package(ImageMagick COMPONENTS Magick++ MagickWand MagickCore)
+ find_package( OpenCV REQUIRED )
 
 
 #SET(USE_VTK CACHE BOOL "Set to on to use vtk visualisation")
@@ -226,7 +226,7 @@ SET(OptCommon_Srcs
         ${PUGIXML-SRC}
         GeonamicaNSGAII.cpp
         GeonamicaNSGAII.hpp
-        )
+        "../../Parallel NSGAII Backend/respository/parallel-nsgaII-backend/Checkpoints/BoolTerminateCheckpoint.hpp")
 
 add_library(geonoptcommon STATIC ${OptCommon_Srcs})
 target_compile_definitions(geonoptcommon PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
@@ -244,7 +244,7 @@ SET(Geonamica_optimiser_parallel_Src
 
 add_executable(geooptpar ${Geonamica_optimiser_parallel_Src})
 target_link_libraries(geooptpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} geonoptcommon)
+        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
 #IF(USE_VTK)
 #    if(VTK_LIBRARIES)
 #        target_link_libraries(geooptpar ${VTK_LIBRARIES} )
@@ -271,7 +271,7 @@ SET(Geonamica_optimiser_serial_Src
 
 add_executable(geooptser ${Geonamica_optimiser_serial_Src} )
 target_link_libraries(geooptser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} geonoptcommon)
+        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
 #IF(USE_VTK)
 #    if(VTK_LIBRARIES)
 #        target_link_libraries(geooptser ${VTK_LIBRARIES} )
@@ -298,7 +298,7 @@ SET(zonal_opt_tst_src
 
 add_executable(zonalopttest ${zonal_opt_tst_src})
 target_link_libraries(zonalopttest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} geonoptcommon)
+        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
 #IF(USE_VTK)
 #    if(VTK_LIBRARIES)
 #        target_link_libraries(zonalopttest ${VTK_LIBRARIES} )

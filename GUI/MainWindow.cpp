@@ -52,7 +52,7 @@
 
 #include "MainWindow.hpp"
 //#include "optimisationwizardpage.h"
-#include "configdialog.h"
+#include "ConfigDialog.h"
 
 MainWindow::MainWindow()
         : mdiArea(new QMdiArea)
@@ -512,9 +512,13 @@ QMdiSubWindow *MainWindow::findMdiChild(const QString &fileName) const
     QString canonicalFilePath = QFileInfo(fileName).canonicalFilePath();
 
             foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-            ConfigDialog *mdiChild = qobject_cast<ConfigDialog *>(window->widget());
-            if (mdiChild->currentFile() == canonicalFilePath)
-                return window;
+            ConfigDialog *mdiChild = qobject_cast<ConfigDialog *>(window->widget()); // returns 0 if not a ConfigDialog
+            if (mdiChild != 0) // ie windows is a ConfigDialog
+            {
+                if (mdiChild->currentFile() == canonicalFilePath)
+                    return window;
+            }
+
         }
     return 0;
 }
