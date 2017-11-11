@@ -23,6 +23,7 @@ struct ZonalPolicyParameters
     CmdLinePaths template_project_dir; // path to template project
     CmdLinePaths working_dir;
     CmdLinePaths wine_prefix_path;
+    std::string wine_geoproject_disk_drive;
     bool set_prefix_path;
     std::string windows_env_var;
     CmdLinePaths wine_drive_path;

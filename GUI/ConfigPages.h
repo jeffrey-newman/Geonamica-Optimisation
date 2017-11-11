@@ -66,7 +66,7 @@ public:
     void addXPathDV();
     void addYear();
     void processObjectiveMapListChange();
-    void processYearListChange();
+//    void processYearListChange();
     void processOXPathDVListChange();
     void addObjModule();
     void processObjModuleChange();
@@ -82,7 +82,7 @@ public:
     void updateZonalLayerMap(QString path);
     void updateXpathDVs(std::vector<std::string> xpathDVs);
     void updateObjModules(std::vector<std::string> obj_modules);
-    void updateYearsCalculated(std::vector<int> years);
+//    void updateYearsCalculated(std::vector<int> years);
 //    void updateStartYear(int year);
 //    void updateEndYear(int year);
 
@@ -117,6 +117,7 @@ public:
     private slots:
     void addOutputLogMap();
     void processOutputLogMapListChange();
+    void displaySaveMapHelp();
 
     public:
     void updateTimeoutCmd(QString path);
@@ -136,6 +137,7 @@ public:
 //    void updateEndYear(int year);
     void updateNumberReplicates(int number);
     void updateOuputLogMaps(std::vector<std::string> ouput_maps);
+    void updateDriveLetter(QString letter);
 
     signals:
     void outputLogMapsChanged(QVector<QString> logMapsLists);
@@ -159,6 +161,7 @@ private:
     QLineEdit *year_end_save_edit;
     QSpinBox *replicates_SpinBox;
     QTextEdit * help_box;
+    QLineEdit * driver_letter_edit;
 
 };
 

@@ -1,52 +1,3 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the examples of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:BSD$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** BSD License Usage
-** Alternatively, you may use this file under the terms of the BSD license
-** as follows:
-**
-** "Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are
-** met:
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**   * Redistributions in binary form must reproduce the above copyright
-**     notice, this list of conditions and the following disclaimer in
-**     the documentation and/or other materials provided with the
-**     distribution.
-**   * Neither the name of The Qt Company Ltd nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-**
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-** "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-** LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-** A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-** OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-** SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-** LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-** DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
 
 #include <QtWidgets>
 #include <QVector>
@@ -131,12 +82,12 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     connect(this, &ProblemSpecPage::objectiveMapsChanged, config_dialogue, &ConfigDialog::changeObjectiveMaps);
     connect(add_obj_button, &QPushButton::clicked, this, &ProblemSpecPage::addObjectiveMap);
 
-    connect(years_List, &QListWidget::itemChanged, this, &ProblemSpecPage::processYearListChange);
-    connect(this, &ProblemSpecPage::yearsCalculatedChanged, config_dialogue, &ConfigDialog::changeMetricYears);
-    connect(add_obj_button, &QPushButton::clicked, this, &ProblemSpecPage::addYear);
+//    connect(years_List, &QListWidget::itemChanged, this, &ProblemSpecPage::processYearListChange);
+//    connect(this, &ProblemSpecPage::yearsCalculatedChanged, config_dialogue, &ConfigDialog::changeMetricYears);
+//    connect(add_obj_button, &QPushButton::clicked, this, &ProblemSpecPage::addYear);
 
-    connect(rate_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDiscountRate);
-    connect(discount_year_zero_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDiscountRate);
+//    connect(rate_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDiscountRate);
+//    connect(discount_year_zero_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDiscountRate);
     
 //    connect(year_begin_metrics_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearStartMetrics);
 //    connect(year_end_metrics_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearEndMetrics);
@@ -233,15 +184,15 @@ void ProblemSpecPage::processObjectiveMapListChange()
     emit yearsCalculatedChanged(items);
 }
 
-void ProblemSpecPage::processYearListChange()
-{
-    QVector<QString> items;
-    for (int j = 0; j < years_List->count() ; ++j)
-    {
-        items.append(years_List->item(j)->text());
-    }
-    emit objectiveMapsChanged(items);
-}
+//void ProblemSpecPage::processYearListChange()
+//{
+//    QVector<QString> items;
+//    for (int j = 0; j < years_List->count() ; ++j)
+//    {
+//        items.append(years_List->item(j)->text());
+//    }
+//    emit objectiveMapsChanged(items);
+//}
 
 void ProblemSpecPage::processOXPathDVListChange()
 {
@@ -367,10 +318,11 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
       geoproj_file_edit(new QLineEdit),
       obj_log_file_edit(new QLineEdit),
       plot_log_file_edit(new QLineEdit),
-      year_begin_save_edit(new QLineEdit),
-      year_end_save_edit(new QLineEdit),
+//      year_begin_save_edit(new QLineEdit),
+//      year_end_save_edit(new QLineEdit),
       replicates_SpinBox(new QSpinBox),
-      help_box(_help_box)
+      help_box(_help_box),
+      driver_letter_edit(new QLineEdit)
 {
     QGroupBox* system_call_group = new QGroupBox(tr("System commands to run Geonamica"));
 
@@ -381,6 +333,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     QLabel *geon_label = new QLabel(tr("Geonamica command:"));
 //    QLineEdit *geon_edit = new QLineEdit;
     QLabel *windows_env_var_label = new QLabel(tr("Windows environment variable to set:"));
+
 
     QGridLayout *system_calls_Layout = new QGridLayout;
     system_calls_Layout->addWidget(timeout_label, 0, 0);
@@ -411,6 +364,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     QLabel *saving_dir_label = new QLabel(tr("Saving directory:"));
 //    QLineEdit *saving_dir_edit = new QLineEdit;
 //    QCheckBox* log_checkbox = new QCheckBox(tr("Log the optimisation (i.e. for debugging)"));
+    QLabel* drive_letter_label = new QLabel(tr("Drive letter to set for Georporject directory"));
 
     QGridLayout *geon_env_Layout = new QGridLayout;
     geon_env_Layout->addWidget(working_dir_label, 0, 0);
@@ -418,17 +372,20 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     geon_env_Layout->addWidget(wine_prefix_label, 1, 0);
     geon_env_Layout->addWidget(wine_prefix_edit, 1, 1);
     geon_env_Layout->addWidget(prefix_env_var_CheckBox, 2, 0, 1, 2);
-    geon_env_Layout->addWidget(windows_env_var_label, 3, 0);
-    geon_env_Layout->addWidget(windows_env_var_edit, 3, 1);
-    geon_env_Layout->addWidget(saving_dir_label, 4, 0);
-    geon_env_Layout->addWidget(saving_dir_edit, 4, 1);
-    geon_env_Layout->addWidget(log_checkbox, 5, 0);
+    geon_env_Layout->addWidget(drive_letter_label, 3,0);
+    geon_env_Layout->addWidget(driver_letter_edit, 3,1);
+    geon_env_Layout->addWidget(windows_env_var_label, 4, 0);
+    geon_env_Layout->addWidget(windows_env_var_edit, 4, 1);
+    geon_env_Layout->addWidget(saving_dir_label, 5, 0);
+    geon_env_Layout->addWidget(saving_dir_edit, 5, 1);
+    geon_env_Layout->addWidget(log_checkbox, 6, 0);
 
 
     geonamica_config_group->setLayout(geon_env_Layout);
 
     connect(working_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWorkingDirectory);
     connect(wine_prefix_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changePrefixPath);
+    connect(driver_letter_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDriveLetter);
     connect(saving_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeSaveDir);
     connect(windows_env_var_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWindowsEnvVar);
     connect(prefix_env_var_CheckBox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeWhetherPrefixEnvVarSet);
@@ -465,6 +422,8 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(obj_log_file_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeLogFileForObjective);
     connect(plot_log_file_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeLogFileForPostOptimisationSave);
 
+
+
     //////
 
     QGroupBox* save_files_group = new QGroupBox(tr("Maps to save post-optimisation from Pareto front"));
@@ -472,19 +431,19 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     QLabel *save_map_Label = new QLabel(tr("Paths pointing to output log maps"));
 //    QListWidget *save_map_List = new QListWidget;
     QPushButton* add_save_map_button = new QPushButton(tr("Add new map"));
-    QLabel *year_begin_label = new QLabel(tr("Start saving maps in year:"));
+//    QLabel *year_begin_label = new QLabel(tr("Start saving maps in year:"));
 //    QLineEdit *year_begin_edit = new QLineEdit;
-    QLabel *year_end_label = new QLabel(tr("End saving maps in year:"));
+//    QLabel *year_end_label = new QLabel(tr("End saving maps in year:"));
 //    QLineEdit *year_end_edit = new QLineEdit;
 
     QGridLayout *save_files_Layout = new QGridLayout;
     save_files_Layout->addWidget(save_map_Label, 0, 0, 1, 2);
     save_files_Layout->addWidget(save_map_List, 1, 0 , 1, 2);
     save_files_Layout->addWidget(add_save_map_button, 2, 0, 1, 2);
-    save_files_Layout->addWidget(year_begin_label, 3, 0);
-    save_files_Layout->addWidget(year_begin_save_edit, 3, 1);
-    save_files_Layout->addWidget(year_end_label, 4, 0);
-    save_files_Layout->addWidget(year_end_save_edit, 4, 1);
+//    save_files_Layout->addWidget(year_begin_label, 3, 0);
+//    save_files_Layout->addWidget(year_begin_save_edit, 3, 1);
+//    save_files_Layout->addWidget(year_end_label, 4, 0);
+//    save_files_Layout->addWidget(year_end_save_edit, 4, 1);
 
 
 
@@ -493,8 +452,9 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(save_map_List, &QListWidget::itemChanged, this, &GeonSettingsPage::processOutputLogMapListChange);
     connect(this, &GeonSettingsPage::outputLogMapsChanged, config_dialogue, &ConfigDialog::changeSaveMaps);
     connect(add_save_map_button, &QPushButton::clicked, this, &GeonSettingsPage::addOutputLogMap);
-    connect(year_begin_save_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearStartSave);
-    connect(year_end_save_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearEndSave);
+    connect(save_map_List, &QListWidget::itemClicked, this, &GeonSettingsPage::displaySaveMapHelp);
+//    connect(year_begin_save_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearStartSave);
+//    connect(year_end_save_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeYearEndSave);
 
     /////
 
@@ -526,6 +486,12 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     mainLayout->addWidget(replications_group);
     mainLayout->addStretch(1);
     setLayout(mainLayout);
+}
+
+void GeonSettingsPage::displaySaveMapHelp()
+{
+    QString f = ":/Help/SaveMaps.html";
+    displayHelp(f, help_box);
 }
 
 void GeonSettingsPage::addOutputLogMap()
@@ -615,15 +581,15 @@ void GeonSettingsPage::updatePostOptPrintLogFile(QString path)
     plot_log_file_edit->setText(path);
 }
 
-void GeonSettingsPage::updateStartYear(int year)
-{
-    year_begin_save_edit->setText(QString::number(year));
-}
-
-void GeonSettingsPage::updateEndYear(int year)
-{
-    year_end_save_edit->setText(QString::number(year));
-}
+//void GeonSettingsPage::updateStartYear(int year)
+//{
+//    year_begin_save_edit->setText(QString::number(year));
+//}
+//
+//void GeonSettingsPage::updateEndYear(int year)
+//{
+//    year_end_save_edit->setText(QString::number(year));
+//}
 
 void GeonSettingsPage::updateNumberReplicates(int number)
 {
@@ -639,6 +605,11 @@ void GeonSettingsPage::updateOuputLogMaps(std::vector<std::string> ouput_maps)
                     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
                 }
 //    std::for_each(ouput_maps.begin(), ouput_maps.end(), [save_map_List](std::string& xpath_dv) {save_map_List->addItem(QString::fromStdString(xpath_dv));});
+}
+
+void GeonSettingsPage::updateDriveLetter(QString letter)
+{
+    driver_letter_edit->setText(letter);
 }
 
 EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent)

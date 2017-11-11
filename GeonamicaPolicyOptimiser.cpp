@@ -63,14 +63,14 @@ struct XPathDVParser : boost::spirit::qi::grammar<std::string::iterator, boost::
         namespace qi = boost::spirit::qi;
         namespace ph = boost::phoenix;
 
-        string_parser_quote_delimited = qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"");   //[_val = _1]
+        string_parser_quote_delimited = qi::lexeme[qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"")];   //[_val = _1]
 
-        int_bounds_parser = qi::lit("BOUNDS(")
+        int_bounds_parser = qi::lit("BOUNDS") >> qi::lit("(")
                 >> qi::int_[ph::ref(this->dv.i_lower_bounds) = qi::_1]
                 >>  qi::lit(",") >> qi::int_[ph::ref(this->dv.i_upper_bounds) = qi::_1]
                 >>  qi::lit(")");
 
-        real_bounds_parser = qi::lit("BOUNDS(")
+        real_bounds_parser = qi::lit("BOUNDS") >> qi::lit("(")
                 >> qi::double_[ph::ref(this->dv.d_lower_bounds) = qi::_1]
                 >>  qi::lit(",") >> qi::double_[ph::ref(this->dv.d_upper_bounds) = qi::_1]
                 >>  qi::lit(")");
@@ -91,7 +91,7 @@ struct XPathDVParser : boost::spirit::qi::grammar<std::string::iterator, boost::
                 >>  qi::lit(":") >> xpath_parser;
 
         point_parser = qi::double_ >> qi::lit(",") >> qi::double_;
-        spline_parser  = qi::lit("BASE(") >> *(point_parser >> qi::lit(";")) >> point_parser;
+        spline_parser  = qi::lit("BASE") >> qi::lit("(") >> *(point_parser >> qi::lit(";")) >> point_parser;
 
         spline_dv_parser = qi::lit("SPLINE")[ph::ref(this->dv.dv_type) = XPathDV::REAL]
                 >> qi::lit(":") >> qi::lit("PROPORTIONAL_CHANGE")
@@ -125,12 +125,11 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
         namespace qi = boost::spirit::qi;
         namespace ph = boost::phoenix;
 
-        string_parser_quote_delimited = qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"");
-        years_parser  = qi::lit("YEARS(") >> *(qi::int_[ph::push_back(ph::ref(this->obj.years), qi::_1)]
-                >> qi::lit(";")) >> qi::int_[ph::push_back(ph::ref(this->obj.years), qi::_1)] >> qi::lit(")");
-        discounting_parser = qi::lit("DISCOUNTING(") >> qi::lit("RATE=") >> qi::double_[ph::ref(this->obj.discount_rate) = qi::_1]
+        string_parser_quote_delimited = qi::lexeme[qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"")];
+        years_parser  = qi::lit("YEARS") >> qi::lit("(") >> *((qi::int_ >> qi::lit(";"))[ph::push_back(ph::ref(this->obj.years), qi::_1)]) >> qi::int_[ph::push_back(ph::ref(this->obj.years), qi::_1)] >> qi::lit(")");
+        discounting_parser = qi::lit("DISCOUNTING") >> qi::lit("(") >> qi::lit("RATE") >> qi::lit("=") >> qi::double_[ph::ref(this->obj.discount_rate) = qi::_1]
                                                     >> qi::lit(";")
-                                                    >> qi::lit("YEAR_PRESENT_VALUE=") >> qi::int_[ph::ref(this->obj.year_present_val) = qi::_1] >> qi::lit(")");
+                                                    >> qi::lit("YEAR_PRESENT_VALUE") >> qi::lit("=") >> qi::int_[ph::ref(this->obj.year_present_val) = qi::_1] >> qi::lit(")");
         maximise_parser = qi::no_case[( qi::lit("MAXIMISE") | qi::lit("MAXIMIZE") | qi::lit("MAX"))[ph::ref(this->obj.type) = MapObj::MAXIMISATION] ];
         minimise_parser = qi::no_case[( qi::lit("MINIMISE") | qi::lit("MINIMIZE") | qi::lit("MIN"))[ph::ref(this->obj.type) = MapObj::MINIMISATION] ];
 
@@ -147,6 +146,50 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
     boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> discounting_parser;
     boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> maximise_parser;
     boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> minimise_parser;
+
+    boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> start;
+};
+
+struct SaveMapParser : boost::spirit::qi::grammar<std::string::iterator, boost::spirit::qi::space_type>
+{
+
+
+    SaveMapParser(SaveMapDetails& _save_map) : MapObjParser::base_type(start), save_map(_save_map)
+    {
+        namespace qi = boost::spirit::qi;
+        namespace ph = boost::phoenix;
+
+
+        string_parser_quote_delimited = qi::lexeme[qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"")];
+        legend_parser = qi::lit("LEGEND") >> qi::lit("=") >> string_parser_quote_delimited;
+        source_raster_parser = qi::lit("PATH") >> qi::lit("=") >> string_parser_quote_delimited;
+        years_parser  = qi::lit("YEARS(") >> *(qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)]
+                >> qi::lit(";")) >> qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)] >> qi::lit(")");
+        diff_raster_parser = (qi::lit("DIFF") >> qi::lit("=") >> string_parser_quote_delimited) | qi::attr(std::string("no_diff"));
+        save_path_parser = qi::lit("SAVE_AS") >> qi::lit("=")  >> string_parser_quote_delimited;
+
+        categorised_parser = qi::no_case[( qi::lit("CATEGORISED") | qi::lit("CAT"))[ph::ref(this->save_map.type) = SaveMapDetails::CATEGORISED] ];
+        linear_grad_parser = qi::no_case[( qi::lit("LINEAR_GRADIENT") | qi::lit("LIN_GRAD") )[ph::ref(this->save_map.type) = SaveMapDetails::LINEAR_GRADIENT] ];
+
+
+        start = (categorised_parser | linear_grad_parser )
+                >> qi::lit(":") >> legend_parser[ph::ref(this->save_map.legend_file.first) = qi::_1]
+                >> qi::lit(":") >> source_raster_parser[ph::ref(this->save_map.source_raster.first) = qi::_1]
+                >> qi::lit(":") >> years_parser
+                >> qi::lit(":") >> diff_raster_parser[ph::ref(this->save_map.diff_raster.first) = qi::_1]
+                >> qi::lit(":") >> save_path_parser[ph::ref(this->save_map.save_path.first) = qi::_1];
+
+    }
+
+    SaveMapDetails& save_map;
+    boost::spirit::qi::rule<std::string::iterator, std::string(), boost::spirit::qi::space_type> string_parser_quote_delimited;
+    boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type > years_parser;
+    boost::spirit::qi::rule<std::string::iterator, std::string(), boost::spirit::qi::space_type> legend_parser;
+    boost::spirit::qi::rule<std::string::iterator, std::string(), boost::spirit::qi::space_type> source_raster_parser;
+    boost::spirit::qi::rule<std::string::iterator, std::string(), boost::spirit::qi::space_type> diff_raster_parser;
+    boost::spirit::qi::rule<std::string::iterator, std::string(), boost::spirit::qi::space_type> save_path_parser;
+    boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> categorised_parser;
+    boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> linear_grad_parser;
 
     boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> start;
 };
@@ -331,6 +374,76 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
 //    }
 
 
+template <typename T>
+void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_path, SaveMapDetails & save_details)
+{
+    if (save_details.diff_raster.first != "no_diff")
+    {
+        boost::optional<T> map_no_data = map.noDataVal();
+        blink::raster::gdal_raster<T> diff = blink::raster::open_gdal_raster<T>(save_details.diff_raster.second, GA_ReadOnly);
+        boost::optional<T> diff_no_data = diff.noDataVal();
+        blink::raster::gdal_raster<T> out = blink::raster::create_temp_gdal_raster_from_model<T>(diff);
+        auto zip = blink::iterator::make_zip_range(std::ref(map), std::ref(diff), std::ref(out));
+        if (map_no_data || diff_no_data)
+        {
+            for (auto &&i : zip)
+            {
+
+                const T map_val = std::get<0>(i);
+                const T diff_val = std::get<1>(i);
+                if(map_val == map_no_data.value() || diff_val == diff_no_data.value())
+                {
+                    std::get<2>(i) = map_no_data.value();
+                }
+                else if(map_val != diff_val)
+                {
+                    std::get<2>(i) = map_val;
+                }
+                else
+                {
+                    std::get<2>(i) = map_no_data.value();
+                }
+            }
+        } else
+        {
+            for (auto &&i : zip)
+            {
+
+                const T map_val = std::get<0>(i);
+                const T diff_val = std::get<1>(i);
+                if(map_val != diff_val)
+                {
+                    std::get<2>(i) = map_val;
+                }
+                else
+                {
+                    std::get<2>(i) = map_no_data.value();
+                }
+            }
+        }
+        if (save_details.type == SaveMapDetails::CATEGORISED)
+        {
+            save_details.classified_writer->render(map, save_path);
+        }
+        if (save_details.type == SaveMapDetails::LINEAR_GRADIENT)
+        {
+            save_details.gradient_writer->render(map, save_path);
+        }
+    }
+    else
+    {
+        if (save_details.type == SaveMapDetails::CATEGORISED)
+        {
+            save_details.classified_writer->render(map, save_path);
+        }
+        if (save_details.type == SaveMapDetails::LINEAR_GRADIENT)
+        {
+            save_details.gradient_writer->render(map, save_path);
+        }
+
+    }
+}
+
 
     GeonamicaOptimiser::GeonamicaOptimiser( ZonalPolicyParameters & _params)
             :
@@ -438,48 +551,83 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
 
 
             // Create new dosdevice drive to working geoproject file directory.
-            std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:",
-                                                      "x:", "y:", "l:", "a:", "b:"};
 
-            BOOST_FOREACH(std::string &drive_option, drive_options)
+            if (params.wine_geoproject_disk_drive == "choose_for_me" || params.wine_geoproject_disk_drive == "" )
             {
-                boost::filesystem::path symlinkpath_ext = params.wine_drive_path.second / drive_option;
-                //Check if symbolic link for wine J: exists.
-                boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(
-                        symlinkpath_ext);
-                if (!(boost::filesystem::is_symlink(lnk_status)) ||
-                    !(boost::filesystem::exists(symlinkpath_ext)))
-                    {
-                        try
-                        {
-                            boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
-                            //                                params.wine_drive_letter = drive_option;
-                        }
-                        catch (boost::filesystem::filesystem_error & ex)
-                        {
-                            std::stringstream msg;
-                            msg << "Creating symlink from " << params.working_dir.second
-                                << " to " << symlinkpath_ext << " failed";
-                            initialisation_error_msgs += msg.str() + "; ";
-                            std::cout << msg.str() <<  std::endl;
-                            is_initialised = false;
-                        }
+                std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:",
+                                                          "x:", "y:", "l:", "a:", "b:"};
 
-                    params.wine_working_dir = drive_option;
-                    params.wine_drive_path.second = params.wine_drive_path.second / drive_option;
-                    delete_wine_dir_on_exit = true;
-                    break;
+                BOOST_FOREACH(std::string &drive_option, drive_options)
+                            {
+                                boost::filesystem::path symlinkpath_ext = params.wine_drive_path.second / drive_option;
+                                //Check if symbolic link for wine J: exists.
+                                boost::filesystem::file_status lnk_status = boost::filesystem::symlink_status(
+                                        symlinkpath_ext);
+                                if (!(boost::filesystem::is_symlink(lnk_status)) ||
+                                    !(boost::filesystem::exists(symlinkpath_ext)))
+                                {
+                                    try
+                                    {
+                                        boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
+                                        //                                params.wine_drive_letter = drive_option;
+                                    }
+                                    catch (boost::filesystem::filesystem_error & ex)
+                                    {
+                                        std::stringstream msg;
+                                        msg << "Creating symlink from " << params.working_dir.second
+                                            << " to " << symlinkpath_ext << " failed";
+                                        initialisation_error_msgs += msg.str() + "; ";
+                                        std::cout << msg.str() <<  std::endl;
+                                        is_initialised = false;
+                                    }
+
+                                    params.wine_working_dir = drive_option;
+                                    params.wine_drive_path.second = params.wine_drive_path.second / drive_option;
+                                    delete_wine_dir_on_exit = true;
+                                    break;
+                                }
+                                if (drive_option == "b:")
+                                {
+                                    std::stringstream msg;
+                                    msg << "Could not make a symlink to the working drive for winedrive";
+                                    initialisation_error_msgs += msg.str() + "; ";
+                                    std::cout << msg.str() <<  std::endl;
+                                    is_initialised = false;
+                                }
+
+                            }
+            }
+            else
+            {
+                boost::filesystem::path symlinkpath_ext = params.wine_drive_path.second / params.wine_geoproject_disk_drive;
+                if (boost::filesystem::exists(symlinkpath_ext))  //exists does not seem to pick up sym links.
+                {
+                    boost::filesystem::remove(symlinkpath_ext);
                 }
-                if (drive_option == "b:")
+                if (boost::filesystem::is_symlink(symlinkpath_ext)) // so we need to use this one to test if something already exists
+                {
+                    boost::filesystem::remove(symlinkpath_ext);
+                }
+                try
+                {
+                    boost::filesystem::create_directory_symlink(params.working_dir.second, symlinkpath_ext);
+                    //                                params.wine_drive_letter = drive_option;
+                }
+                catch (boost::filesystem::filesystem_error & ex)
                 {
                     std::stringstream msg;
-                    msg << "Could not make a symlink to the working drive for winedrive";
+                    msg << "Creating symlink from " << params.working_dir.second
+                        << " to " << symlinkpath_ext << " failed";
                     initialisation_error_msgs += msg.str() + "; ";
                     std::cout << msg.str() <<  std::endl;
                     is_initialised = false;
                 }
-
+                params.wine_working_dir = params.wine_geoproject_disk_drive;
+                params.wine_drive_path.second = params.wine_drive_path.second / params.wine_geoproject_disk_drive;
+                delete_wine_dir_on_exit = true;
             }
+
+
         }
 
         using_timeout = false;
@@ -552,9 +700,11 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
             num_objectives++;
         }
 
+        //Logging settings
         working_logging = params.working_dir.second / params.rel_path_log_specification_obj;
         wine_working_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_obj;
 
+        // Zonal optimisation settings
         if (params.rel_path_zones_delineation_map != "no_zonal_dvs" || params.rel_path_zones_delineation_map == "")
         {
             zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
@@ -616,57 +766,37 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
             }
         }
 
-        typedef std::vector<std::string> StringTuple;
-        std::vector<StringTuple > classified_img_rqsts_tmp;
-        std::vector<StringTuple> lin_grdnt_img_rqsts_tmp;
 
-//        qi::debug(string_parser_quote_delimited);
-        qi::rule<std::string::iterator, StringTuple()> catgeorised_save_map_rule = qi::no_case[qi::lit("CATEGORISED") | qi::lit("CAT")] >> qi::lit(":") >> qi::lit("LEGEND") >> qi::lit("=") >> string_parser_quote_delimited >> qi::lit(":") >> qi::lit("PATH") >> qi::lit("=") >> string_parser_quote_delimited >> qi::lit(":") >> ( (qi::lit("DIFF") >> qi::lit("=") >> string_parser_quote_delimited) | qi::attr(std::string("no_diff")))>> qi::lit(":") >> qi::lit("SAVE_AS") >> qi::lit("=")  >> string_parser_quote_delimited;
-        qi::rule<std::string::iterator, StringTuple()> line_grad_save_map_rule = qi::no_case[qi::lit("LINEAR_GRADIENT") | qi::lit("LIN_GRAD")] >> qi::lit(":")  >> qi::lit("LEGEND") >> qi::lit("=") >> string_parser_quote_delimited >> qi::lit(":") >> qi::lit("PATH") >> qi::lit("=")  >> string_parser_quote_delimited >> qi::lit(":") >> ( (qi::lit("DIFF") >> qi::lit("=") >> string_parser_quote_delimited) | qi::attr(std::string("no_diff")))>> qi::lit(":") >> qi::lit("SAVE_AS") >> qi::lit("=")  >> string_parser_quote_delimited;
-        auto save_maps_parser = catgeorised_save_map_rule[ph::push_back(ph::ref(classified_img_rqsts_tmp), qi::_1)] | line_grad_save_map_rule[ph::push_back(ph::ref(lin_grdnt_img_rqsts_tmp), qi::_1)];
-        BOOST_FOREACH(std::string & save_map, params.save_maps)
+        //Output images of Geonamica output rasters
+        this->save_img_rqsts.resize(params.save_maps.size());
+        for (int m = 0; m < params.save_maps.size(); ++m)
         {
-            boost::spirit::qi::parse(save_map.begin(), save_map.end(),  save_maps_parser);
-        }
-        BOOST_FOREACH(StringTuple & cat_save_map_pair, classified_img_rqsts_tmp)
-        {
-//                        boost::shared_ptr<ColourMapperClassified> classified_clr_map =  parseColourMapClassified(params.working_dir.second / std::get<0>(cat_save_map_pair));
-            boost::shared_ptr<ColourMapperClassified> classified_clr_map =  parseColourMapClassified(params.working_dir.second / (cat_save_map_pair[0]));
-            boost::shared_ptr<OpenCVWriterClassified> classified_map_prntr(new OpenCVWriterClassified(*classified_clr_map));
-            boost::filesystem::path diff_map;
-            if(cat_save_map_pair[2] == "no_diff")
+            SaveMapParser parser(save_img_rqsts[m]);
+            boost::spirit::qi::phrase_parse(params.save_maps[m].begin(), params.save_maps[m].end(), parser, boost::spirit::qi::space);
+            parser.save_map.legend_file.second = params.working_dir.second /  parser.save_map.legend_file.first;
+            parser.save_map.source_raster.second = params.working_dir.second /  parser.save_map.source_raster.first;
+            if( ! (parser.save_map.diff_raster.first == "no_diff" or parser.save_map.diff_raster.first == ""))
             {
-                diff_map = "no_diff";
-            } else
-            {
-                diff_map = params.working_dir.second / (cat_save_map_pair[2]);
+                parser.save_map.diff_raster.second = params.working_dir.second / parser.save_map.diff_raster.first;
             }
-//                        classified_img_rqsts.push_back(std::make_tuple(params.working_dir.second / std::get<1>(cat_save_map_pair), classified_clr_map, classified_map_prntr, std::get<2>(cat_save_map_pair)));
-            classified_img_rqsts.push_back(std::make_tuple(params.working_dir.second / (cat_save_map_pair[1]), diff_map, classified_clr_map, classified_map_prntr, (cat_save_map_pair[3])));
-        }
-        BOOST_FOREACH(StringTuple & lin_grad_save_map_pair, lin_grdnt_img_rqsts_tmp)
-        {
-//                        boost::shared_ptr<ColourMapperGradient> lin_grad_clr_map = parseColourMapLinearGradient(params.working_dir.second / std::get<0>(lin_grad_save_map_pair));
-            boost::shared_ptr<ColourMapperGradient> lin_grad_clr_map = parseColourMapGradient(params.working_dir.second / (lin_grad_save_map_pair[0]));
-            boost::shared_ptr<OpenCVWriterGradient> lin_grad_map_prntr(new OpenCVWriterGradient(*lin_grad_clr_map));
-            boost::filesystem::path diff_map;
-            if(lin_grad_save_map_pair[2] == "no_diff")
+
+            if (parser.save_map.type == SaveMapDetails::CATEGORISED)
             {
-                diff_map = "no_diff";
-            } else
-            {
-                diff_map = params.working_dir.second / (lin_grad_save_map_pair[2]);
+                parser.save_map.classified_clr_map =  parseColourMapClassified(parser.save_map.legend_file.second);
+                parser.save_map.classified_writer.reset(new OpenCVWriterClassified(*parser.save_map.classified_clr_map));
             }
-//                        lin_grdnt_img_rqsts.push_back(std::make_tuple(params.working_dir.second / std::get<1>(lin_grad_save_map_pair), lin_grad_clr_map, lin_grad_map_prntr, std::get<2>(lin_grad_save_map_pair)));
-            lin_grdnt_img_rqsts.push_back(std::make_tuple(params.working_dir.second / (lin_grad_save_map_pair[1]), diff_map, lin_grad_clr_map, lin_grad_map_prntr, (lin_grad_save_map_pair[3])));
+            if (parser.save_map.type == SaveMapDetails::LINEAR_GRADIENT)
+            {
+                parser.save_map.gradient_clr_map = parseColourMapGradient(parser.save_map.legend_file.second);
+                parser.save_map.gradient_writer.reset(new OpenCVWriterGradient(*parser.save_map.gradient_clr_map));
+            }
         }
+
 
         num_objectives = int(objectives_and_constraints.first.size());
         // Make the problem defintions and intialise the objectives and constraints struct.
         prob_defs.reset(new ProblemDefinitions(real_lowerbounds, real_upperbounds, int_lowerbounds, int_upperbounds, params.min_or_max, num_constraints));
 //        objectives_and_constrataints = std::make_pair(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
-
-        //Zonal optimisation objectives go first,
 
         setting_env_vars = false;
         if (params.windows_env_var != "" || params.windows_env_var != "unspecified" )
@@ -674,24 +804,61 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
             setting_env_vars = true;
         }
 
+        // Now make batch and running commands for running Geonamica.
+        std::stringstream run_command_ss;
+        run_bat_file = params.save_dir.second / "run_geonamica.bat";
+        run_sh_file = params.save_dir.second / "run_wine.sh";
+
+        std::ofstream bat_file(run_bat_file.string().c_str());
+        std::ofstream sh_file(run_sh_file.string().c_str());
+
+        if (setting_env_vars)
+        {
+            bat_file_contents << "SET " << params.windows_env_var << "\n";
+        }
+        if (params.with_reset_and_save)
+        {
+            bat_file_contents << "\"" << params.geonamica_cmd << "\" --Reset --Save " << "\"" << wine_working_project << "\"\n";
+        }
+
+        //Call the model to run it.
+        if (using_wine && params.wine_prefix_path.first != "na" && params.set_prefix_path)
+        {
+            sh_file_contents << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
+        }
+
+        if (using_timeout)
+        {
+            sh_file_contents << params.timout_cmd << " ";
+        }
+        if (using_wine)
+        {
+            sh_file_contents << params.wine_cmd;
+        }
+        sh_file_contents << " cmd /V /C " << "\"" << run_bat_file.string() << "\"";
+
+        if (params.with_reset_and_save)
+        {
+            bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --Save --LogSettings " << "\"" << wine_working_logging << "\""
+                 << " " << "\"" << wine_working_project << "\"\n";
+        }
+        else
+        {
+            bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --LogSettings " << "\"" << wine_working_logging << "\""
+                 << " " << "\"" << wine_working_project << "\"\n";
+        }
+
+        sh_file << sh_file_contents.str();
+        bat_file << bat_file_contents.str();
+        sh_file.close();
+        bat_file.close();
+//        run_command = run_command_ss.str();
     }
 
-//    void
-//    pushSaveClasifiedMapSpec(std::tuple<std::string, std::string>  arg1)
-//    {
-//        classified_img_rqsts.push_back(std::make_pair(params.working_dir.second / std::get<1>(arg1), parseColourMapClassified(params.working_dir.second / std::get<0>(arg1))));
-//    }
-//
-//    void
-//    pushSaveLinearGradMapSpec(std::tuple<std::string, std::string>  arg1)
-//    {
-//        lin_grdnt_img_rqsts.push_back(std::make_pair(params.working_dir.second / std::get<1>(arg1), parseColourMapLinearGradient(params.working_dir.second / std::get<0>(arg1))));
-//    }
 
     GeonamicaOptimiser::~GeonamicaOptimiser()
     {
         //        boost::filesystem::remove_all(worker_dir);
-
         if (delete_wine_dir_on_exit)
         {
             std::this_thread::sleep_for (std::chrono::seconds(1));
@@ -717,8 +884,6 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
             std::this_thread::sleep_for (std::chrono::seconds(1));
             boost::filesystem::remove_all(params.working_dir.second);
         }
-
-
     }
 
 
@@ -728,65 +893,35 @@ GeonamicaOptimiser::runGeonamica(std::ofstream & logging_file)
 
     boost::scoped_ptr<boost::timer::auto_cpu_timer> t(nullptr);
     if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
-    std::stringstream cmd1, cmd2;
 
-    if (params.with_reset_and_save)
-    {
-        //Call the model to rest it
-        if (using_wine && params.wine_prefix_path.first != "na" && params.set_prefix_path)
-            cmd1 << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
-        if (using_timeout) cmd1 << params.timout_cmd << " ";
-        if (using_wine) cmd1 << params.wine_cmd << " cmd /V /C ";
-        if (setting_env_vars) cmd1 << "SET " << params.windows_env_var << " && ";
-        cmd1 << "\"" << params.geonamica_cmd << "\" --Reset --Save " << "\"" << wine_working_project << "\"";
-        if (params.is_logging)
-        {
-            cmd1 << " >> \"" << logfile.string().c_str() << "\" 2>&1";
-            logging_file << "Running: " << cmd1.str() << std::endl;
-            logging_file.close();
-        }
-        int i1 = std::system(cmd1.str().c_str());
-        if (params.is_logging) logging_file.open(logfile.string().c_str(), std::ios_base::app);
-        if (!logging_file.is_open()) params.is_logging = false;
-    }
+    std::stringstream run_command_ss;
+    run_command_ss << "sh \"" << run_sh_file.string() << "\"";
 
-    //Call the model to run it.
-    if (using_wine && params.wine_prefix_path.first != "na" && params.set_prefix_path)
-        cmd2 << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
-    if (using_timeout) cmd2 << params.timout_cmd << " ";
-    if (using_wine) cmd2 << params.wine_cmd << " cmd /V /C ";
-    if (setting_env_vars) cmd2 << "SET " << params.windows_env_var << " && ";
-    if (params.with_reset_and_save)
-    {
-        cmd2 << "\"" << params.geonamica_cmd << "\" --Run --Save --LogSettings " << "\"" << wine_working_logging << "\""
-             << " " << "\"" << wine_working_project << "\"";
-    }
-    else
-    {
-        cmd2 << "\"" << params.geonamica_cmd << "\" --Run --LogSettings " << "\"" << wine_working_logging << "\""
-             << " " << "\"" << wine_working_project << "\"";
-    }
     if (params.is_logging)
     {
-        cmd2 << " >> \"" << logfile.string().c_str() << "\" 2>&1";
-        logging_file << "Running: " << cmd2.str() << std::endl;
+        run_command_ss << " >> \"" << logfile.string().c_str() << "\" 2>&1";
+        logging_file << "Running: " << run_command_ss.str() << std::endl;
+        logging_file << "With sh file:\n" << sh_file_contents.str() << "\n";
+        logging_file << "With BAT file:\n" << bat_file_contents.str() << "\n";
         logging_file.close();
     }
-    int i2 = std::system(cmd2.str().c_str());
-    if (params.is_logging) logging_file.open(logfile.string().c_str(), std::ios_base::app);
+
+    int i2 = std::system(run_command_ss.str().c_str());
+
+    if (params.is_logging)
+    {
+        t->stop();
+        logging_file.open(logfile.string().c_str(), std::ios_base::app);
+    }
     if (!logging_file.is_open()) params.is_logging = false;
-
-
 
     if (params.is_logging)
     {
         logging_file << "Geonamica run time:\n";
-        t->stop();
         t->report();
     }
 
 }
-
 
     double
     GeonamicaOptimiser::sumMap(blink::raster::gdal_raster<double> & map)
@@ -1043,6 +1178,10 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
 
         std::vector<double> & objectives = objectives_and_constraints.first;
+        for(double& obj: objectives)
+        {
+            obj = 0;
+        }
 
         // Make Zonal map
         if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
@@ -1105,10 +1244,11 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
 //            }
         }
 
+        // Calculate objectives for a number of replicate runs of Geonamica
         std::vector<std::vector<double> > obj_vals_across_replicates;
         for (int j = 0; j < params.replicates; ++j)
         {
-            // If geoproject manipulation needed, do it now, here.
+            // Set stochastic seed for landuse model part
             if (params.is_logging) logging_file << "Replicate " << j << "\n";
             setAllChildValuesOfXMLNode(doc, "/GeonamicaSimulation/model/modelBlocks/modelBlock[@library=\"\" and @name=\"MB_Land_use_model\"]/CompositeModelBlock/modelBlocks/modelBlock[@library=\"CAModel.dll\" and @name=\"MB_Total_potential\"]/TotalPotentialBlock/Seed", params.rand_seeds[j]);
             doc.save_file(working_project.string().c_str());
@@ -1125,119 +1265,57 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
             runGeonamica(logging_file);
             std::vector<double> obj_vals = calcObjectives(logging_file, real_decision_vars, int_decision_vars);
 
+            // If output of running Geonamica is saved.... (this is not logging which is managed by Geopnbamica iotself, but the generation of images of Geonamica logged output.
             boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
-            if (do_save)
-            {
+            if (do_save) {
 //                boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
                 //            if (!boost::filesystem::exists(save_replicate_path)) boost::filesystem::create_directory(save_replicate_path);
                 if (boost::filesystem::exists(save_replicate_path)) boost::filesystem::remove_all(save_replicate_path);
                 copyDir(params.working_dir.second, save_replicate_path);
-                typedef std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperClassified>,     boost::shared_ptr<OpenCVWriterClassified>, std::string >  ClassfdImgRqstTuple;
-                typedef std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperGradient>, boost::shared_ptr<OpenCVWriterGradient>, std::string >  LinGradntImgRqstTuple;
 
-                BOOST_FOREACH(ClassfdImgRqstTuple & classified_img_request, classified_img_rqsts)
-                {
-                    blink::raster::gdal_raster<int> map = blink::raster::open_gdal_raster<int>(std::get<0>(classified_img_request), GA_ReadOnly);
-                    if ((std::get<1>(classified_img_request)).string() != "no_diff")
-                    {
-                        boost::optional<int> map_no_data = map.noDataVal();
-                        blink::raster::gdal_raster<int> diff = blink::raster::open_gdal_raster<int>(std::get<1>(classified_img_request), GA_ReadOnly);
-                        boost::optional<int> diff_no_data = diff.noDataVal();
-                        blink::raster::gdal_raster<int> out = blink::raster::create_temp_gdal_raster_from_model<int>(diff);
-                        boost::filesystem::path save_path = save_replicate_path / std::get<4>(classified_img_request);
-                        auto zip = blink::iterator::make_zip_range(std::ref(map), std::ref(diff), std::ref(out));
-                        if (map_no_data || diff_no_data)
-                        {
-                            for (auto &&i : zip)
-                            {
+                BOOST_FOREACH(SaveMapDetails &save_details, this->save_img_rqsts) {
+                                if (!(boost::filesystem::exists(save_details.source_raster.second))) {
+                                    BOOST_FOREACH(int year, save_details.years) {
+                                                    boost::filesystem::path map_path_year =
+                                                            save_details.source_raster.second.parent_path() /
+                                                            (save_details.source_raster.second.filename().string() +
+                                                             "_" + std::to_string(year) + "-Jan-01 00_00_00.rst");
 
-                                const int map_val = std::get<0>(i);
-                                const int diff_val = std::get<1>(i);
-                                if(map_val == map_no_data.value() || diff_val == diff_no_data.value())
-                                {
-                                    std::get<2>(i) = map_no_data.value();
-                                }
-                                else if(map_val != diff_val)
-                                {
-                                    std::get<2>(i) = map_val;
-                                }
-                                else
-                                {
-                                    std::get<2>(i) = map_no_data.value();
-                                }
-                            }
-                        } else
-                        {
-                            for (auto &&i : zip)
-                            {
+                                                    if (boost::filesystem::exists(map_path_year)) {
+                                                        boost::filesystem::path save_path = save_replicate_path /
+                                                                                            (save_details.save_path.first +
+                                                                                             "_" +
+                                                                                             std::to_string(year) +
+                                                                                             ".png");
+                                                        if (save_details.type == SaveMapDetails::CATEGORISED) {
+                                                            blink::raster::gdal_raster<int> map = blink::raster::open_gdal_raster<int>(
+                                                                    map_path_year, GA_ReadOnly);
+                                                            saveMap(map, save_path, save_details);
+                                                        }
+                                                        if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
+                                                            blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(
+                                                                    map_path_year, GA_ReadOnly);
+                                                            saveMap(map, save_path, save_details);
+                                                        }
 
-                                const int map_val = std::get<0>(i);
-                                const int diff_val = std::get<1>(i);
-                                if(map_val != diff_val)
-                                {
-                                    std::get<2>(i) = map_val;
-                                }
-                                else
-                                {
-                                    std::get<2>(i) = map_no_data.value();
+
+                                                    }
+                                                }
+                                } else {
+                                    boost::filesystem::path save_path =
+                                            save_replicate_path / (save_details.save_path.first + ".png");
+                                    if (save_details.type == SaveMapDetails::CATEGORISED) {
+                                        blink::raster::gdal_raster<int> map = blink::raster::open_gdal_raster<int>(
+                                                save_details.source_raster.second, GA_ReadOnly);
+                                        saveMap(map, save_path, save_details);
+                                    }
+                                    if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
+                                        blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(
+                                                save_details.source_raster.second, GA_ReadOnly);
+                                        saveMap(map, save_path, save_details);
+                                    }
                                 }
                             }
-                        }
-                        std::get<3>(classified_img_request)->render(out, save_path);
-                    }
-                    else
-                    {
-
-                        std::get<3>(classified_img_request)->render(map, save_path);
-                    }
-
-                }
-                BOOST_FOREACH(LinGradntImgRqstTuple & lin_grad_img_request, lin_grdnt_img_rqsts)
-                {
-                    blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(std::get<0>(lin_grad_img_request), GA_ReadOnly);
-                    if ((std::get<1>(lin_grad_img_request).string() != "no_diff"))
-                    {
-                        boost::optional<double> map_no_data = map.noDataVal();
-                        blink::raster::gdal_raster<double> diff = blink::raster::open_gdal_raster<double>(std::get<1>(lin_grad_img_request), GA_ReadOnly);
-                        boost::optional<double> diff_no_data = diff.noDataVal();
-                        blink::raster::gdal_raster<double> out = blink::raster::create_temp_gdal_raster_from_model<double>(diff);
-                        boost::filesystem::path save_path = save_replicate_path / std::get<4>(lin_grad_img_request);
-                        auto zip = blink::iterator::make_zip_range(std::ref(map), std::ref(diff), std::ref(out));
-                        if (map_no_data || diff_no_data)
-                        {
-                            for (auto &&i : zip)
-                            {
-
-                                const double map_val = std::get<0>(i);
-                                const double diff_val = std::get<1>(i);
-                                if(map_val == map_no_data.value() || diff_val == diff_no_data.value())
-                                {
-                                    std::get<2>(i) = map_no_data.value();
-                                }
-                                else
-                                {
-                                    std::get<2>(i) = map_val - diff_val;
-                                }
-                            }
-                        } else
-                        {
-                            for (auto &&i : zip)
-                            {
-
-                                const double map_val = std::get<0>(i);
-                                const double diff_val = std::get<1>(i);
-                                std::get<2>(i) = map_val - diff_val;
-                            }
-                        }
-                        std::get<3>(lin_grad_img_request)->render(out, save_path);
-                    }
-                    else
-                    {
-
-                        std::get<3>(lin_grad_img_request)->render(map, save_path);
-                    }
-
-                }
             }
 
             for (int i =0; i < obj_vals.size(); ++i)

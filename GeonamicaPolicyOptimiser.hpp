@@ -51,6 +51,22 @@ struct XPathDV
 
 };
 
+struct SaveMapDetails
+{
+    enum SaveType{CATEGORISED, LINEAR_GRADIENT};
+    SaveType type;
+    CmdLinePaths legend_file;
+    CmdLinePaths source_raster;
+    std::vector<int> years;
+    CmdLinePaths diff_raster;
+    CmdLinePaths save_path;
+    boost::shared_ptr<ColourMapperClassified> classified_clr_map;
+    boost::shared_ptr<OpenCVWriterClassified> classified_writer;
+    boost::shared_ptr<ColourMapperGradient> gradient_clr_map;
+    boost::shared_ptr<OpenCVWriterGradient> gradient_writer;
+
+};
+
 class GeonamicaOptimiser : public ObjectivesAndConstraintsBase
 {
 private:
@@ -114,9 +130,9 @@ private:
     ProblemDefinitionsSPtr prob_defs;
     std::pair<std::vector<double>, std::vector<double> > objectives_and_constraints;
 
-
-    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperClassified>,     boost::shared_ptr<OpenCVWriterClassified>, std::string > > classified_img_rqsts;
-    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperGradient>, boost::shared_ptr<OpenCVWriterGradient>, std::string > > lin_grdnt_img_rqsts;
+    std::vector<SaveMapDetails> save_img_rqsts;
+//    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperClassified>,     boost::shared_ptr<OpenCVWriterClassified>, std::string > > classified_img_rqsts;
+//    std::vector<std::tuple<boost::filesystem::path, boost::filesystem::path, boost::shared_ptr<ColourMapperGradient>, boost::shared_ptr<OpenCVWriterGradient>, std::string > > lin_grdnt_img_rqsts;
 
     bool delete_wine_dir_on_exit = false;
     bool delete_wine_prefix_on_exit = false;
@@ -127,6 +143,12 @@ private:
 
     bool is_initialised;
     std::string initialisation_error_msgs;
+
+    std::string run_command;
+    boost::filesystem::path run_bat_file;
+    boost::filesystem::path run_sh_file;
+    std::stringstream bat_file_contents;
+    std::stringstream sh_file_contents;
     
     //Copies entire directory - so that each geoproject is running in a different directory.
     bool

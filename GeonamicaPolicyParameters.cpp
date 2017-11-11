@@ -58,6 +58,7 @@ LoadParameters::LoadParameters() :
                  "path of directory for storing temp files during running")
                 ("wine-prefix-path,w", po::value<std::string>(&params.wine_prefix_path.first)->default_value("na"),
                  "Path to the wine prefix to use. Subfolder should contain dosdevices. To use default in home drive, specify <use_home_drive> to generate new prefix use <generate>")
+                ("wine-geoproject-disk-drive", po::value<std::string>(&params.wine_geoproject_disk_drive)->default_value("choose_for_me"), "Drive letter which will be given to the directory containign the geoproject in wine")
                 ("set-prefix-env-var", po::value<bool>(&params.set_prefix_path)->default_value(true),
                  "If using crossover, the prefix is set as part of wine command, and so can be switched off.")
                 //            ("wine-drive-path,f", po::value<std::string>(&params.wine_prefix_path.first)->default_value("do not test"), "Path of root directory of wine drive")

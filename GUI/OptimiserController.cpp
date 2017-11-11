@@ -27,7 +27,6 @@ OptimiserController::OptimiserController(MainWindow * main_window)
     QObject::connect(this, SIGNAL(runOptimisation()), worker, SLOT(optimise()));
 
     QObject::connect(&optimiser_thread, SIGNAL(finished()), worker, SLOT(deleteLater()));
-    QObject::connect(this, SIGNAL(runOptimisation()), worker, SLOT(optimise()));
     QObject::connect(worker, SIGNAL(nextHypervolumeMetric(int, double)), hypervolume_chart, SLOT(addNextMetricValue(int, double)));
     QObject::connect(worker, SIGNAL(nextFront(int, QVector<std::pair<double, double> >)), front_chart,SLOT(addNewFront(int, QVector<std::pair<double, double> >)));
     QObject::connect(worker, SIGNAL(error(QString)), this, SLOT(onError(QString)));

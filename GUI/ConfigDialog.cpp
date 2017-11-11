@@ -1,52 +1,4 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the examples of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:BSD$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** BSD License Usage
-** Alternatively, you may use this file under the terms of the BSD license
-** as follows:
-**
-** "Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are
-** met:
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**   * Redistributions in binary form must reproduce the above copyright
-**     notice, this list of conditions and the following disclaimer in
-**     the documentation and/or other materials provided with the
-**     distribution.
-**   * Neither the name of The Qt Company Ltd nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-**
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-** "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-** LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-** A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-** OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-** SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-** LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-** DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+
 
 #include <QtWidgets>
 #include <Qt>
@@ -192,14 +144,54 @@ void ConfigDialog::initialise(int argc, char **argv)
 
 }
 
+void
+ConfigDialog::CheckSavingAndWorkingDirs()
+{
+    if (!boost::filesystem::is_empty(params->working_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("The working directory is not empty.");
+        msgBox.setInformativeText("Do you want to delete the contents of the directory");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        switch (ret)
+        {
+            case QMessageBox::Yes:
+                boost::filesystem::remove_all(params->working_dir.second);
+                boost::filesystem::create_directories(params->working_dir.second);
+                break;
+        }
+    }
+    if (!boost::filesystem::is_empty(params->save_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("The saving directory is not empty.");
+        msgBox.setInformativeText("Do you want to delete the contents of the directory");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        switch (ret)
+        {
+            case QMessageBox::Yes:
+                boost::filesystem::remove_all(params->save_dir.second);
+                boost::filesystem::create_directories(params->save_dir.second);
+                break;
+        }
+    }
+}
+
 void ConfigDialog::run()
 {
-//    std::cout << "Button clicked" << std::endl;
+//    std::cout << "Button clicked" << std::endl
     if (this->opt_needs_initialisation)
     {
+        this->CheckSavingAndWorkingDirs();
         optsn_cntrl->initialise(*params);
         opt_needs_initialisation = false;
     }
+
+
     optsn_cntrl->run();
 }
 
@@ -207,6 +199,7 @@ void ConfigDialog::step()
 {
     if (this->opt_needs_initialisation)
     {
+        this->CheckSavingAndWorkingDirs();
         optsn_cntrl->initialise(*params);
         opt_needs_initialisation = false;
     }
@@ -217,6 +210,7 @@ void ConfigDialog::test()
 {
     if (this->opt_needs_initialisation)
     {
+        this->CheckSavingAndWorkingDirs();
         optsn_cntrl->initialise(*params);
         opt_needs_initialisation = false;
     }
@@ -272,6 +266,7 @@ bool ConfigDialog::loadFile(const QString &fileName)
 //    geon_setting_page->updateEndYear(params->year_end_saving);
     geon_setting_page->updateNumberReplicates(params->replicates);
     geon_setting_page->updateOuputLogMaps(params->save_maps);
+    geon_setting_page->updateDriveLetter(QString::fromStdString(params->wine_geoproject_disk_drive));
 
     ea_Page->updatePop(params->pop_size);
     ea_Page->updateHyprvolTerm(params->max_gen_hvol);
@@ -428,6 +423,13 @@ void ConfigDialog::changePrefixPath(QString new_val)
     opt_needs_initialisation = true;
 }
 
+void ConfigDialog::changeDriveLetter(QString new_val)
+{
+    this->params->wine_geoproject_disk_drive = new_val.toStdString();
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+
 void ConfigDialog::changeWhetherPrefixEnvVarSet(int state)
 {
     if (state == Qt::Unchecked) this->params->set_prefix_path = false;
@@ -481,15 +483,15 @@ void ConfigDialog::changeObjectiveMaps(QVector<QString> new_vals)
     opt_needs_initialisation = true;
 }
 
-void ConfigDialog::changeMetricYears(QVector<QString> new_vals)
-{
-    this->params->years_metric_calc.clear();
-    QVectorIterator<QString> i(new_vals);
-    while (i.hasNext())
-        this->params->years_metric_calc.push_back(i.next().toInt());
-    is_modified = true;
-    opt_needs_initialisation = true;
-}
+//void ConfigDialog::changeMetricYears(QVector<QString> new_vals)
+//{
+//    this->params->years_metric_calc.clear();
+//    QVectorIterator<QString> i(new_vals);
+//    while (i.hasNext())
+//        this->params->years_metric_calc.push_back(i.next().toInt());
+//    is_modified = true;
+//    opt_needs_initialisation = true;
+//}
 
 //void ConfigDialog::changeObjectiveMaps(QListWidgetItem *current, QListWidgetItem *previous)
 //{
