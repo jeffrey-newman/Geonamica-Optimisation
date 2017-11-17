@@ -28,9 +28,10 @@ struct ZonalPolicyParameters
     std::string windows_env_var;
     CmdLinePaths wine_drive_path;
 //    std::string wine_drive_letter;
-    std::string  wine_working_dir;
-    std::string  rel_path_geoproj; // relative path of geoproject file from geoproject directory (head/root directory)
-    std::string  rel_path_zonal_map; // relative path of zonal policy map layer that is being optimised relative to (head/root directory.)
+    std::string wine_working_dir;
+    std::string rel_path_geoproj; // relative path of geoproject file from geoproject directory (head/root directory)
+    std::string rel_path_zonal_map; // relative path of zonal policy map layer that is being optimised relative to (head/root directory.)
+    std::string zonal_map_classes; // values that are valid in the zonal map. The optimisation specifes one fo these for each of the delinatied araas in zones_delineation_map.
     std::vector<std::string> rel_path_obj_maps; // relative paths of objectives maps that we are maximising/minimising relative to (head/root directory)
     std::vector<std::string> objectives_plugins; // vector of objective plugins....
     std::vector<std::string> xpath_dvs;

@@ -30,6 +30,7 @@ public:
     ConfigDialog(MainWindow * _main_window, ZonalPolicyParameters& _params = dummy_params);
     void initialise(int argc, char *argv[]);
     void newFile();
+    void updateParamsValuesInGUI();
     bool loadFile(const QString &fileName);
     bool saveFile(const QString &fileName);
     QString userFriendlyCurrentFile();
@@ -76,7 +77,8 @@ public slots:
 //    void changeDiscountYearZero(QString new_val);
     void changeObjModules(QVector<QString> new_vals);
     void changeDriveLetter(QString new_val);
-
+    void changeZonalClasses(QString new_val);
+    void duplicateSlot();
 
 
 private:
@@ -116,6 +118,7 @@ private slots:
 signals:
     void runOptimisation(double val);
     void contentsChanged();
+    void duplicateSignal(ZonalPolicyParameters params);
 
 private:
 //    Ui::OptimisationWizardPage *ui;

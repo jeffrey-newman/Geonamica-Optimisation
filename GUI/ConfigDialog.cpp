@@ -40,7 +40,7 @@ ConfigDialog::ConfigDialog(MainWindow * _main_window, ZonalPolicyParameters& _pa
 
 
     QPushButton *closeButton = new QPushButton(tr("Close"));
-    QPushButton *saveAs_Button = new QPushButton(tr("Save As"));
+    QPushButton *duplicate_button = new QPushButton(tr("Duplicate"));
     QPushButton *saveButton = new QPushButton(tr("Save"));
     QPushButton *test_Button = new QPushButton(tr("Test"));
     QPushButton *step_Button = new QPushButton(tr("Step"));
@@ -51,7 +51,8 @@ ConfigDialog::ConfigDialog(MainWindow * _main_window, ZonalPolicyParameters& _pa
 
     connect(closeButton, &QAbstractButton::clicked, this, &QWidget::close);
     connect(saveButton, &QAbstractButton::clicked, this, &ConfigDialog::save);
-    connect(saveAs_Button, &QAbstractButton::clicked, this, &ConfigDialog::saveAs);
+    connect(duplicate_button, &QAbstractButton::clicked, this, &ConfigDialog::duplicateSlot);
+    connect(this, &ConfigDialog::duplicateSignal, _main_window, &MainWindow::duplicate);
     connect(runButton, &QAbstractButton::clicked, this, &ConfigDialog::run);
     connect(test_Button, &QAbstractButton::clicked, this, &ConfigDialog::test);
     connect(step_Button, &QAbstractButton::clicked, this, &ConfigDialog::step);
@@ -65,7 +66,7 @@ ConfigDialog::ConfigDialog(MainWindow * _main_window, ZonalPolicyParameters& _pa
     QHBoxLayout *buttonsLayout = new QHBoxLayout;
     buttonsLayout->addStretch(1);
     buttonsLayout->addWidget(closeButton);
-    buttonsLayout->addWidget(saveAs_Button);
+    buttonsLayout->addWidget(duplicate_button);
     buttonsLayout->addWidget(saveButton);
     buttonsLayout->addWidget(test_Button);
     buttonsLayout->addWidget(step_Button);
@@ -231,24 +232,19 @@ void ConfigDialog::newFile()
             this, &ConfigDialog::documentWasModified);
 }
 
-bool ConfigDialog::loadFile(const QString &fileName)
+void ConfigDialog::updateParamsValuesInGUI()
 {
-
-    //While reading in file, if long, change cursor.
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    // Open file and read in values into params struct.
-    parameter_loader.processOptions(fileName.toStdString(), *params);
-
     problem_spec_page->updateObjectiveMaps(params->rel_path_obj_maps);
-//    problem_spec_page->updateDiscountRate(params->discount_rate);
-//    problem_spec_page->updateYearsCalculated(params->years_metric_calc);
-//    problem_spec_page->updateStartYear(params->year_start_metrics);
-//    problem_spec_page->updateEndYear(params->year_end_metrics);
+    //    problem_spec_page->updateDiscountRate(params->discount_rate);
+    //    problem_spec_page->updateYearsCalculated(params->years_metric_calc);
+    //    problem_spec_page->updateStartYear(params->year_start_metrics);
+    //    problem_spec_page->updateEndYear(params->year_end_metrics);
     problem_spec_page->updateZoneDelineationMap(QString::fromStdString(params->rel_path_zones_delineation_map));
     problem_spec_page->updateZonalLayerMap(QString::fromStdString(params->rel_path_zonal_map));
+    problem_spec_page->updateZonalMapClasses(QString::fromStdString(params->zonal_map_classes));
     problem_spec_page->updateXpathDVs(params->xpath_dvs);
     problem_spec_page->updateObjModules(params->objectives_plugins);
-
+    
     geon_setting_page->updateTimeoutCmd(QString::fromStdString(params->timout_cmd));
     geon_setting_page->updateWineCmd(QString::fromStdString(params->wine_cmd));
     geon_setting_page->updateGeonCmd(QString::fromStdString(params->geonamica_cmd));
@@ -262,20 +258,30 @@ bool ConfigDialog::loadFile(const QString &fileName)
     geon_setting_page->updateGeoprojFile(QString::fromStdString(params->rel_path_geoproj));
     geon_setting_page->updateObjLogFile(QString::fromStdString(params->rel_path_log_specification_obj));
     geon_setting_page->updatePostOptPrintLogFile(QString::fromStdString(params->rel_path_log_specification_save));
-//    geon_setting_page->updateStartYear(params->year_start_saving);
-//    geon_setting_page->updateEndYear(params->year_end_saving);
+    //    geon_setting_page->updateStartYear(params->year_start_saving);
+    //    geon_setting_page->updateEndYear(params->year_end_saving);
     geon_setting_page->updateNumberReplicates(params->replicates);
     geon_setting_page->updateOuputLogMaps(params->save_maps);
     geon_setting_page->updateDriveLetter(QString::fromStdString(params->wine_geoproject_disk_drive));
-
+    
     ea_Page->updatePop(params->pop_size);
     ea_Page->updateHyprvolTerm(params->max_gen_hvol);
     ea_Page->updateMaxGenTerm(params->max_gen);
     ea_Page->updateReseedFile(QString::fromStdString(params->restart_pop_file.first));
     ea_Page->updateLoggingFreq(params->save_freq);
+    
+}
 
+bool ConfigDialog::loadFile(const QString &fileName)
+{
 
+    //While reading in file, if long, change cursor.
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // Open file and read in values into params struct.
+    parameter_loader.processOptions(fileName.toStdString(), *params);
+    this->updateParamsValuesInGUI();
 
+ 
     //Return cursor to normal.
     QApplication::restoreOverrideCursor();
 
@@ -429,6 +435,19 @@ void ConfigDialog::changeDriveLetter(QString new_val)
     is_modified = true;
     opt_needs_initialisation = true;
 }
+
+void ConfigDialog::changeZonalClasses(QString new_val)
+{
+    this->params->zonal_map_classes = new_val.toStdString();
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+
+void ConfigDialog::duplicateSlot()
+{
+    emit duplicateSignal(*this->params);
+}
+
 
 void ConfigDialog::changeWhetherPrefixEnvVarSet(int state)
 {

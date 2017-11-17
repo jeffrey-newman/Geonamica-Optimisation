@@ -64,6 +64,7 @@ class QMenu;
 class QMdiArea;
 class QMdiSubWindow;
 QT_END_NAMESPACE
+struct ZonalPolicyParameters;
 
 namespace Ui {
     class MainWindow;
@@ -103,6 +104,9 @@ private slots:
 
     void switchLayoutDirection();
 
+public slots:
+    void duplicate(ZonalPolicyParameters params);
+    
 private:
     enum { MaxRecentFiles = 5 };
 

@@ -80,6 +80,7 @@ public:
 //    void updateDiscountYearZero(int year);
     void updateZoneDelineationMap(QString path);
     void updateZonalLayerMap(QString path);
+    void updateZonalMapClasses(QString values);
     void updateXpathDVs(std::vector<std::string> xpathDVs);
     void updateObjModules(std::vector<std::string> obj_modules);
 //    void updateYearsCalculated(std::vector<int> years);
@@ -103,6 +104,7 @@ private:
 //    QLineEdit *year_end_metrics_edit;
     QLineEdit *zone_delineation_edit;
     QLineEdit *zonal_layer_edit;
+    QLineEdit * zonal_map_classes_edit;
     QTextEdit * help_box;
 
 };

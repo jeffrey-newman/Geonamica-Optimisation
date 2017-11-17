@@ -34,6 +34,7 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
       zone_delineation_edit(new QLineEdit),
       zonal_layer_edit(new QLineEdit),
       evaluator_modules_list(new QListWidget),
+        zonal_map_classes_edit(new QLineEdit),
       help_box(_help_box)
 {
     QGroupBox *objectives_Group = new QGroupBox(tr("Objectives"));
@@ -110,6 +111,7 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
 //    QLineEdit *zone_delineation_edit = new QLineEdit;
     QLabel *zonal_layer_label = new QLabel(tr("Zonal layer in Geonamica"));
 //    QLineEdit *zonal_layer_edit = new QLineEdit;
+    QLabel *zonal_map_classes_label = new QLabel(tr("Zonal classes as defined in zonal tool in geopoproject/Geonamica"));
 
     QVBoxLayout *zonal_Layout = new QVBoxLayout;
     zonal_Layout->addWidget(zone_delineation_label);
@@ -117,11 +119,15 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     zonal_Layout->addSpacing(12);
     zonal_Layout->addWidget(zonal_layer_label);
     zonal_Layout->addWidget(zonal_layer_edit);
+    zonal_Layout->addSpacing(12);
+    zonal_Layout->addWidget(zonal_map_classes_label);
+    zonal_Layout->addWidget(zonal_map_classes_edit);
 
     zonal_Group->setLayout(zonal_Layout);
 
     connect(zone_delineation_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZoneDelineation);
     connect(zonal_layer_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalLayer);
+     connect(zonal_map_classes_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalClasses);
 
     ///////
 
@@ -223,6 +229,11 @@ void ProblemSpecPage::updateObjectiveMaps(std::vector<std::string> obj_maps)
 void ProblemSpecPage::updateZoneDelineationMap(QString path)
 {
     zone_delineation_edit->setText(path);
+}
+
+void ProblemSpecPage::updateZonalMapClasses(QString values)
+{
+    zonal_map_classes_edit->setText(values);
 }
 
 void ProblemSpecPage::updateZonalLayerMap(QString path)

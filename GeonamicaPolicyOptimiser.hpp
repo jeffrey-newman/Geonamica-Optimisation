@@ -91,7 +91,8 @@ private:
     boost::filesystem::path zones_delineation_map_path;
     blink::raster::gdal_raster<int> zones_delineation_map;
     boost::optional<int> zones_delineation_no_data_val;
-    std::unordered_set<int> zones;
+    std::vector<int> zone_categories;
+    std::set<int> delineations_ids;
     
     boost::filesystem::path logfile;
     boost::filesystem::path previous_logfile;
@@ -105,15 +106,15 @@ private:
     int num_objectives;
     int num_constraints = 0;
 
-    int min_zonal_dv_values  = 0; //lower bounds
-    int max_zonal_dv_values = 3; // upper bound of x
+//    int min_zonal_dv_values  = 0; //lower bounds
+//    int max_zonal_dv_values = 3; // upper bound of x
     // Decision variable mapping:
     // 0 -- 0 Strictly restrict
     // 1 -- 0.5 Weakly restrict
     // 2 -- 1 Allow
     // 3 -- 1.5 Stimulate
-    std::map<int, float> zone_policies = {{0, 1}, {1, 2}, {2, 3}, {3, 4}};
-    std::vector<int> zone_policies_vec = {1,2,3,4};
+//    std::map<int, float> zone_policies = {{0, 1}, {1, 2}, {2, 3}, {3, 4}};
+//    std::vector<int> zone_policies_vec = {1,2,3,4};
 
 //    std::vector<std::string> int_dv_xpaths;
 //    std::vector<std::string> real_dv_xpaths;

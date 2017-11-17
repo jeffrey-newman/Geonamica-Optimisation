@@ -84,6 +84,7 @@ LoadParameters::LoadParameters() :
                 ("zone-delineation,e",
                  po::value<std::string>(&params.rel_path_zones_delineation_map)->default_value("no_zonal_dvs"),
                  "name of zonal delineation map (without full path), relative to template geoproject directory")
+                ("zonal-map-classes", po::value<std::string>(&params.zonal_map_classes), "values that are valid in the zonal map. The optimisation specifes one fo these for each of the delinatied araas in zones_delineation_map.")
                 ("xpath-dv,j", po::value<std::vector<std::string> >(&params.xpath_dvs)->multitoken(),
                  "xpath for decision variable, See documentation for format")
 //                ("discount-rate,d", po::value<double>(&params.discount_rate)->default_value(0.0),
@@ -280,6 +281,7 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         
         ofs << "zonal-maps = " << _params.rel_path_zonal_map << "\n";
         ofs << "zone-delineation = " << _params.rel_path_zones_delineation_map << "\n";
+        ofs << "zonal-map-classes = " << _params.zonal_map_classes << "\n";
         std::for_each(_params.xpath_dvs.begin(), _params.xpath_dvs.end(), [&ofs] (std::string &
         xpath_dvs_str) {
             ofs << "xpath-dv = " << xpath_dvs_str << "\n";

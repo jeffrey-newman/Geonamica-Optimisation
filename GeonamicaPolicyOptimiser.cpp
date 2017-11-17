@@ -723,6 +723,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
             // Calculate number of zones (this will be equal to the number of decision variables related to the zonal policy)
             auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map));
             zones_delineation_no_data_val = zones_delineation_map.noDataVal();
+            
             for (auto i : zip)
             {
                 int val_i = std::get<0>(i);
@@ -730,17 +731,22 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
                 {
                     if (val_i != zones_delineation_no_data_val.get())
                     {
-                        zones.emplace(val_i);
+                        delineations_ids.emplace(val_i);
                     }
                 } else
                 {
-                    zones.emplace(val_i);
+                    delineations_ids.emplace(val_i);
                 }
 //            if (val != no_data_val)
             }
-
-            int_lowerbounds.resize(zones.size(), min_zonal_dv_values);
-            int_upperbounds.resize(zones.size(), max_zonal_dv_values);
+            
+            
+            
+            qi::rule<std::string::iterator, std::vector<int>()> zonal_categories_parser = +(qi::int_);
+            boost::spirit::qi::parse(params.zonal_map_classes.begin(), params.zonal_map_classes.end(), (+qi::int_)[ph::ref(this->zone_categories) = qi::_1]);
+            int_lowerbounds.resize(delineations_ids.size(), 0);
+            int_upperbounds.resize(delineations_ids.size(), this->zone_categories.size() - 1);
+            
 
             params.min_or_max.push_back(
                     MINIMISATION);  // For minimising the area which has a restrictive (and stimulating?) zonal policies.
@@ -1186,6 +1192,16 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         // Make Zonal map
         if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
         {
+            int min_delineated_id = *delineations_ids.begin();
+            int max_delineated_id = *delineations_ids.end();
+            std::vector<int> zonal_values(max_delineated_id - min_delineated_id + 1, -1);
+            
+            int zone_dv_index = 0;
+            for(const int&  delineation_id : delineations_ids)
+            {
+                zonal_values[delineation_id - min_delineated_id] = int_decision_vars[zone_dv_index++];
+            }
+            
             objectives.back() = 0.0;
             namespace raster = blink::raster;
             namespace raster_it = blink::iterator;
@@ -1198,9 +1214,9 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                 {
                     if (zone != zones_delineation_no_data_val.get())
                     {
-                        int & zone_policy = zone_policies_vec[int_decision_vars[(zone-1)] ]; // zone map index starts at 1; while c++ vectors index starts at 0.
+                        int zone_policy = zonal_values[zone - min_delineated_id];
                         std::get<1>(i) = zone_policy;
-                        if (not(zone_policy == 0 or zone_policy == 2))
+                        if (zone_policy == 1)
                         {
                             objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
                         }
@@ -1208,11 +1224,11 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                 }
                 else
                 {
-                    int & zone_policy = zone_policies_vec[int_decision_vars[(zone-1)] ]; // zone map index starts at 1; while c++ vectors index starts at 0.
+                    int zone_policy = zonal_values[zone - min_delineated_id];
                     std::get<1>(i) = zone_policy;
-                    if (not(zone_policy == 0 or zone_policy == 2))
+                    if (zone_policy == 1)
                     {
-                        objectives.back() += 1.0; // Zonal_policy = 0 (description: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
+                        objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
                     }
                 }
             }
@@ -1223,7 +1239,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         pugi::xml_parse_result result = doc.load_file(working_project.string().c_str());
         {
             int k = 0;
-            int j = zones.size();
+            int j = delineations_ids.size();
             for (XPathDV & dv : this->xpath_dvs)
             {
                 if (dv.dv_type == XPathDV::REAL) setXPathDVValue(doc, dv, real_decision_vars[k++]);

@@ -1,4 +1,4 @@
-﻿/****************************************************************************
+/****************************************************************************
 **
 ** Copyright (C) 2016 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
@@ -53,6 +53,7 @@
 #include "MainWindow.hpp"
 //#include "optimisationwizardpage.h"
 #include "ConfigDialog.h"
+#include "../GeonamicaPolicyParameters.hpp"
 
 MainWindow::MainWindow()
         : mdiArea(new QMdiArea)
@@ -100,6 +101,14 @@ void MainWindow::open()
     const QString fileName = QFileDialog::getOpenFileName(this);
     if (!fileName.isEmpty())
         openFile(fileName);
+}
+
+void MainWindow::duplicate(ZonalPolicyParameters _params)
+{
+    ConfigDialog *child = new ConfigDialog(this, _params);
+    mdiArea->addSubWindow(child);
+    child->updateParamsValuesInGUI();
+    child->show();
 }
 
 bool MainWindow::openFile(const QString &fileName)
