@@ -152,6 +152,7 @@ SET(prll-nsga-src
         "${PARALLEL-NSGAII}/Checkpoints/SignalCheckpoint.hpp"
         "${PARALLEL-NSGAII}/Checkpoints/SignalHandler.cpp"
         "${PARALLEL-NSGAII}/Checkpoints/SignalHandler.hpp"
+        "${PARALLEL-NSGAII}/Checkpoints/BoolTerminateCheckpoint.hpp"
 
         "${PARALLEL-NSGAII}/Serialization/SerializeBoostPath.hpp"
         "${PARALLEL-NSGAII}/Serialization/SerializeRng.hpp"
@@ -226,10 +227,11 @@ SET(OptCommon_Srcs
         ${PUGIXML-SRC}
         GeonamicaNSGAII.cpp
         GeonamicaNSGAII.hpp
-        "../../Parallel NSGAII Backend/respository/parallel-nsgaII-backend/Checkpoints/BoolTerminateCheckpoint.hpp")
+   )
 
 add_library(geonoptcommon STATIC ${OptCommon_Srcs})
 target_compile_definitions(geonoptcommon PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
+target_link_libraries(geonoptcommon ${GDAL_LIBRARY} ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 ##################################################################################################################
 #                                                                                                                #

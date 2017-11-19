@@ -19,7 +19,7 @@ public:
         return ("Implementation Cost");
     }
 
-    void configure(std::string _configure_string)
+    void configure(std::string _configure_string, boost::filesystem::path _geoproj_dir)
     {
         std::cout << "Configuring" << std::endl;
     }

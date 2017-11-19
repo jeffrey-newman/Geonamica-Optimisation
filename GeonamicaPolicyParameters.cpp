@@ -256,20 +256,28 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         ofs << "template = " << _params.template_project_dir.first << "\n";
         ofs << "working-dir = " << _params.working_dir.first << "\n";
         ofs << "wine-prefix-path = " << _params.wine_prefix_path.first << "\n";
+        ofs << "wine-geoproject-disk-drive = " << _params.wine_geoproject_disk_drive << "\n";
         ofs << "set-prefix-env-var = " << _params.set_prefix_path << "\n";
         ofs << "set-windows-env-var = " << _params.windows_env_var << "\n";
         ofs << "geoproj-file = " << _params.rel_path_geoproj << "\n";
         ofs << "log-file-objectives = " << _params.rel_path_log_specification_obj << "\n";
         ofs << "log-file-save = " << _params.rel_path_log_specification_save << "\n";
         ofs << "replicates = " << _params.replicates << "\n";
-        std::for_each(_params.rel_path_obj_maps.begin(), _params.rel_path_obj_maps.end(), [&ofs] (std::string &
-        rel_path_obj_map) {
-            ofs << "obj-maps = " << rel_path_obj_map << "\n";
-                });
-        std::for_each(_params.objectives_plugins.begin(), _params.objectives_plugins.end(), [&ofs] (std::string &
-        objective_plugin_string) {
-            ofs << "obj-plugins = " << objective_plugin_string << "\n";
-        });
+        if (!_params.rel_path_obj_maps.empty())
+        {
+            std::for_each(_params.rel_path_obj_maps.begin(), _params.rel_path_obj_maps.end(), [&ofs] (std::string &
+            rel_path_obj_map) {
+                ofs << "obj-maps = " << rel_path_obj_map << "\n";
+            });
+        }
+        if (!_params.objectives_plugins.empty())
+        {
+            std::for_each(_params.objectives_plugins.begin(), _params.objectives_plugins.end(), [&ofs] (std::string &
+            objective_plugin_string) {
+                ofs << "obj-plugins = " << objective_plugin_string << "\n";
+            });
+        }
+
 //        ofs << "discount-rate = " << _params.discount_rate << "\n";
 //        ofs << "discount-year-zero = " << _params.discount_start_year << "\n";
 //        std::for_each(_params.years_metric_calc.begin(), _params.years_metric_calc.end(), [&ofs] (int &
@@ -282,16 +290,23 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         ofs << "zonal-maps = " << _params.rel_path_zonal_map << "\n";
         ofs << "zone-delineation = " << _params.rel_path_zones_delineation_map << "\n";
         ofs << "zonal-map-classes = " << _params.zonal_map_classes << "\n";
-        std::for_each(_params.xpath_dvs.begin(), _params.xpath_dvs.end(), [&ofs] (std::string &
-        xpath_dvs_str) {
-            ofs << "xpath-dv = " << xpath_dvs_str << "\n";
-        });
+        if (!_params.xpath_dvs.empty())
+        {
+            std::for_each(_params.xpath_dvs.begin(), _params.xpath_dvs.end(), [&ofs] (std::string &
+            xpath_dvs_str) {
+                ofs << "xpath-dv = " << xpath_dvs_str << "\n";
+            });
+        }
         ofs << "is-logging = " << _params.is_logging << "\n";
         ofs << "save-dir = " << _params.save_dir.first << "\n";
-        std::for_each(_params.save_maps.begin(), _params.save_maps.end(), [&ofs] (std::string &
-        save_map_spec) {
-            ofs << "save-map = " << save_map_spec << "\n";
-        });
+        if(!_params.save_maps.empty())
+        {
+            std::for_each(_params.save_maps.begin(), _params.save_maps.end(), [&ofs] (std::string &
+            save_map_spec) {
+                ofs << "save-map = " << save_map_spec << "\n";
+            });
+        }
+
         ofs << "pop-size = " << _params.pop_size << "\n";
         ofs << "max-gen-no-hvol-improve = " << _params.max_gen_hvol << "\n";
         ofs << "max-gen = " << _params.max_gen << "\n";

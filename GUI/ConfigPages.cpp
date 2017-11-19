@@ -187,7 +187,7 @@ void ProblemSpecPage::processObjectiveMapListChange()
     {
         items.append(objectives_List->item(j)->text());
     }
-    emit yearsCalculatedChanged(items);
+    emit objectiveMapsChanged(items);
 }
 
 //void ProblemSpecPage::processYearListChange()

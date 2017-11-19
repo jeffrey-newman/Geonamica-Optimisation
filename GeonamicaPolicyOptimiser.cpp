@@ -455,7 +455,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
         is_initialised = true;
         // Set up wine prefixes and wine paths.
         using_wine = false;
-        if (params.wine_cmd != "no_wine" || params.wine_cmd == "")
+        if (params.wine_cmd != "no_wine" || params.wine_cmd.empty())
         {
             using_wine = true;
             // Configure Wine prefix tp use.
@@ -552,7 +552,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
 
             // Create new dosdevice drive to working geoproject file directory.
 
-            if (params.wine_geoproject_disk_drive == "choose_for_me" || params.wine_geoproject_disk_drive == "" )
+            if (params.wine_geoproject_disk_drive == "choose_for_me" || params.wine_geoproject_disk_drive.empty())
             {
                 std::vector<std::string> drive_options = {"m:", "n:", "o:", "p:", "q:", "r:", "s:", "t:", "u:", "v:", "w:",
                                                           "x:", "y:", "l:", "a:", "b:"};
@@ -631,7 +631,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
         }
 
         using_timeout = false;
-        if (params.timout_cmd != "no_timeout" || params.timout_cmd == "")
+        if (params.timout_cmd != "no_timeout" || params.timout_cmd.empty())
         {
             using_timeout = true;
         }
@@ -671,10 +671,11 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
         namespace qi = boost::spirit::qi;
         namespace ph = boost::phoenix;
         qi::rule<std::string::iterator, std::string()> string_parser_quote_delimited = qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"");   //[_val = _1]
-        auto obj_module_parser = (string_parser_quote_delimited[ph::push_back(ph::ref(module_paths), qi::_1)]
+        qi::rule<std::string::iterator> obj_module_parser = (string_parser_quote_delimited[ph::push_back(ph::ref(module_paths), qi::_1)]
                 >>  qi::lit(":")
                 >> string_parser_quote_delimited[ph::push_back(ph::ref(constructor_strings), qi::_1)]);
 
+//        qi::debug(obj_module_parser);
         BOOST_FOREACH(std::string & module_info, params.objectives_plugins)
                     {
                         boost::spirit::qi::parse(module_info.begin(), module_info.end(), obj_module_parser);
@@ -684,7 +685,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
             boost::filesystem::path module_path(module_paths[j]);
             boost::shared_ptr<evalModuleAPI> eval_module;
             eval_module = boost::dll::import<evalModuleAPI>(module_path, "eval_module");
-            eval_module->configure(constructor_strings[j]);
+            eval_module->configure(constructor_strings[j], params.working_dir.second);
             if (eval_module->isMinOrMax() == MINIMISATION)
             {
                 objective_modules.push_back(eval_module);
@@ -705,10 +706,10 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
         wine_working_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_obj;
 
         // Zonal optimisation settings
-        if (params.rel_path_zones_delineation_map != "no_zonal_dvs" || params.rel_path_zones_delineation_map == "")
+        if (params.rel_path_zones_delineation_map != "no_zonal_dvs" || params.rel_path_zones_delineation_map.empty())
         {
             zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
-            if (params.rel_path_zonal_map == "no_zonal_dvs" || params.rel_path_zonal_map == "")
+            if (params.rel_path_zonal_map == "no_zonal_dvs" || params.rel_path_zonal_map.empty())
             {
                 std::stringstream msg;
                 msg << "Error: Zonal delineation map specified, but not the zonal map layer in Metronamica";
@@ -723,7 +724,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
             // Calculate number of zones (this will be equal to the number of decision variables related to the zonal policy)
             auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map));
             zones_delineation_no_data_val = zones_delineation_map.noDataVal();
-            
+
             for (auto i : zip)
             {
                 int val_i = std::get<0>(i);
@@ -739,14 +740,14 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
                 }
 //            if (val != no_data_val)
             }
-            
-            
-            
-            qi::rule<std::string::iterator, std::vector<int>()> zonal_categories_parser = +(qi::int_);
-            boost::spirit::qi::parse(params.zonal_map_classes.begin(), params.zonal_map_classes.end(), (+qi::int_)[ph::ref(this->zone_categories) = qi::_1]);
+
+
+
+//            qi::rule<std::string::iterator> zonal_categories_parser = +(qi::int_[ph::push_back(ph::ref(this->zone_categories), qi::_1)]);
+            boost::spirit::qi::phrase_parse(params.zonal_map_classes.begin(), params.zonal_map_classes.end(), (+qi::int_)[ph::ref(this->zone_categories) = qi::_1], qi::space);
             int_lowerbounds.resize(delineations_ids.size(), 0);
             int_upperbounds.resize(delineations_ids.size(), this->zone_categories.size() - 1);
-            
+
 
             params.min_or_max.push_back(
                     MINIMISATION);  // For minimising the area which has a restrictive (and stimulating?) zonal policies.
@@ -781,7 +782,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
             boost::spirit::qi::phrase_parse(params.save_maps[m].begin(), params.save_maps[m].end(), parser, boost::spirit::qi::space);
             parser.save_map.legend_file.second = params.working_dir.second /  parser.save_map.legend_file.first;
             parser.save_map.source_raster.second = params.working_dir.second /  parser.save_map.source_raster.first;
-            if( ! (parser.save_map.diff_raster.first == "no_diff" or parser.save_map.diff_raster.first == ""))
+            if( ! (parser.save_map.diff_raster.first == "no_diff" or parser.save_map.diff_raster.first.empty()))
             {
                 parser.save_map.diff_raster.second = params.working_dir.second / parser.save_map.diff_raster.first;
             }
@@ -805,7 +806,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
 //        objectives_and_constrataints = std::make_pair(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
 
         setting_env_vars = false;
-        if (params.windows_env_var != "" || params.windows_env_var != "unspecified" )
+        if (!params.windows_env_var.empty() || params.windows_env_var != "unspecified" )
         {
             setting_env_vars = true;
         }
@@ -983,7 +984,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                 std::cout << "Malformed xpath; returns a null node" << std::endl;
             }
 
-            if (xpath_details.attribute_name == "")
+            if (xpath_details.attribute_name.empty())
             {
                 node.node().set_value(std::to_string(new_value).c_str());
             }
@@ -1082,16 +1083,16 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         int metric_num = 0;
         std::vector<double> obj_vals(num_objectives, 0);
 
-        BOOST_FOREACH(MapObj & obj, map_objectives)
+        for(MapObj & obj: map_objectives)
                     {
                         obj_vals[metric_num] = 0;
                         int num_maps = 0;
 
                         if (!(boost::filesystem::exists(obj.file_path.second)))
                         {
-                            BOOST_FOREACH(int year, obj.years)
+                            for(int year: obj.years)
                                         {
-                                            boost::filesystem::path map_path_year = obj.file_path.second.parent_path() / (obj.file_path.second.filename().string() +  "_" + std::to_string(year) + "-Jan-01 00_00_00.rst");
+                                            boost::filesystem::path map_path_year = obj.file_path.second.parent_path() / (obj.file_path.second.stem().string() +  "_" + std::to_string(year) + "-Jan-01 00_00_00" + obj.file_path.second.extension().string());
 
                                             if(boost::filesystem::exists(map_path_year))
                                             {
@@ -1146,7 +1147,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         boost::filesystem::current_path(params.working_dir.second);
 
         bool do_save = false;
-        if (save_path != "no_path" || save_path == "") do_save = true;
+        if (save_path != "no_path" || !save_path.empty() ) do_save = true;
 
         // Cycle log files.
         bool delete_previous_logfile = false;
@@ -1195,44 +1196,44 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
             int min_delineated_id = *delineations_ids.begin();
             int max_delineated_id = *delineations_ids.end();
             std::vector<int> zonal_values(max_delineated_id - min_delineated_id + 1, -1);
-            
+
             int zone_dv_index = 0;
-            for(const int&  delineation_id : delineations_ids)
+            for (const int &delineation_id : delineations_ids)
             {
                 zonal_values[delineation_id - min_delineated_id] = int_decision_vars[zone_dv_index++];
             }
-            
+
             objectives.back() = 0.0;
             namespace raster = blink::raster;
             namespace raster_it = blink::iterator;
             raster::gdal_raster<int> zonal_map = raster::open_gdal_raster<int>(this->zonal_map_path, GA_Update);
             auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map), std::ref(zonal_map));
-            for (auto&& i : zip)
+            if (zones_delineation_no_data_val)
             {
-                const int zone = std::get<0>(i);
-                if (zones_delineation_no_data_val)
+                for (auto &&i : zip)
                 {
+                    const int zone = std::get<0>(i);
                     if (zone != zones_delineation_no_data_val.get())
                     {
                         int zone_policy = zonal_values[zone - min_delineated_id];
                         std::get<1>(i) = zone_policy;
-                        if (zone_policy == 1)
-                        {
-                            objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
-                        }
-                    }
-                }
-                else
-                {
-                    int zone_policy = zonal_values[zone - min_delineated_id];
-                    std::get<1>(i) = zone_policy;
-                    if (zone_policy == 1)
-                    {
-                        objectives.back() += 1.0; // Zonal_policy = 0 (dscription: 'Other area') or Zonal_policy = 2 (Development Permitted) not really placing something on people, which is what the last objective is about.
                     }
                 }
             }
+
+
+            else
+            {
+                for (auto &&i : zip)
+                {
+                    const int zone = std::get<0>(i);
+                    int zone_policy = zonal_values[zone - min_delineated_id];
+                    std::get<1>(i) = zone_policy;
+                }
+
+            }
         }
+
 
         // Manipulate geoproject with xpath dvs
         pugi::xml_document doc;

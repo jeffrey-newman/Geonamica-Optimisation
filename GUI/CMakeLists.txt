@@ -10,7 +10,7 @@ IF (USE_QT)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
-    find_package(Qt5GUI)
+    find_package(Qt5Gui)
     find_package(Qt5Charts)
     find_package(Qt5Widgets)
     find_package(Qt5Core)
@@ -59,7 +59,7 @@ SET(Geon_Optimiser_GUI_SRCS
 
 add_executable(geonoptgui ${Geon_Optimiser_GUI_SRCS} )
 target_link_libraries(geonoptgui ${Boost_LIBRARIES} ${GDAL_LIBRARY}  ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} Qt5::Widgets Qt5::Gui Qt5::Charts geonoptcommon ${OpenCV_LIBS})
+        ${MagickLibs} Qt5::Widgets Qt5::Gui Qt5::Charts geonoptcommon ${OpenCV_LIBS} )
 target_compile_definitions(geonoptgui PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 #IF(USE_VTK)
 #    if(VTK_LIBRARIES)

@@ -89,7 +89,7 @@ public:
 
 signals:
     void objectiveMapsChanged(QVector<QString> objMapsLists);
-    void yearsCalculatedChanged(QVector<QString> yearsList);
+//    void yearsCalculatedChanged(QVector<QString> yearsList);
     void xpathDVsChanged(QVector<QString> xpathDVLists);
     void objModulesChanged(QVector<QString> xpathDVLists);
 
