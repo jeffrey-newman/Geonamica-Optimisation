@@ -5,7 +5,7 @@
 OptimisationWizardPage::OptimisationWizardPage(QWidget *parent) :
     QWizardPage(parent),
     ui(new Ui::OptimisationWizardPage),
-    params(new ZonalPolicyParameters)
+    params(new GeonamicaPolicyParameters)
 {
     ui->setupUi(this);
     setAttribute(Qt::WA_DeleteOnClose);

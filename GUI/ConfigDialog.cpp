@@ -7,10 +7,10 @@
 #include "ConfigPages.h"
 #include "MainWindow.hpp"
 
-ZonalPolicyParameters dummy_params;
+GeonamicaPolicyParameters dummy_params;
 
-ConfigDialog::ConfigDialog(MainWindow * _main_window, ZonalPolicyParameters& _params) :
-        params(new ZonalPolicyParameters(_params)),
+ConfigDialog::ConfigDialog(MainWindow * _main_window, GeonamicaPolicyParameters& _params) :
+        params(new GeonamicaPolicyParameters(_params)),
         main_window(_main_window),
         optsn_cntrl(new OptimiserController(main_window)),
         opt_needs_initialisation(true)

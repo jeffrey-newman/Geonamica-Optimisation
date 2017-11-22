@@ -8,16 +8,30 @@
 
 
 void
-postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyParameters & params)
+postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, GeonamicaPolicyParameters & params, boost::filesystem::path save_dir, bool process_first_front)
 {
-    Population & first_front = pop->getFronts()->at(0);
+    Population * pop_2_process;
+    if (save_dir == "")
+    {
+        save_dir = params.save_dir.second;
+    }
+
+    if (process_first_front)
+    {
+        pop_2_process = &(pop->getFronts()->at(0));
+    }
+    else
+    {
+        pop_2_process = pop.get();
+    }
+
 
     int i = 0;
-    BOOST_FOREACH(IndividualSPtr ind, first_front)
+    BOOST_FOREACH(IndividualSPtr ind, *pop_2_process)
                 {
                     std::vector<double> objectives;
                     std::vector<double> constraints;
-                    boost::filesystem::path save_ind_dir = params.save_dir.second / ("individual_" + std::to_string(i++));
+                    boost::filesystem::path save_ind_dir = save_dir / ("individual_" + std::to_string(i++));
                     if (!boost::filesystem::exists(save_ind_dir)) boost::filesystem::create_directory(save_ind_dir);
                     std::tie(objectives, constraints) = zonal_eval(ind->getRealDVVector(), ind->getIntDVVector(), save_ind_dir);
                     ind->setObjectives(objectives);
@@ -25,20 +39,20 @@ postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, ZonalPol
                     std::cout << *ind << std::endl;
                 }
 
-    boost::filesystem::path save_file = params.save_dir.second / "final_front.xml";
+    boost::filesystem::path save_file = save_dir / "final_front.xml";
     std::ofstream ofs(save_file.c_str());
     assert(ofs.good());
     boost::archive::xml_oarchive oa(ofs);
-    oa << BOOST_SERIALIZATION_NVP(first_front);
+    oa << BOOST_SERIALIZATION_NVP(*pop_2_process);
 
-    boost::filesystem::path save_file2 = params.save_dir.second /  "final_front.txt";
+    boost::filesystem::path save_file2 = save_dir /  "final_front.txt";
     std::ofstream ofs2(save_file2.c_str());
     assert(ofs2.good());
-    ofs2 << first_front;
+    ofs2 << *pop_2_process;
 }
 
 //void
-//cleanup(ZonalPolicyParameters & params)
+//cleanup(GeonamicaPolicyParameters & params)
 //{
 //    if (params.wine_prefix_path.first != "do not test") {
 //

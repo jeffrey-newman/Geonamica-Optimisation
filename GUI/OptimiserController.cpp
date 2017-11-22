@@ -22,7 +22,7 @@ OptimiserController::OptimiserController(MainWindow * main_window)
     worker = new OptimiserWorker;
     worker->moveToThread(&optimiser_thread);
     QObject::connect(this, SIGNAL(testOptimisation()), worker, SLOT(test()));
-    QObject::connect(this, SIGNAL(intialiseOptimisation(ZonalPolicyParameters)), worker, SLOT(initialise(ZonalPolicyParameters)));
+    QObject::connect(this, SIGNAL(intialiseOptimisation(GeonamicaPolicyParameters)), worker, SLOT(initialise(GeonamicaPolicyParameters)));
     QObject::connect(this, SIGNAL(stepOptimisation()), worker, SLOT(step()));
     QObject::connect(this, SIGNAL(runOptimisation()), worker, SLOT(optimise()));
 
@@ -54,7 +54,7 @@ void OptimiserController::onError(QString what)
 
 }
 
-void OptimiserController::initialise(ZonalPolicyParameters _params)
+void OptimiserController::initialise(GeonamicaPolicyParameters _params)
 {
     emit intialiseOptimisation(_params);
 }

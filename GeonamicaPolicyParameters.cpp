@@ -101,6 +101,9 @@ LoadParameters::LoadParameters() :
                 ("save-dir,v", po::value<std::string>(&params.save_dir.first)->default_value(
                         boost::filesystem::current_path().string()),
                  "path of the directory for writing results and outputs to")
+            ("test-dir,v", po::value<std::string>(&params.test_dir.first)->default_value(
+                boost::filesystem::current_path().string()),
+             "path of the directory for writing test results and outputs to")
                 ("save-map,k", po::value<std::vector<std::string> >(&params.save_maps)->multitoken(),
                  "relative path to geoproject directory for maps to save when optimisation completes. Format: [CATEGORISED/LINEAR_GRADIENT]:LEGEND=\"[legend_specification_file_relative_to_geoproject]\":PATH=[\"path_of_map_relative_to_geoproject\"]:DIFF=[\"opt_path_of_differencing_map_relative_to_geoproject\"]:SAVE_AS=[\"file_name\"]")
 //                ("save-map-year", po::value<std::vector<int> >(&params.years_save)->multitoken(), "Years in which to save maps to image files")
@@ -136,7 +139,7 @@ LoadParameters::LoadParameters() :
 }
 
 int
-LoadParameters::processOptions(int argc, char * argv[], ZonalPolicyParameters & _params)
+LoadParameters::processOptions(int argc, char * argv[], GeonamicaPolicyParameters & _params)
 {
 
     namespace po = boost::program_options;
@@ -195,7 +198,7 @@ LoadParameters::processOptions(int argc, char * argv[], ZonalPolicyParameters & 
 }
 
 int
-LoadParameters::processOptions(std::string filepath, ZonalPolicyParameters & _params)
+LoadParameters::processOptions(std::string filepath, GeonamicaPolicyParameters & _params)
 {
 
     namespace po = boost::program_options;
@@ -244,7 +247,7 @@ LoadParameters::processOptions(std::string filepath, ZonalPolicyParameters & _pa
 
 }
 
-int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_params)
+int LoadParameters::saveOptions(std::string filepath, GeonamicaPolicyParameters &_params)
 {
     std::ofstream ofs(filepath.c_str());
     if (ofs.is_open())
@@ -299,6 +302,7 @@ int LoadParameters::saveOptions(std::string filepath, ZonalPolicyParameters &_pa
         }
         ofs << "is-logging = " << _params.is_logging << "\n";
         ofs << "save-dir = " << _params.save_dir.first << "\n";
+        ofs << "test-dir = " << _params.save_dir.first << "\n";
         if(!_params.save_maps.empty())
         {
             std::for_each(_params.save_maps.begin(), _params.save_maps.end(), [&ofs] (std::string &

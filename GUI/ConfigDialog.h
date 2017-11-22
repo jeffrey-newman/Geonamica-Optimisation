@@ -20,14 +20,14 @@ class GeonSettingsPage;
 class EAPage;
 class MainWindow;
 
-extern ZonalPolicyParameters dummy_params;
+extern GeonamicaPolicyParameters dummy_params;
 
 class ConfigDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    ConfigDialog(MainWindow * _main_window, ZonalPolicyParameters& _params = dummy_params);
+    ConfigDialog(MainWindow * _main_window, GeonamicaPolicyParameters& _params = dummy_params);
     void initialise(int argc, char *argv[]);
     void newFile();
     void updateParamsValuesInGUI();
@@ -118,12 +118,12 @@ private slots:
 signals:
     void runOptimisation(double val);
     void contentsChanged();
-    void duplicateSignal(ZonalPolicyParameters params);
+    void duplicateSignal(GeonamicaPolicyParameters params);
 
 private:
 //    Ui::OptimisationWizardPage *ui;
 //    QList<OptimiserController *> controllers;
-    boost::scoped_ptr<ZonalPolicyParameters> params;
+    boost::scoped_ptr<GeonamicaPolicyParameters> params;
     bool is_modified;
     bool opt_needs_initialisation;
     LoadParameters parameter_loader;

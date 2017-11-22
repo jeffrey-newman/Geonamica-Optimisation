@@ -10,11 +10,14 @@
 #define ZonalPolicyUtility_hpp
 
 #include <string>
-#include "Pathify.hpp"
-#include "ProblemDefinitions.hpp"
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/vector.hpp>
 #include <boost/program_options.hpp>
 
-struct ZonalPolicyParameters
+#include "Pathify.hpp"
+#include "MinOrMax.hpp"
+
+struct GeonamicaPolicyParameters
 {
     std::string timout_cmd; //cmd to run everything through another program which kills model on timer, incase it gets stuck/spins/hangs
     std::string wine_cmd; // cmd to run geonamica model through wine, emulation for running on linux or mac.
@@ -48,6 +51,7 @@ struct ZonalPolicyParameters
     int max_gen;
     int save_freq;
     CmdLinePaths save_dir;
+    CmdLinePaths test_dir;
     int evaluator_id = 0;
     std::vector<int> rand_seeds { 1000,1001,1002,1003,1004,1005,1006,1007,1008,1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020 };
     CmdLinePaths restart_pop_file;
@@ -60,6 +64,54 @@ struct ZonalPolicyParameters
     
 };
 
+
+namespace boost
+{
+namespace serialization
+{
+
+template<class Archive>
+void serialize(Archive& ar, GeonamicaPolicyParameters& p, const unsigned int version)
+{
+    ar & p.timout_cmd;
+    ar & p.wine_cmd;
+    ar & p.geonamica_cmd;
+    ar & p.with_reset_and_save;
+    ar & p.template_project_dir;
+    ar & p.working_dir;
+    ar & p.wine_prefix_path;
+    ar & p.wine_geoproject_disk_drive;
+    ar & p.set_prefix_path;
+    ar & p.windows_env_var;
+    ar & p.wine_drive_path;
+    ar & p.wine_working_dir;
+    ar & p.rel_path_geoproj;
+    ar & p.rel_path_zonal_map;
+    ar & p.zonal_map_classes;
+    ar & p.rel_path_obj_maps;
+    ar & p.objectives_plugins;
+    ar & p.xpath_dvs;
+    ar & p.min_or_max;
+    ar & p.rel_path_log_specification_obj;
+    ar & p.rel_path_log_specification_save;
+    ar & p.rel_path_zones_delineation_map;
+    ar & p.save_maps;
+    ar & p.is_logging;
+    ar & p.replicates;
+    ar & p.pop_size;
+    ar & p.max_gen_hvol;
+    ar & p.max_gen;
+    ar & p.save_freq;
+    ar & p.save_dir;
+    ar & p.test_dir;
+    ar & p.evaluator_id;
+    ar & p.rand_seeds;
+    ar & p.restart_pop_file;
+}
+
+}
+}
+
 class LoadParameters
 {
 
@@ -67,19 +119,19 @@ public:
     LoadParameters();
 
     int
-    processOptions(int argc, char * argv[], ZonalPolicyParameters & _params);
+    processOptions(int argc, char * argv[], GeonamicaPolicyParameters & _params);
 
     int
-    processOptions(std::string filepath, ZonalPolicyParameters & _params);
+    processOptions(std::string filepath, GeonamicaPolicyParameters & _params);
 
     int
-    saveOptions(std::string filepath, ZonalPolicyParameters & _params);
+    saveOptions(std::string filepath, GeonamicaPolicyParameters & _params);
 
 private:
     boost::program_options::options_description desc;
     boost::filesystem::path deafult_working_dir;
     boost::program_options::variables_map vm;
-    ZonalPolicyParameters params;
+    GeonamicaPolicyParameters params;
 
 };
 

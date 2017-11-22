@@ -52,7 +52,7 @@ signals:
 private:
     Ui::OptimisationWizardPage *ui;
 //    QList<OptimiserController *> controllers;
-    boost::scoped_ptr<ZonalPolicyParameters> params;
+    boost::scoped_ptr<GeonamicaPolicyParameters> params;
     bool is_modified;
     LoadParameters parameter_loader;
 };

@@ -13,7 +13,7 @@
 
 template<typename RNG>
 void
-createCheckpoints(NSGAII<RNG> & optimiser, ZonalPolicyParameters & params)
+createCheckpoints(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params)
 {
     boost::shared_ptr<SavePopCheckpoint> save_pop(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
     boost::shared_ptr<SaveFirstFrontCheckpoint> save_front(new SaveFirstFrontCheckpoint(params.save_freq, params.save_dir.second));
@@ -38,4 +38,4 @@ createCheckpoints(NSGAII<RNG> & optimiser, ZonalPolicyParameters & params)
 }
 
 template void
-createCheckpoints(NSGAII<std::mt19937> & optimiser, ZonalPolicyParameters & params);
+createCheckpoints(NSGAII<std::mt19937> & optimiser, GeonamicaPolicyParameters & params);

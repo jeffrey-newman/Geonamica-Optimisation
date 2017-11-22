@@ -25,7 +25,7 @@ void OptimiserThread::run()
 
     mutex.lock();
 
-    ZonalPolicyParameters params_t = *params;
+    GeonamicaPolicyParameters params_t = *params;
 
     mutex.unlock();
 

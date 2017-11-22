@@ -9,6 +9,7 @@
 #include "GeonamicaPolicyOptimiser.hpp"
 #include <random>
 #include <boost/shared_ptr.hpp>
+#include "ParallelEvaluator.hpp"
 
 class NSGAIIObjs
 {
@@ -20,7 +21,20 @@ public:
     NSGAIIObjs(GeonamicaOptimiser & geon_eval);
 };
 
+class NSGAIIObjsParallel
+{
+public:
+    typedef  std::mt19937 RNG;
+    unsigned seed;
+    RNG rng;
+    NSGAII<RNG> optimiser;
+    NSGAIIObjsParallel(ParallelEvaluatePopServerNonBlocking & geon_eval);
+};
+
 boost::shared_ptr<NSGAIIObjs>
 getNSGAIIForGeon(GeonamicaOptimiser & geon_eval);
+
+boost::shared_ptr<NSGAIIObjsParallel>
+getNSGAIIForGeonParallel(ParallelEvaluatePopServerNonBlocking & eval_server);
 
 #endif //GEON_OPT_GEONAMICANSGAII_HPP

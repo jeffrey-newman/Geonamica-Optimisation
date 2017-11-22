@@ -10,6 +10,6 @@
 #include "Population.hpp"
 
 void
-postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, ZonalPolicyParameters & params);
+postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, GeonamicaPolicyParameters & params, boost::filesystem::path save_dir = "", bool process_first_front = true);
 
 #endif //GEON_OPT_GEONAMICAPOLICYPOSTPROCESS_HPP

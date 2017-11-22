@@ -27,7 +27,7 @@ public:
     public slots:
     void onError(QString what);
 
-    void initialise(ZonalPolicyParameters _params);
+    void initialise(GeonamicaPolicyParameters _params);
     void run();
     void step();
     void test();
@@ -35,7 +35,7 @@ public:
 signals:
     void runOptimisation();
     void testOptimisation();
-    void intialiseOptimisation(ZonalPolicyParameters _params);
+    void intialiseOptimisation(GeonamicaPolicyParameters _params);
     void stepOptimisation();
 //    void terminateOptimisation();
 

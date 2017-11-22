@@ -5,6 +5,9 @@
 #ifndef WDS_OPT_OPTIMISERWORKER_H
 #define WDS_OPT_OPTIMISERWORKER_H
 
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+
 #include <QObject>
 #include <QMutex>
 #include <boost/shared_ptr.hpp>
@@ -12,6 +15,8 @@
 #include "GeonamicaPolicyParametersQtMetaTyping.hpp"
 #include "../GeonamicaPolicyOptimiser.hpp"
 #include "../GeonamicaNSGAII.hpp"
+#include "ParallelEvaluator.hpp"
+
 
 class OptimiserWorker : public QObject
 {
@@ -22,7 +27,7 @@ public:
 
 
 public slots:
-    void initialise(ZonalPolicyParameters params);
+    void initialise(GeonamicaPolicyParameters params);
     void optimise();
     void step();
     void test();
@@ -37,13 +42,18 @@ signals:
 
 private:
     QMutex mutex;
-    ZonalPolicyParameters params;
+    GeonamicaPolicyParameters params;
     boost::shared_ptr<GeonamicaOptimiser> geon_eval;
-    boost::shared_ptr<NSGAIIObjs> nsgaii_obs;
+    boost::shared_ptr<ParallelEvaluatePopServerNonBlocking> eval_server;
+    boost::shared_ptr<NSGAIIObjs> nsgaii_objs;
+    boost::shared_ptr<NSGAIIObjsParallel> nsgaii_objs_pll;
     PopulationSPtr pop;
     double count;
     bool is_initialised;
     bool do_terminate;
+    boost::mpi::environment env;
+    boost::mpi::communicator world;
+    bool using_mpi;
 
 //private slots:
 //    void relayNextHypervolumeMetric(int gen, double hypervolume_val);

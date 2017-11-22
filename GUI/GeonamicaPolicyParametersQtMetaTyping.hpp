@@ -8,7 +8,7 @@
 #include "../GeonamicaPolicyParameters.hpp"
 #include <QMetaType>
 
-Q_DECLARE_METATYPE(ZonalPolicyParameters);
+Q_DECLARE_METATYPE(GeonamicaPolicyParameters);
 
 
 #endif //GEON_OPT_QTPARAMETERSMETATYPING_HPP

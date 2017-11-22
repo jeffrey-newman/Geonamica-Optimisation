@@ -9,15 +9,15 @@
 
 
 #include "NSGAII.hpp"
-#include "GeonamicaPolicyParameters.hpp"
-#include "GeonamicaPolicyOptimiser.hpp"
-#include "GeonamicaPolicyCheckpoints.hpp"
-#include "GeonamicaPolicyPostProcess.hpp"
+#include "../GeonamicaPolicyParameters.hpp"
+#include "../GeonamicaPolicyOptimiser.hpp"
+#include "../GeonamicaPolicyCheckpoints.hpp"
+#include "../GeonamicaPolicyPostProcess.hpp"
 
 
 int main(int argc, char * argv[]) {
 
-    ZonalPolicyParameters params;
+    GeonamicaPolicyParameters params;
     LoadParameters parameter_loader;
     parameter_loader.processOptions(argc, argv, params);
     GeonamicaOptimiser zonal_eval(params);
@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) {
     optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
     
     // Run the optimisation
-    optimiser.initialisePop(pop);
+    optimiser.initialiseWithPop(pop);
     optimiser.run();
     
     //Postprocess the results

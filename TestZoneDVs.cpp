@@ -15,7 +15,7 @@
 
 int main(int argc, char * argv[]) {
 
-    ZonalPolicyParameters params;
+    GeonamicaPolicyParameters params;
     LoadParameters parameter_loader;
     parameter_loader.processOptions(argc, argv, params);
     GeonamicaOptimiser zonal_eval(params);

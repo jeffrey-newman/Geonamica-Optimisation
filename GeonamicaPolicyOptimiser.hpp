@@ -71,7 +71,7 @@ class GeonamicaOptimiser : public ObjectivesAndConstraintsBase
 {
 private:
     
-    ZonalPolicyParameters params;
+    GeonamicaPolicyParameters params;
     
     
     boost::filesystem::path working_project;
@@ -166,7 +166,7 @@ private:
 
     
 public:
-    GeonamicaOptimiser( ZonalPolicyParameters & _params);
+    GeonamicaOptimiser( GeonamicaPolicyParameters & _params);
 
     ~GeonamicaOptimiser();
 

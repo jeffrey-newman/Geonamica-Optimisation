@@ -4,4 +4,4 @@
 
 #include "GeonamicaPolicyParametersQtMetaTyping.hpp"
 
-int id = qRegisterMetaType<ZonalPolicyParameters>();
+int id = qRegisterMetaType<GeonamicaPolicyParameters>();

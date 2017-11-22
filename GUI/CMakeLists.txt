@@ -1,5 +1,6 @@
 include_directories(${Boost_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES(${PARALLEL-NSGAII})
+include_directories(${MPI_CXX_INCLUDE_PATH})
 
 # Define required for how hypervolume is calculated.
 add_definitions(-DVARIANT=4)
@@ -15,47 +16,48 @@ IF (USE_QT)
     find_package(Qt5Widgets)
     find_package(Qt5Core)
     add_definitions(-DWITH_QT)
+
+    SET(Geon_Optimiser_GUI_SRCS
+            TimeSeriesQtChart.h
+            TimeSeriesQtChart.cpp
+            #        nsgaiirunningpage.cpp
+            #        nsgaiirunningpage.h
+            #        optimisationwizardpage.cpp
+            #        optimisationwizardpage.h
+            #        optimiserthread.cpp
+            #        optimiserthread.h
+            OptimiserController.cpp
+            OptimiserController.h
+            OptimiserWorker.cpp
+            OptimiserWorker.h
+            MetricQtSignal.cpp
+            MetricQtSignal.h
+            GeonamicOptGUICheckpoints.cpp
+            GeonamicaOptGUICheckpoints.h
+            #        nsgaiiguimainwindow.ui
+            #        optimisationwizardpage.ui
+            ParetoFrontQtChart.cpp
+            ParetoFrontQtChart.h
+            FrontQtSignal.cpp
+            FrontQtSignal.h
+            QtDialogueCheckpoint.cpp
+            QtDialogueCheckpoint.h
+            MainWindow.cpp
+            MainWindow.hpp
+            mdi.qrc
+            ConfigDialog.h
+            ConfigDialog.cpp
+            ConfigPages.cpp
+            ConfigPages.h
+            GeonamicaPolicyParametersQtMetaTyping.cpp
+            GeonamicaPolicyParametersQtMetaTyping.hpp
+            main.cpp
+            )
+ELSE(USE_QT)
+    SET(Geon_Optimiser_GUI_SRCS
+            main.cpp
+            RandomVector.hpp)
 ENDIF()
-
-SET(Geon_Optimiser_GUI_SRCS
-        TimeSeriesQtChart.h
-        TimeSeriesQtChart.cpp
-        main.cpp
-#        nsgaiirunningpage.cpp
-#        nsgaiirunningpage.h
-#        optimisationwizardpage.cpp
-#        optimisationwizardpage.h
-#        optimiserthread.cpp
-#        optimiserthread.h
-        OptimiserController.cpp
-        OptimiserController.h
-        OptimiserWorker.cpp
-        OptimiserWorker.h
-        MetricQtSignal.cpp
-        MetricQtSignal.h
-        GeonamicOptGUICheckpoints.cpp
-        GeonamicaOptGUICheckpoints.h
-#        nsgaiiguimainwindow.ui
-#        optimisationwizardpage.ui
-        ParetoFrontQtChart.cpp
-        ParetoFrontQtChart.h
-        FrontQtSignal.cpp
-        FrontQtSignal.h
-        QtDialogueCheckpoint.cpp
-        QtDialogueCheckpoint.h
-        MainWindow.cpp
-        MainWindow.hpp
-        mdi.qrc
-        ConfigDialog.h
-        ConfigDialog.cpp
-        ConfigPages.cpp
-        ConfigPages.h
-        GeonamicaPolicyParametersQtMetaTyping.cpp
-        GeonamicaPolicyParametersQtMetaTyping.hpp
-
-)
-
-
 
 add_executable(geonoptgui ${Geon_Optimiser_GUI_SRCS} )
 target_link_libraries(geonoptgui ${Boost_LIBRARIES} ${GDAL_LIBRARY}  ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}

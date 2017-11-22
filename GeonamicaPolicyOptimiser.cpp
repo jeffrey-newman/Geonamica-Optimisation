@@ -445,7 +445,7 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
 }
 
 
-    GeonamicaOptimiser::GeonamicaOptimiser( ZonalPolicyParameters & _params)
+    GeonamicaOptimiser::GeonamicaOptimiser( GeonamicaPolicyParameters & _params)
             :
             params(_params),
             eval_count(0),

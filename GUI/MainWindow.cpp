@@ -103,7 +103,7 @@ void MainWindow::open()
         openFile(fileName);
 }
 
-void MainWindow::duplicate(ZonalPolicyParameters _params)
+void MainWindow::duplicate(GeonamicaPolicyParameters _params)
 {
     ConfigDialog *child = new ConfigDialog(this, _params);
     mdiArea->addSubWindow(child);
@@ -250,8 +250,11 @@ void MainWindow::saveAs()
 void MainWindow::about()
 {
     QMessageBox::about(this, tr("About MDI"),
-                       tr("The <b>MDI</b> example demonstrates how to write multiple "
-                                  "document interface applications using Qt."));
+                       tr("The <b>GeonamicaOptimiser</b> is a parallel NSGAII optimiser "
+                              " for the calibration of geoprojects and optimisation of policies"
+                              " simulated within the Geonamica environment. It's development"
+                              " was supported by the University of Adelaide and the BNHCRC"
+                              "for optimising natural hazard mitigation policy"));
 }
 
 void MainWindow::updateMenus()

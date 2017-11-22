@@ -233,88 +233,85 @@ add_library(geonoptcommon STATIC ${OptCommon_Srcs})
 target_compile_definitions(geonoptcommon PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 target_link_libraries(geonoptcommon ${GDAL_LIBRARY} ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
-##################################################################################################################
-#                                                                                                                #
-#                 Parallel NSGAII for optimising zonal policy in Geonamica-Metronamica geoprojects               #
-#                                                                                                                #
-#                                                                                                                #
-##################################################################################################################
-
-SET(Geonamica_optimiser_parallel_Src
-        MainPar.cpp
-    )
-
-add_executable(geooptpar ${Geonamica_optimiser_parallel_Src})
-target_link_libraries(geooptpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
-#IF(USE_VTK)
-#    if(VTK_LIBRARIES)
-#        target_link_libraries(geooptpar ${VTK_LIBRARIES} )
-#    else()
-#        target_link_libraries(geooptpar vtkHybrid vtkWidgets )
-#    endif()
-#ENDIF()
-target_compile_definitions(geooptpar PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
-
-
-##################################################################################################################
-#                                                                                                                #
-#                 Serial NSGAII for optimising zonal policy in Geonamica-Metronamica geoprojects                 #
-#                                                                                                                #
-#                                                                                                                #
-##################################################################################################################
-
-
-SET(Geonamica_optimiser_serial_Src
-       MainSer.cpp
-    )
-
-
-
-add_executable(geooptser ${Geonamica_optimiser_serial_Src} )
-target_link_libraries(geooptser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
-#IF(USE_VTK)
-#    if(VTK_LIBRARIES)
-#        target_link_libraries(geooptser ${VTK_LIBRARIES} )
-#    else()
-#        target_link_libraries(geooptser vtkHybrid vtkWidgets )
-#    endif()
-#ENDIF()
-target_compile_definitions(geooptser PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
-
-
-##################################################################################################################
-#                                                                                                                #
-#                 Test ZonalOF on zonal areas all restrict or all stimulate, or all nothing                      #
-#                                                                                                                #
-#                                                                                                                #
-##################################################################################################################
+###################################################################################################################
+##                                                                                                                #
+##                 Parallel NSGAII for optimising zonal policy in Geonamica-Metronamica geoprojects               #
+##                                                                                                                #
+##                                                                                                                #
+###################################################################################################################
+#
+#SET(Geonamica_optimiser_parallel_Src
+#        MainPar.cpp
+#    )
+#
+#add_executable(geooptpar ${Geonamica_optimiser_parallel_Src})
+#target_link_libraries(geooptpar ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
+#        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
+##IF(USE_VTK)
+##    if(VTK_LIBRARIES)
+##        target_link_libraries(geooptpar ${VTK_LIBRARIES} )
+##    else()
+##        target_link_libraries(geooptpar vtkHybrid vtkWidgets )
+##    endif()
+##ENDIF()
+#target_compile_definitions(geooptpar PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
+#
+#
+###################################################################################################################
+##                                                                                                                #
+##                 Serial NSGAII for optimising zonal policy in Geonamica-Metronamica geoprojects                 #
+##                                                                                                                #
+##                                                                                                                #
+###################################################################################################################
+#
+#
+#SET(Geonamica_optimiser_serial_Src
+#       MainSer.cpp
+#    )
+#
+#
+#
+#add_executable(geooptser ${Geonamica_optimiser_serial_Src} )
+#target_link_libraries(geooptser ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
+#        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
+##IF(USE_VTK)
+##    if(VTK_LIBRARIES)
+##        target_link_libraries(geooptser ${VTK_LIBRARIES} )
+##    else()
+##        target_link_libraries(geooptser vtkHybrid vtkWidgets )
+##    endif()
+##ENDIF()
+#target_compile_definitions(geooptser PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
-SET(zonal_opt_tst_src
-        TestZoneDVs.cpp
-        )
-
-
-
-add_executable(zonalopttest ${zonal_opt_tst_src})
-target_link_libraries(zonalopttest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
-#IF(USE_VTK)
-#    if(VTK_LIBRARIES)
-#        target_link_libraries(zonalopttest ${VTK_LIBRARIES} )
-#    else()
-#        target_link_libraries(zonalopttest vtkHybrid vtkWidgets )
-#    endif()
-#ENDIF()
-target_compile_definitions(zonalopttest PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
+###################################################################################################################
+##                                                                                                                #
+##                 Test ZonalOF on zonal areas all restrict or all stimulate, or all nothing                      #
+##                                                                                                                #
+##                                                                                                                #
+###################################################################################################################
+#
+#
+#SET(zonal_opt_tst_src
+#        TestZoneDVs.cpp
+#        )
+#
+#
+#
+#add_executable(zonalopttest ${zonal_opt_tst_src})
+#target_link_libraries(zonalopttest ${GDAL_LIBRARY} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
+#        ${MagickLibs} geonoptcommon ${OpenCV_LIBS})
+##IF(USE_VTK)
+##    if(VTK_LIBRARIES)
+##        target_link_libraries(zonalopttest ${VTK_LIBRARIES} )
+##    else()
+##        target_link_libraries(zonalopttest vtkHybrid vtkWidgets )
+##    endif()
+##ENDIF()
+#target_compile_definitions(zonalopttest PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 
 
 
 SET(USE_QT CACHE BOOL "Set to on to build qt gui with chart visualisation")
-IF (USE_QT)
-    add_subdirectory(GUI)
-ENDIF()
-
+add_subdirectory(GUI)
 add_subdirectory(EvaluatorModules)
