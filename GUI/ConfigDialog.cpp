@@ -146,7 +146,7 @@ void ConfigDialog::initialise(int argc, char **argv)
 }
 
 void
-ConfigDialog::CheckSavingAndWorkingDirs()
+ConfigDialog::CheckSavingAndWorkingAndTestingDirs()
 {
     if (!boost::filesystem::is_empty(params->working_dir.second))
     {
@@ -180,6 +180,22 @@ ConfigDialog::CheckSavingAndWorkingDirs()
                 break;
         }
     }
+    if (!boost::filesystem::is_empty(params->test_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("The saving directory is not empty.");
+        msgBox.setInformativeText("Do you want to delete the contents of the directory");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        switch (ret)
+        {
+            case QMessageBox::Yes:
+                boost::filesystem::remove_all(params->save_dir.second);
+                boost::filesystem::create_directories(params->save_dir.second);
+                break;
+        }
+    }
 }
 
 void ConfigDialog::run()
@@ -187,7 +203,7 @@ void ConfigDialog::run()
 //    std::cout << "Button clicked" << std::endl
     if (this->opt_needs_initialisation)
     {
-        this->CheckSavingAndWorkingDirs();
+        this->CheckSavingAndWorkingAndTestingDirs();
         optsn_cntrl->initialise(*params);
         opt_needs_initialisation = false;
     }
@@ -200,7 +216,7 @@ void ConfigDialog::step()
 {
     if (this->opt_needs_initialisation)
     {
-        this->CheckSavingAndWorkingDirs();
+        this->CheckSavingAndWorkingAndTestingDirs();
         optsn_cntrl->initialise(*params);
         opt_needs_initialisation = false;
     }
@@ -211,7 +227,7 @@ void ConfigDialog::test()
 {
     if (this->opt_needs_initialisation)
     {
-        this->CheckSavingAndWorkingDirs();
+        this->CheckSavingAndWorkingAndTestingDirs();
         optsn_cntrl->initialise(*params);
         opt_needs_initialisation = false;
     }
@@ -251,6 +267,7 @@ void ConfigDialog::updateParamsValuesInGUI()
     geon_setting_page->updateworkingDir(QString::fromStdString(params->working_dir.first));
     geon_setting_page->updateWinePrefix(QString::fromStdString(params->wine_prefix_path.first));
     geon_setting_page->updateSaveDir(QString::fromStdString(params->save_dir.first));
+    geon_setting_page->updateTestDir(QString::fromStdString(params->test_dir.first));
     geon_setting_page->updateWhetherPrefixEnvVarSet(params->set_prefix_path);
     geon_setting_page->updateWindowsEnvVar(QString::fromStdString(params->windows_env_var));
     geon_setting_page->updateWhetherLog(params->is_logging);
@@ -754,6 +771,13 @@ void ConfigDialog::changeObjModules(QVector<QString> new_vals)
     QVectorIterator<QString> i(new_vals);
     while (i.hasNext())
         this->params->objectives_plugins.push_back(i.next().toStdString());
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+void
+ConfigDialog::changeTestDir(QString new_val)
+{
+    this->params->test_dir.first = new_val.toStdString();
     is_modified = true;
     opt_needs_initialisation = true;
 }

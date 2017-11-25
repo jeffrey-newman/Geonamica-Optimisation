@@ -128,6 +128,7 @@ public:
     void updateworkingDir(QString path);
     void updateWinePrefix(QString path);
     void updateSaveDir(QString path);
+    void updateTestDir(QString path);
     void updateWhetherPrefixEnvVarSet(bool  do_set);
     void updateWindowsEnvVar(QString val);
     void updateWhetherLog(bool do_log);
@@ -152,6 +153,7 @@ private:
     QLineEdit *working_dir_edit;
     QLineEdit *wine_prefix_edit;
     QLineEdit *saving_dir_edit;
+    QLineEdit *testing_dir_edit;
     QCheckBox* prefix_env_var_CheckBox;
     QLineEdit *windows_env_var_edit;
     QCheckBox* log_checkbox;

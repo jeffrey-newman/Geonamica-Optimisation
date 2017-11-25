@@ -322,6 +322,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
       working_dir_edit(new QLineEdit),
       wine_prefix_edit(new QLineEdit),
       saving_dir_edit(new QLineEdit),
+      testing_dir_edit(new QLineEdit),
       log_checkbox(new QCheckBox(tr("Log the optimisation (i.e. for debugging)"))),
       prefix_env_var_CheckBox(new QCheckBox(tr("Set wine prefix environment variable on system call"))),
       windows_env_var_edit(new QLineEdit),
@@ -373,9 +374,10 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
 //    QLineEdit *wine_prefix_edit = new QLineEdit;
 //    QCheckBox* prefix_env_var_CheckBox = new QCheckBox(tr("Set wine prefix environment variable on system call"));
     QLabel *saving_dir_label = new QLabel(tr("Saving directory:"));
+    QLabel *testing_dir_label = new QLabel(tr("Testing directory:"));
 //    QLineEdit *saving_dir_edit = new QLineEdit;
 //    QCheckBox* log_checkbox = new QCheckBox(tr("Log the optimisation (i.e. for debugging)"));
-    QLabel* drive_letter_label = new QLabel(tr("Drive letter to set for Georporject directory"));
+    QLabel* drive_letter_label = new QLabel(tr("Drive letter to set for Georproject directory"));
 
     QGridLayout *geon_env_Layout = new QGridLayout;
     geon_env_Layout->addWidget(working_dir_label, 0, 0);
@@ -389,7 +391,9 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     geon_env_Layout->addWidget(windows_env_var_edit, 4, 1);
     geon_env_Layout->addWidget(saving_dir_label, 5, 0);
     geon_env_Layout->addWidget(saving_dir_edit, 5, 1);
-    geon_env_Layout->addWidget(log_checkbox, 6, 0);
+    geon_env_Layout->addWidget(testing_dir_label, 6, 0);
+    geon_env_Layout->addWidget(testing_dir_edit, 6, 1);
+    geon_env_Layout->addWidget(log_checkbox, 7, 0);
 
 
     geonamica_config_group->setLayout(geon_env_Layout);
@@ -398,6 +402,7 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(wine_prefix_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changePrefixPath);
     connect(driver_letter_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDriveLetter);
     connect(saving_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeSaveDir);
+    connect(testing_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeTestDir);
     connect(windows_env_var_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWindowsEnvVar);
     connect(prefix_env_var_CheckBox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeWhetherPrefixEnvVarSet);
     connect(log_checkbox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeDoLog);
@@ -621,6 +626,11 @@ void GeonSettingsPage::updateOuputLogMaps(std::vector<std::string> ouput_maps)
 void GeonSettingsPage::updateDriveLetter(QString letter)
 {
     driver_letter_edit->setText(letter);
+}
+void
+GeonSettingsPage::updateTestDir(QString path)
+{
+    testing_dir_edit->setText(path);
 }
 
 EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent)

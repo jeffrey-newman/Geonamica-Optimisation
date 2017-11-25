@@ -61,6 +61,7 @@ public slots:
 //    void changeXPathDVs(QListWidgetItem *current, QListWidgetItem *previous);
     void changeDoLog(int do_log);
     void changeSaveDir(QString new_val);
+    void changeTestDir(QString new_val);
     void changeSaveMaps(QVector<QString> new_val);
 //    void changeSaveMaps(QListWidgetItem *current, QListWidgetItem *previous);
     void changePopSize(int new_val);
@@ -104,7 +105,7 @@ private:
     bool maybeSave();
     void setCurrentFile(const QString &fileName);
     QString strippedName(const QString &fullFileName);
-    void CheckSavingAndWorkingDirs();
+    void CheckSavingAndWorkingAndTestingDirs();
 
 
     QString curFile;

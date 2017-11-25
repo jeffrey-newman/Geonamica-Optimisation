@@ -302,7 +302,7 @@ int LoadParameters::saveOptions(std::string filepath, GeonamicaPolicyParameters 
         }
         ofs << "is-logging = " << _params.is_logging << "\n";
         ofs << "save-dir = " << _params.save_dir.first << "\n";
-        ofs << "test-dir = " << _params.save_dir.first << "\n";
+        ofs << "test-dir = " << _params.test_dir.first << "\n";
         if(!_params.save_maps.empty())
         {
             std::for_each(_params.save_maps.begin(), _params.save_maps.end(), [&ofs] (std::string &
