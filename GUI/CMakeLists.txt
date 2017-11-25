@@ -59,10 +59,16 @@ ELSE(USE_QT)
             RandomVector.hpp)
 ENDIF()
 
+SET(UI_LINK_LIBS
+        ${Boost_LIBRARIES} ${GDAL_LIBRARY}  ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES} geonoptcommon ${OpenCV_LIBS})
+IF (USE_QT)
+    SET(UI_LINK_LIBS ${UI_LINK_LIBS} Qt5::Widgets Qt5::Gui Qt5::Charts)
+ENDIF()
+
 add_executable(geonoptgui ${Geon_Optimiser_GUI_SRCS} )
-target_link_libraries(geonoptgui ${Boost_LIBRARIES} ${GDAL_LIBRARY}  ${MPI_LIBRARIES} ${PNGwriter_LIBRARIES}
-        ${MagickLibs} Qt5::Widgets Qt5::Gui Qt5::Charts geonoptcommon ${OpenCV_LIBS} )
-target_compile_definitions(geonoptgui PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
+target_link_libraries(geonoptgui ${UI_LINK_LIBS} )
+
+#target_compile_definitions(geonoptgui PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 #IF(USE_VTK)
 #    if(VTK_LIBRARIES)
 #        target_link_libraries(wdsoptgui ${VTK_LIBRARIES})
