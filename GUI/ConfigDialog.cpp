@@ -145,8 +145,8 @@ void ConfigDialog::initialise(int argc, char **argv)
 
 }
 
-void
-ConfigDialog::CheckSavingAndWorkingAndTestingDirs()
+bool
+ConfigDialog::CheckNeededDirectoriesExist()
 {
     if (!boost::filesystem::is_empty(params->working_dir.second))
     {
@@ -196,6 +196,25 @@ ConfigDialog::CheckSavingAndWorkingAndTestingDirs()
                 break;
         }
     }
+    if(!boost::filesystem::exists(params->template_project_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Specified directory containing template geoproject does not exist.\nNot running optimisation");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        int ret = msgBox.exec();
+        return false;
+    }
+    if(boost::filesystem::is_empty(params->template_project_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Specified directory containing template geoproject is empty.\nNot running optimisation");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        int ret = msgBox.exec();
+        return false;
+    }
+    return true;
 }
 
 void ConfigDialog::run()
@@ -203,9 +222,12 @@ void ConfigDialog::run()
 //    std::cout << "Button clicked" << std::endl
     if (this->opt_needs_initialisation)
     {
-        this->CheckSavingAndWorkingAndTestingDirs();
-        optsn_cntrl->initialise(*params);
-        opt_needs_initialisation = false;
+        if (this->CheckNeededDirectoriesExist());
+        {
+            optsn_cntrl->initialise(*params);
+            opt_needs_initialisation = false;
+        }
+
     }
 
 
@@ -216,9 +238,12 @@ void ConfigDialog::step()
 {
     if (this->opt_needs_initialisation)
     {
-        this->CheckSavingAndWorkingAndTestingDirs();
-        optsn_cntrl->initialise(*params);
-        opt_needs_initialisation = false;
+        if(this->CheckNeededDirectoriesExist())
+        {
+            optsn_cntrl->initialise(*params);
+            opt_needs_initialisation = false;
+        }
+
     }
     optsn_cntrl->step();
 }
@@ -227,9 +252,11 @@ void ConfigDialog::test()
 {
     if (this->opt_needs_initialisation)
     {
-        this->CheckSavingAndWorkingAndTestingDirs();
-        optsn_cntrl->initialise(*params);
-        opt_needs_initialisation = false;
+        if(this->CheckNeededDirectoriesExist())
+        {
+            optsn_cntrl->initialise(*params);
+            opt_needs_initialisation = false;
+        }
     }
     optsn_cntrl->test();
 }
@@ -427,6 +454,7 @@ void ConfigDialog::changeResetAndSave(int state)
 void ConfigDialog::changeGeoprojDirectory(QString new_val)
 {
     this->params->template_project_dir.first = new_val.toStdString();
+    this->params->template_project_dir.second = this->params->template_project_dir.first;
     is_modified = true;
     opt_needs_initialisation = true;
 
@@ -435,6 +463,7 @@ void ConfigDialog::changeGeoprojDirectory(QString new_val)
 void ConfigDialog::changeWorkingDirectory(QString new_val)
 {
     this->params->working_dir.first = new_val.toStdString();
+    this->params->working_dir.second = this->params->working_dir.first;
     is_modified = true;
     opt_needs_initialisation = true;
 }
@@ -592,6 +621,7 @@ void ConfigDialog::changeDoLog(int state)
 void ConfigDialog::changeSaveDir(QString new_val)
 {
     this->params->save_dir.first = new_val.toStdString();
+    this->params->save_dir.second = this->params->save_dir.first;
     is_modified = true;
     opt_needs_initialisation = true;
 }
@@ -778,6 +808,7 @@ void
 ConfigDialog::changeTestDir(QString new_val)
 {
     this->params->test_dir.first = new_val.toStdString();
+    this->params->test_dir.second = this->params->test_dir.first;
     is_modified = true;
     opt_needs_initialisation = true;
 }

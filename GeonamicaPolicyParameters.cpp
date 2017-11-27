@@ -169,6 +169,7 @@ LoadParameters::processOptions(int argc, char * argv[], GeonamicaPolicyParameter
             pathify(params.template_project_dir);
             //pathify(params.log_dir);
             pathify_mk(params.save_dir);
+            pathify_mk(params.test_dir);
             if (params.restart_pop_file.first != "no_seed")
             {
                 pathify(params.restart_pop_file);
@@ -219,6 +220,7 @@ LoadParameters::processOptions(std::string filepath, GeonamicaPolicyParameters &
         pathify(params.template_project_dir);
         //pathify(params.log_dir);
         pathify_mk(params.save_dir);
+        pathify_mk(params.test_dir);
         if (params.restart_pop_file.first != "no_seed")
         {
             pathify(params.restart_pop_file);

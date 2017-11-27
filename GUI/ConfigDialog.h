@@ -105,7 +105,8 @@ private:
     bool maybeSave();
     void setCurrentFile(const QString &fileName);
     QString strippedName(const QString &fullFileName);
-    void CheckSavingAndWorkingAndTestingDirs();
+    bool
+    CheckNeededDirectoriesExist();
 
 
     QString curFile;

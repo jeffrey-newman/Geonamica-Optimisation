@@ -230,7 +230,7 @@ SET(OptCommon_Srcs
    )
 
 add_library(geonoptcommon STATIC ${OptCommon_Srcs})
-target_compile_definitions(geonoptcommon PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
+# target_compile_definitions(geonoptcommon PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 target_link_libraries(geonoptcommon ${GDAL_LIBRARY} ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 ###################################################################################################################

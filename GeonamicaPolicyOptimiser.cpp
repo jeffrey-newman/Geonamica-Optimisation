@@ -1146,8 +1146,10 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         boost::filesystem::path initial_path = boost::filesystem::current_path();
         boost::filesystem::current_path(params.working_dir.second);
 
-        bool do_save = false;
-        if (save_path != "no_path" || !save_path.empty() ) do_save = true;
+        bool do_save = true;
+        if (save_path == "no_path") do_save = false;
+        if (save_path.empty()) do_save = false;
+
 
         // Cycle log files.
         bool delete_previous_logfile = false;

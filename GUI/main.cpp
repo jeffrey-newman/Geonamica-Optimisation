@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
         //load parameters
         GeonamicaPolicyParameters params;
         boost::mpi::broadcast(world, params, 0);
+        std::cout << "received params\n";
         params.evaluator_id = world.rank();
         //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
         std::this_thread::sleep_for(std::chrono::seconds(world.rank()));

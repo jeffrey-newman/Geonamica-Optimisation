@@ -32,6 +32,7 @@ OptimiserWorker::OptimiserWorker():
 is_initialised(false)
 {
     using_mpi = false;
+    std::cout << "world size: " << world.size() << std::endl;
     if (world.size() > 1) using_mpi = true;
 }
 
@@ -78,6 +79,7 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
     {
         try
         {
+            std::cout << "Broadcasting params\n";
             boost::mpi::broadcast(world, _params, 0);
 
             geon_eval = boost::shared_ptr<GeonamicaOptimiser>(new GeonamicaOptimiser(params));
