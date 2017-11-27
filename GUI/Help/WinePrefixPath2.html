@@ -1,0 +1,89 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:DengXian;
+	panose-1:2 1 6 0 3 1 1 1 1 1;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"\@DengXian";
+	panose-1:2 1 6 0 3 1 1 1 1 1;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0cm;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:"Calibri",sans-serif;}
+.MsoChpDefault
+	{font-size:12.0pt;
+	font-family:"Calibri",sans-serif;}
+@page WordSection1
+	{size:595.0pt 842.0pt;
+	margin:72.0pt 72.0pt 72.0pt 72.0pt;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-AU>
+
+<div class=WordSection1>
+
+<p class=MsoNormal>Wine prefix path</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>This gives the path to the wine prefix to use to run
+Geonamica. Geonamica itself needs to be installed in this prefix in the path
+specified in the ‘Geonamica command’ field above.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>In addition, the way the optimisation uses this prefix is
+also specified as follows:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>If field is specified:</p>
+
+<p class=MsoNormal>“No_wine” or is left blank, then no prefix is specified.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>“use_home_path” then: the default prefix in “~/.wine” is
+used.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>“generate:&lt;path&gt;” then an attempt is made to generate
+a prefix from scratch within the working directopry. The path to the Geonamica
+model as given by the &lt;path&gt; and the contents of this folder is copied
+into the prefix,</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>“copy:&lt;path&gt; then: a copy of the prefix is made in the
+working directory. This seems to be the best way to go about prefixes,
+especially when running through mpi.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+</div>
+
+</body>
+
+</html>
