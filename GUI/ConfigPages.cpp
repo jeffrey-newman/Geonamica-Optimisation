@@ -129,6 +129,8 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     connect(zonal_layer_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalLayer);
      connect(zonal_map_classes_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalClasses);
 
+    connect(zone_delineation_edit, &QLineEdit::
+
     ///////
 
     QGroupBox *xpath_Group = new QGroupBox(tr("Xpath decision variables"));
@@ -310,6 +312,12 @@ void ProblemSpecPage::displayObjModuleHelp()
 void ProblemSpecPage::displayXPathDVsHelp()
 {
     QString f = ":/Help/XPathDVs.html";
+    displayHelp(f, help_box);
+}
+
+void ProblemSpecPage::displayZonalOptimisationHelp()
+{
+    QString f = ":/Help/ZonalOptimisation.html";
     displayHelp(f, help_box);
 }
 
@@ -631,6 +639,37 @@ void
 GeonSettingsPage::updateTestDir(QString path)
 {
     testing_dir_edit->setText(path);
+}
+
+void GeonSettingsPage::displayTimeoutHelp()
+{
+    QString f = ":/Help/timeout.html";
+    displayHelp(f, help_box);
+}
+
+void GeonSettingsPage::displayWineCmdHelp() {
+    QString f = ":/Help/WineCmd.html";
+    displayHelp(f, help_box);
+}
+
+void GeonSettingsPage::displayGeonamicaCmdHelp() {
+    QString f = ":/Help/GeonamicaCommand.html";
+    displayHelp(f, help_box);
+}
+
+void GeonSettingsPage::displayWorkDirHelp() {
+    QString f = ":/Help/Workingdirectory.html";
+    displayHelp(f, help_box);
+}
+
+void GeonSettingsPage::displayWinePrefixHelp() {
+    QString f = ":/Help/WinePrefixPath.html";
+    displayHelp(f, help_box);
+}
+
+void GeonSettingsPage::displayDriverLetterHelp() {
+    QString f = ":/Help/WindDriveLetter.html";
+    displayHelp(f, help_box);
 }
 
 EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent)

@@ -73,6 +73,7 @@ public:
     void displayObjMapHelp();
     void displayObjModuleHelp();
     void displayXPathDVsHelp();
+    void displayZonalOptimisationHelp();
 
 public:
     void updateObjectiveMaps(std::vector<std::string> obj_maps);
@@ -120,6 +121,13 @@ public:
     void addOutputLogMap();
     void processOutputLogMapListChange();
     void displaySaveMapHelp();
+    void displayTimeoutHelp();
+    void displayWineCmdHelp();
+    void displayGeonamicaCmdHelp();
+    void displayWorkDirHelp();
+    void displayWinePrefixHelp();
+    void displayDriverLetterHelp();
+
 
     public:
     void updateTimeoutCmd(QString path);
