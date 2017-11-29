@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
 //                params.working_dir.second = params.test_dir.second;
                 params.save_dir.first = params.test_dir.first;
 //                params.save_dir.second = params.test_dir.second;
+                params.pop_size = 3;
             }
             parameter_loader.checkNeededDirectories(params);
 

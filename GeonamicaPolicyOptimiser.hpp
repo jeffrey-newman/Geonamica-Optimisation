@@ -72,14 +72,10 @@ class GeonamicaOptimiser : public ObjectivesAndConstraintsBase
 private:
     
     GeonamicaPolicyParameters params;
-    
-    
+
+    boost::filesystem::path original_bck_geoproj;
     boost::filesystem::path working_project;
-    std::string wine_working_project;
-    
-    boost::filesystem::path working_logging;
-    std::string wine_working_logging;
-    
+
     boost::filesystem::path zonal_map_path;
 
 //    std::vector<boost::filesystem::path> obj_map_paths;
@@ -103,7 +99,7 @@ private:
 //    int analysisNum;
     int eval_count;
     
-    int num_objectives;
+    int num_objectives = 0;
     int num_constraints = 0;
 
 //    int min_zonal_dv_values  = 0; //lower bounds
@@ -147,9 +143,13 @@ private:
 
     std::string run_command;
     boost::filesystem::path run_bat_file;
+    boost::filesystem::path save_bat_file;
     boost::filesystem::path run_sh_file;
-    std::stringstream bat_file_contents;
-    std::stringstream sh_file_contents;
+    boost::filesystem::path save_sh_file;
+    std::stringstream run_bat_file_contents;
+    std::stringstream save_bat_file_contents;
+    std::stringstream run_sh_file_contents;
+    std::stringstream save_sh_file_contents;
     
 public:
     GeonamicaOptimiser( GeonamicaPolicyParameters & _params);
@@ -180,9 +180,7 @@ private:
     );
 
     void
-    runGeonamica(std::ofstream & logging_file);
-    
-
+    runGeonamica(std::ofstream & logging_file, bool do_save);
 
     template<typename T> void
     setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_details, T new_value);
@@ -217,7 +215,7 @@ private:
     makeZonalMap(int min_delineated_id, const std::vector<int> &zonal_values, blink::raster::gdal_raster<int> & zonal_map);
 
     template <typename T> void
-    saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &save_path, int recurse_depth = 0) const;
+    saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &map_path, const boost::filesystem::path &save_path, int recurse_depth = 0) const;
 
     template <typename T> void
     saveMap(blink::raster::gdal_raster<T> & map, const boost::filesystem::path save_path, const SaveMapDetails & save_details) const;

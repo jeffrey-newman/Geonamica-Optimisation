@@ -147,13 +147,56 @@ void ConfigDialog::initialise(int argc, char **argv)
 }
 
 bool
+ConfigDialog::CheckNeededDirectoriesTesting()
+{
+    pathifyMkQMsg(params->test_dir);
+    pathifyQMsg(params->template_project_dir);
+
+    if (!boost::filesystem::is_empty(params->test_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("The testing directory is not empty.");
+        msgBox.setInformativeText("Do you want to delete the contents of the directory");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        switch (ret)
+        {
+            case QMessageBox::Yes:
+                boost::filesystem::remove_all(params->test_dir.second);
+                boost::filesystem::create_directories(params->test_dir.second);
+                break;
+        }
+    }
+    if(!boost::filesystem::exists(params->template_project_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Specified directory containing template geoproject does not exist.\nNot running optimisation");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        int ret = msgBox.exec();
+        return false;
+    }
+    if(boost::filesystem::is_empty(params->template_project_dir.second))
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Specified directory containing template geoproject is empty.\nNot running optimisation");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        int ret = msgBox.exec();
+        return false;
+    }
+    return true;
+}
+
+bool
 ConfigDialog::CheckNeededDirectories()
 {
     pathifyMkQMsg(params->working_dir);
     pathifyQMsg(params->template_project_dir);
     //pathify(params.log_dir);
     pathifyMkQMsg(params->save_dir);
-    pathifyMkQMsg(params->test_dir);
+//    pathifyMkQMsg(params->test_dir);
     if (params->restart_pop_file.first != "no_seed")
     {
         pathifyQMsg(params->restart_pop_file);
@@ -191,22 +234,22 @@ ConfigDialog::CheckNeededDirectories()
                 break;
         }
     }
-    if (!boost::filesystem::is_empty(params->test_dir.second))
-    {
-        QMessageBox msgBox;
-        msgBox.setText("The saving directory is not empty.");
-        msgBox.setInformativeText("Do you want to delete the contents of the directory");
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        msgBox.setDefaultButton(QMessageBox::Yes);
-        int ret = msgBox.exec();
-        switch (ret)
-        {
-            case QMessageBox::Yes:
-                boost::filesystem::remove_all(params->save_dir.second);
-                boost::filesystem::create_directories(params->save_dir.second);
-                break;
-        }
-    }
+//    if (!boost::filesystem::is_empty(params->test_dir.second))
+//    {
+//        QMessageBox msgBox;
+//        msgBox.setText("The saving directory is not empty.");
+//        msgBox.setInformativeText("Do you want to delete the contents of the directory");
+//        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+//        msgBox.setDefaultButton(QMessageBox::Yes);
+//        int ret = msgBox.exec();
+//        switch (ret)
+//        {
+//            case QMessageBox::Yes:
+//                boost::filesystem::remove_all(params->save_dir.second);
+//                boost::filesystem::create_directories(params->save_dir.second);
+//                break;
+//        }
+//    }
     if(!boost::filesystem::exists(params->template_project_dir.second))
     {
         QMessageBox msgBox;
@@ -231,45 +274,42 @@ ConfigDialog::CheckNeededDirectories()
 void ConfigDialog::run()
 {
 //    std::cout << "Button clicked" << std::endl
-    if (this->opt_needs_initialisation)
+    if (this->CheckNeededDirectories());
     {
-        if (this->CheckNeededDirectories());
+        if (this->opt_needs_initialisation)
         {
+
             optsn_cntrl->initialise(*params);
             opt_needs_initialisation = false;
         }
 
+        optsn_cntrl->run();
     }
-
-
-    optsn_cntrl->run();
 }
 
 void ConfigDialog::step()
 {
-    if (this->opt_needs_initialisation)
+    if(this->CheckNeededDirectories())
     {
-        if(this->CheckNeededDirectories())
+        if (this->opt_needs_initialisation)
         {
             optsn_cntrl->initialise(*params);
             opt_needs_initialisation = false;
         }
 
+        optsn_cntrl->step();
     }
-    optsn_cntrl->step();
 }
 
 void ConfigDialog::test()
 {
-    if (this->opt_needs_initialisation)
-    {
-        if(this->CheckNeededDirectories())
+//    if (this->opt_needs_initialisation)
+
+        if(this->CheckNeededDirectoriesTesting())
         {
-            optsn_cntrl->initialise(*params);
-            opt_needs_initialisation = false;
+            optsn_cntrl->test(*params);
         }
-    }
-    optsn_cntrl->test();
+
 }
 
 void ConfigDialog::newFile()
@@ -832,5 +872,6 @@ ConfigDialog::changeDoThrowExceptns(int state)
     is_modified = true;
     opt_needs_initialisation = true;
 }
+
 
 

@@ -30,11 +30,11 @@ public:
     void initialise(GeonamicaPolicyParameters _params);
     void run();
     void step();
-    void test();
+    void test(GeonamicaPolicyParameters _params);
 
 signals:
     void runOptimisation();
-    void testOptimisation();
+    void testOptimisation(GeonamicaPolicyParameters _params);
     void intialiseOptimisation(GeonamicaPolicyParameters _params);
     void stepOptimisation();
 //    void terminateOptimisation();

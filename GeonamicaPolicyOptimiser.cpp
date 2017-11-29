@@ -161,23 +161,24 @@ struct SaveMapParser : boost::spirit::qi::grammar<std::string::iterator, boost::
 
 
         string_parser_quote_delimited = qi::lexeme[qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"")];
-        legend_parser = qi::lit("LEGEND") >> qi::lit("=") >> string_parser_quote_delimited;
-        source_raster_parser = qi::lit("PATH") >> qi::lit("=") >> string_parser_quote_delimited;
-        years_parser  = qi::lit("YEARS(") >> *(qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)]
-                >> qi::lit(";")) >> qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)] >> qi::lit(")");
-        diff_raster_parser = (qi::lit("DIFF") >> qi::lit("=") >> string_parser_quote_delimited) | qi::attr(std::string("no_diff"));
-        save_path_parser = qi::lit("SAVE_AS") >> qi::lit("=")  >> string_parser_quote_delimited;
+        legend_parser = qi::lit(":") >> qi::lit("LEGEND") >> qi::lit("=") >> string_parser_quote_delimited;
+        source_raster_parser = qi::lit(":") >> qi::lit("PATH") >> qi::lit("=") >> string_parser_quote_delimited;
+        years_parser  = qi::lit(":") >> qi::lit("YEARS") >> qi::lit("(") >> *((qi::int_ >> qi::lit(";"))[ph::push_back(ph::ref(this->save_map.years), qi::_1)]) >> qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)] >> qi::lit(")");
+//        years_parser  = qi::lit("YEARS(") >> *(qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)]
+//                >> qi::lit(";")) >> qi::int_[ph::push_back(ph::ref(this->save_map.years), qi::_1)] >> qi::lit(")");
+        diff_raster_parser = (qi::lit(":") >> qi::lit("DIFF") >> qi::lit("=") >> string_parser_quote_delimited) | qi::attr(std::string("no_diff"));
+        save_path_parser = qi::lit(":") >> qi::lit("SAVE_AS") >> qi::lit("=")  >> string_parser_quote_delimited;
 
         categorised_parser = qi::no_case[( qi::lit("CATEGORISED") | qi::lit("CAT"))[ph::ref(this->save_map.type) = SaveMapDetails::CATEGORISED] ];
         linear_grad_parser = qi::no_case[( qi::lit("LINEAR_GRADIENT") | qi::lit("LIN_GRAD") )[ph::ref(this->save_map.type) = SaveMapDetails::LINEAR_GRADIENT] ];
 
 
         start = (categorised_parser | linear_grad_parser )
-                >> qi::lit(":") >> legend_parser[ph::ref(this->save_map.legend_file.first) = qi::_1]
-                >> qi::lit(":") >> source_raster_parser[ph::ref(this->save_map.source_raster.first) = qi::_1]
-                >> qi::lit(":") >> years_parser
-                >> qi::lit(":") >> diff_raster_parser[ph::ref(this->save_map.diff_raster.first) = qi::_1]
-                >> qi::lit(":") >> save_path_parser[ph::ref(this->save_map.save_path.first) = qi::_1];
+                >> legend_parser[ph::ref(this->save_map.legend_file.first) = qi::_1]
+                >>  source_raster_parser[ph::ref(this->save_map.source_raster.first) = qi::_1]
+                >>  years_parser
+                >>  diff_raster_parser[ph::ref(this->save_map.diff_raster.first) = qi::_1]
+                >>  save_path_parser[ph::ref(this->save_map.save_path.first) = qi::_1];
 
     }
 
@@ -397,7 +398,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 }
                 else if(map_val != diff_val)
                 {
-                    std::get<2>(i) = map_val;
+                    std::get<2>(i) = map_val - diff_val;
                 }
                 else
                 {
@@ -413,7 +414,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 const T diff_val = std::get<1>(i);
                 if(map_val != diff_val)
                 {
-                    std::get<2>(i) = map_val;
+                    std::get<2>(i) = map_val - diff_val;
                 }
                 else
                 {
@@ -423,11 +424,11 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
         }
         if (save_details.type == SaveMapDetails::CATEGORISED)
         {
-            save_details.classified_writer->render(map, save_path);
+            save_details.classified_writer->render(out, save_path);
         }
         if (save_details.type == SaveMapDetails::LINEAR_GRADIENT)
         {
-            save_details.gradient_writer->render(map, save_path);
+            save_details.gradient_writer->render(out, save_path);
         }
     }
     else
@@ -449,7 +450,8 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
             :
             params(_params),
             eval_count(0),
-            num_objectives(0)
+            num_objectives(0),
+            num_constraints(0)
     {
 
         is_initialised = true;
@@ -638,7 +640,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 
         // get paths of important files in working directory.
         working_project = params.working_dir.second / params.rel_path_geoproj;
-        wine_working_project = params.wine_working_dir + "\\" + params.rel_path_geoproj;
+        std::string wine_working_project = params.wine_working_dir + "\\" + params.rel_path_geoproj;
 
 
 
@@ -702,8 +704,9 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
         }
 
         //Logging settings
-        working_logging = params.working_dir.second / params.rel_path_log_specification_obj;
-        wine_working_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_obj;
+//        working_logging = params.working_dir.second / params.rel_path_log_specification_obj;
+        std::string wine_working_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_obj;
+        std::string wine_saving_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_save;
 
         // Zonal optimisation settings
         if (params.rel_path_zones_delineation_map != "no_zonal_dvs" || params.rel_path_zones_delineation_map.empty())
@@ -775,6 +778,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
             boost::spirit::qi::phrase_parse(params.save_maps[m].begin(), params.save_maps[m].end(), parser, boost::spirit::qi::space);
             parser.save_map.legend_file.second = params.working_dir.second /  parser.save_map.legend_file.first;
             parser.save_map.source_raster.second = params.working_dir.second /  parser.save_map.source_raster.first;
+            parser.save_map.save_path.second = boost::filesystem::path(parser.save_map.save_path.first);
             if( ! (parser.save_map.diff_raster.first == "no_diff" or parser.save_map.diff_raster.first.empty()))
             {
                 parser.save_map.diff_raster.second = params.working_dir.second / parser.save_map.diff_raster.first;
@@ -804,54 +808,83 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
             setting_env_vars = true;
         }
 
+
+            // Save a copy of the geoproject file as the current Cmd line runner mangles the GUI aspects preventing it from being loadable in the HGUI interface of Metronamica
+
+            std::string extnsn = working_project.extension().string();
+            std::string filename = working_project.stem().string();
+            original_bck_geoproj = working_project.parent_path() / (filename + "_original" + extnsn);
+            boost::filesystem::copy_file(working_project, original_bck_geoproj, boost::filesystem::copy_option::overwrite_if_exists);
+
+
+
         // Now make batch and running commands for running Geonamica.
         std::stringstream run_command_ss;
         run_bat_file = params.save_dir.second / ("run_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
+        save_bat_file = params.save_dir.second / ("save_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
         run_sh_file = params.save_dir.second / ("run_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
+        save_sh_file = params.save_dir.second / ("save_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
 
-        std::ofstream bat_file(run_bat_file.string().c_str());
-        std::ofstream sh_file(run_sh_file.string().c_str());
+        std::ofstream run_bat_file_stream(run_bat_file.string().c_str());
+        std::ofstream save_bat_file_stream(save_bat_file.string().c_str());
+        std::ofstream run_sh_file_stream(run_sh_file.string().c_str());
+        std::ofstream save_sh_file_stream(save_sh_file.string().c_str());
 
         if (setting_env_vars)
         {
-            bat_file_contents << "SET " << params.windows_env_var << "\n";
+            run_bat_file_contents << "SET " << params.windows_env_var << "\n";
+            save_bat_file_contents << "SET " << params.windows_env_var << "\n";
         }
         if (params.with_reset_and_save)
         {
-            bat_file_contents << "\"" << params.geonamica_cmd << "\" --Reset --Save " << "\"" << wine_working_project << "\"\n";
+            run_bat_file_contents << "\"" << params.geonamica_cmd << "\" --Reset --Save " << "\"" << wine_working_project << "\"\n";
+            save_bat_file_contents << "\"" << params.geonamica_cmd << "\" --Reset --Save " << "\"" << wine_working_project << "\"\n";
         }
 
         //Call the model to run it.
         if (using_wine && params.wine_prefix_path.first != "na" && params.set_prefix_path)
         {
-            sh_file_contents << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
+            run_sh_file_contents << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
+            save_sh_file_contents << "WINEPREFIX=" << "\"" << params.wine_prefix_path.second.string().c_str() << "\"" << " ";
         }
 
         if (using_timeout)
         {
-            sh_file_contents << params.timout_cmd << " ";
+            run_sh_file_contents << params.timout_cmd << " ";
+            save_sh_file_contents << params.timout_cmd << " ";
         }
         if (using_wine)
         {
-            sh_file_contents << params.wine_cmd;
+            run_sh_file_contents << params.wine_cmd;
+            save_sh_file_contents << params.wine_cmd;
         }
-        sh_file_contents << " cmd /V /C " << "\"" << run_bat_file.string() << "\"";
+
+        run_sh_file_contents << " cmd /V /C " << "\"" << run_bat_file.string() << "\"";
+        save_sh_file_contents << " cmd /V /C " << "\"" << save_bat_file.string() << "\"";
 
         if (params.with_reset_and_save)
         {
-            bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --Save --LogSettings " << "\"" << wine_working_logging << "\""
+            run_bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --Save --LogSettings " << "\"" << wine_working_logging << "\""
+                 << " " << "\"" << wine_working_project << "\"\n";
+            save_bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --Save --LogSettings " << "\"" << wine_saving_logging << "\""
                  << " " << "\"" << wine_working_project << "\"\n";
         }
         else
         {
-            bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --LogSettings " << "\"" << wine_working_logging << "\""
+            run_bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --LogSettings " << "\"" << wine_working_logging << "\""
                  << " " << "\"" << wine_working_project << "\"\n";
+            save_bat_file_contents << "\"" << params.geonamica_cmd << "\" --Run --LogSettings " << "\"" << wine_saving_logging << "\""
+                                  << " " << "\"" << wine_working_project << "\"\n";
         }
 
-        sh_file << sh_file_contents.str();
-        bat_file << bat_file_contents.str();
-        sh_file.close();
-        bat_file.close();
+        run_sh_file_stream << run_sh_file_contents.str();
+        run_bat_file_stream << run_bat_file_contents.str();
+        save_sh_file_stream << save_sh_file_contents.str();
+        save_bat_file_stream << save_bat_file_contents.str();
+        run_sh_file_stream.close();
+        run_bat_file_stream.close();
+        save_sh_file_stream.close();
+        save_bat_file_stream.close();
 //        run_command = run_command_ss.str();
     }
 
@@ -888,22 +921,38 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 
 
 void
-GeonamicaOptimiser::runGeonamica(std::ofstream & logging_file)
+GeonamicaOptimiser::runGeonamica(std::ofstream & logging_file, bool do_save)
 {
 
     boost::scoped_ptr<boost::timer::auto_cpu_timer> t(nullptr);
     if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
 
     std::stringstream run_command_ss;
-    run_command_ss << "sh \"" << run_sh_file.string() << "\"";
-
-    if (params.is_logging)
+    if (do_save)
     {
-        run_command_ss << " >> \"" << logfile.string().c_str() << "\" 2>&1";
-        logging_file << "Running: " << run_command_ss.str() << std::endl;
-        logging_file << "With sh file:\n" << sh_file_contents.str() << "\n";
-        logging_file << "With BAT file:\n" << bat_file_contents.str() << "\n";
-        logging_file.close();
+        run_command_ss << "sh \"" << save_sh_file.string() << "\"";
+
+        if (params.is_logging)
+        {
+            run_command_ss << " >> \"" << logfile.string().c_str() << "\" 2>&1";
+            logging_file << "Running: " << run_command_ss.str() << std::endl;
+            logging_file << "With sh file:\n" << save_sh_file_contents.str() << "\n";
+            logging_file << "With BAT file:\n" << save_bat_file_contents.str() << "\n";
+            logging_file.close();
+        }
+    }
+    else
+    {
+        run_command_ss << "sh \"" << run_sh_file.string() << "\"";
+
+        if (params.is_logging)
+        {
+            run_command_ss << " >> \"" << logfile.string().c_str() << "\" 2>&1";
+            logging_file << "Running: " << run_command_ss.str() << std::endl;
+            logging_file << "With sh file:\n" << run_sh_file_contents.str() << "\n";
+            logging_file << "With BAT file:\n" << run_bat_file_contents.str() << "\n";
+            logging_file.close();
+        }
     }
 
     int i2 = std::system(run_command_ss.str().c_str());
@@ -1236,6 +1285,9 @@ void
         boost::scoped_ptr<boost::timer::auto_cpu_timer> t(nullptr);
         if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
 
+        // Make a clean geoproject.
+        boost::filesystem::copy_file(original_bck_geoproj, working_project, boost::filesystem::copy_option::overwrite_if_exists);
+
         std::vector<double> & objectives = objectives_and_constraints.first;
         for(double& obj: objectives)
         {
@@ -1268,16 +1320,16 @@ void
             setAllChildValuesOfXMLNode(doc, "/GeonamicaSimulation/model/modelBlocks/modelBlock[@library=\"\" and @name=\"MB_Land_use_model\"]/CompositeModelBlock/modelBlocks/modelBlock[@library=\"CAModel.dll\" and @name=\"MB_Total_potential\"]/TotalPotentialBlock/Seed", params.rand_seeds[j]);
             doc.save_file(working_project.string().c_str());
 
-            if (do_save)
+            if(do_save)
             {
-                // Save a copy of the geoproject file as the current Cmd line runner mangles the GUI aspects preventing it from being loadable in the HGUI interface of Metronamica
+                // save geoproject as command line runner can mangle the file; and we want to save things so we can run the project.
                 std::string extnsn = working_project.extension().string();
                 std::string filename = working_project.stem().string();
                 boost::filesystem::path prerun_bck_geoproj = working_project.parent_path() / (filename + "_prerunbck" + extnsn);
-                doc.save_file(prerun_bck_geoproj.string().c_str());
+                boost::filesystem::copy_file(working_project, prerun_bck_geoproj, boost::filesystem::copy_option::overwrite_if_exists);
             }
 
-            runGeonamica(logging_file);
+            this->runGeonamica(logging_file, do_save);
             std::vector<double> obj_vals = calcObjectives(logging_file, real_decision_vars, int_decision_vars);
 
             // If output of running Geonamica is saved.... (this is not logging which is managed by Geopnbamica iotself, but the generation of images of Geonamica logged output.
@@ -1288,41 +1340,39 @@ void
                 if (boost::filesystem::exists(save_replicate_path)) boost::filesystem::remove_all(save_replicate_path);
                 copyDir(params.working_dir.second, save_replicate_path);
 
-                BOOST_FOREACH(SaveMapDetails &save_details, this->save_img_rqsts) {
-                                if (!(boost::filesystem::exists(save_details.source_raster.second))) {
-                                    BOOST_FOREACH(int year, save_details.years) {
-                                                    boost::filesystem::path map_path_year =
-                                                            save_details.source_raster.second.parent_path() /
-                                                            (save_details.source_raster.second.filename().string() +
-                                                             "_" + std::to_string(year) + "-Jan-01 00_00_00.rst");
+                for(SaveMapDetails &save_details: this->save_img_rqsts)
+                {
+                    if (!(boost::filesystem::exists(save_details.source_raster.second))) {
+                        for(int year: save_details.years) {
+                            boost::filesystem::path map_path_year = save_details.source_raster.second.parent_path() /
+                                    (save_details.source_raster.second.stem().string() + "_" + std::to_string(year) + "-Jan-01 00_00_00" + save_details.source_raster.second.extension().string() );
 
-                                                    if (boost::filesystem::exists(map_path_year)) {
-                                                        boost::filesystem::path save_path = save_replicate_path /
-                                                                                            (save_details.save_path.first +
-                                                                                             "_" +
-                                                                                             std::to_string(year) +
-                                                                                             ".png");
-                                                        if (save_details.type == SaveMapDetails::CATEGORISED) {
-                                                            this->saveMap<int>(save_details, map_path_year);
-                                                        }
-                                                        if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
-                                                            this->saveMap<double>(save_details, map_path_year);
-                                                        }
+                            if (boost::filesystem::exists(map_path_year))
+                            {
 
-
-                                                    }
-                                                }
-                                } else {
-                                    boost::filesystem::path save_path =
-                                            save_replicate_path / (save_details.save_path.first + ".png");
-                                    if (save_details.type == SaveMapDetails::CATEGORISED) {
-                                        this->saveMap<int>(save_details, save_path);
-                                    }
-                                    if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
-                                        this->saveMap<double>(save_details, save_path);
-                                    }
+                                boost::filesystem::path save_path = save_replicate_path /
+                                    (save_details.save_path.second.stem().string() + "_" + std::to_string(year) + save_details.save_path.second.extension().string());
+                                if (save_details.type == SaveMapDetails::CATEGORISED) {
+                                    this->saveMap<int>(save_details, map_path_year, save_path);
                                 }
+                                if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
+                                    this->saveMap<double>(save_details, map_path_year, save_path);
+                                }
+
+
                             }
+                        }
+                    } else {
+                        boost::filesystem::path save_path =
+                            save_replicate_path / (save_details.save_path.first);
+                        if (save_details.type == SaveMapDetails::CATEGORISED) {
+                            this->saveMap<int>(save_details, save_details.source_raster.second, save_path);
+                        }
+                        if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
+                            this->saveMap<double>(save_details, save_details.source_raster.second, save_path);
+                        }
+                    }
+                }
             }
 
             for (int i =0; i < obj_vals.size(); ++i)
@@ -1388,11 +1438,11 @@ void
     }
 
 template <typename T> void
-GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &save_path, int recurse_depth) const
+GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &map_path,  const boost::filesystem::path &save_path, int recurse_depth) const
 {
     try{
         blink::raster::gdal_raster<T> map = blink::raster::open_gdal_raster<T>(
-            save_details.source_raster.second, GA_ReadOnly);
+            map_path, GA_ReadOnly);
         this->saveMap<T>(map, save_path, save_details);
     }
     catch (blink::raster::insufficient_memory_for_raster_block& ex)
@@ -1410,7 +1460,7 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
             return;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
-        this->saveMap<T>(save_details, save_path, 1);
+        this->saveMap<T>(save_details, map_path, save_path, 1);
     }
     catch (blink::raster::reading_from_raster_failed& ex)
     {
@@ -1421,7 +1471,7 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
             return;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
-        this->saveMap<T>(save_details, save_path, 1);
+        this->saveMap<T>(save_details, map_path, save_path, 1);
     }
 
 }

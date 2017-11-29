@@ -32,7 +32,7 @@ OptimiserWorker::OptimiserWorker():
 is_initialised(false)
 {
     using_mpi = false;
-    std::cout << "world size: " << world.size() << std::endl;
+//    std::cout << "world size: " << world.size() << std::endl;
     if (world.size() > 1) using_mpi = true;
 }
 
@@ -224,16 +224,58 @@ void OptimiserWorker::step()
 
 }
 
-void OptimiserWorker::test()
+void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
 {
-    if (!is_initialised)
-    {
-        emit error(QString("Optimisation is not initialised"));
-        return;
-    }
+//    if (!is_initialised)
+//    {
+//        emit error(QString("Optimisation is not initialised"));
+//        return;
+//    }
 
-    IndividualSPtr ind = *(select_randomly(pop->begin(), pop->end()));
-    (*geon_eval)(ind->getRealDVVector(), ind->getIntDVVector());
+    params_copy.working_dir.first = params_copy.test_dir.first;
+    params_copy.working_dir.second = params_copy.test_dir.second;
+    params_copy.save_dir.first = params_copy.test_dir.first;
+    params_copy.save_dir.second = params_copy.test_dir.second;
+    params_copy.pop_size = 3;
+
+    GeonamicaOptimiser testing_geon_eval(params_copy);
+
+    ProblemDefinitionsSPtr problem_defs = testing_geon_eval.getProblemDefinitions();
+    IndividualSPtr max_dvs(new Individual(problem_defs));
+    max_dvs->setIntDVs(problem_defs->int_upperbounds);
+    max_dvs->setRealDVs(problem_defs->real_upperbounds);
+    IndividualSPtr min_dvs(new Individual(problem_defs));
+    min_dvs->setIntDVs(problem_defs->int_lowerbounds);
+    min_dvs->setRealDVs(problem_defs->real_lowerbounds);
+
+    std::vector<double> objectives;
+    std::vector<double> constraints;
+
+    boost::filesystem::path save_min_dv_dir = params_copy.test_dir.second / "min-dvs";
+    if (!boost::filesystem::exists(save_min_dv_dir)) boost::filesystem::create_directories(save_min_dv_dir);
+    std::tie(objectives, constraints) = testing_geon_eval(min_dvs->getRealDVVector(), min_dvs->getIntDVVector(), save_min_dv_dir);
+    min_dvs->setObjectives(objectives);
+    min_dvs->setConstraints(constraints);
+    std::cout << "All dvs min value: " << std::endl;
+    std::cout << *min_dvs << std::endl;
+
+    boost::filesystem::path save_max_dv_dir = params_copy.test_dir.second / "max-dvs";
+    if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_max_dv_dir);
+    std::tie(objectives, constraints) = testing_geon_eval(max_dvs->getRealDVVector(), max_dvs->getIntDVVector(), save_max_dv_dir);
+    max_dvs->setObjectives(objectives);
+    max_dvs->setConstraints(constraints);
+    std::cout << "All dvs max value: " << std::endl;
+    std::cout << *max_dvs << std::endl;
+
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::mt19937 rng(seed);
+    boost::filesystem::path save_rand_dv_dir = params_copy.test_dir.second / "random-dvs";
+    if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_rand_dv_dir);
+    PopulationSPtr pop(new Population);
+    pop =
+        intialisePopulationRandomDVAssignment(params_copy.pop_size, geon_eval->getProblemDefinitions(), rng);
+    //Postprocess the results
+    postProcessResults(testing_geon_eval, pop, params_copy, save_rand_dv_dir, false);
 }
 
 void OptimiserWorker::terminate()

@@ -30,7 +30,7 @@ public slots:
     void initialise(GeonamicaPolicyParameters params);
     void optimise();
     void step();
-    void test();
+    void test(GeonamicaPolicyParameters params_copy);
     void terminate();
 
 signals:

@@ -104,12 +104,18 @@ private slots:
     void documentWasModified();
 
 private:
+
     bool maybeSave();
+
     void setCurrentFile(const QString &fileName);
+
     QString strippedName(const QString &fullFileName);
+
     bool
     CheckNeededDirectories();
 
+    bool
+    CheckNeededDirectoriesTesting();
 
     QString curFile;
     bool isUntitled;
