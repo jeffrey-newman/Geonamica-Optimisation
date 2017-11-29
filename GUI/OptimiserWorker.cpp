@@ -46,6 +46,7 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
         try
         {
             geon_eval = boost::shared_ptr<GeonamicaOptimiser>(new GeonamicaOptimiser(params));
+
             //Make the NSGAII
             nsgaii_objs = getNSGAIIForGeon(*geon_eval);
 
@@ -79,7 +80,12 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
     {
         try
         {
-            std::cout << "Broadcasting params\n";
+            if (params.wine_prefix_path.first.substr(0, 4) != "copy")
+            {
+                emit error(QString(" Using parallel evaluation (mpi) but not making a 'copy' of the prefix for each evaluator. Are you sure?"));
+            }
+
+//            std::cout << "Broadcasting params\n";
             boost::mpi::broadcast(world, _params, 0);
 
             geon_eval = boost::shared_ptr<GeonamicaOptimiser>(new GeonamicaOptimiser(params));

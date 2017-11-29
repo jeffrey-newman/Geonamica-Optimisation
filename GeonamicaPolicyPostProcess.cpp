@@ -32,7 +32,7 @@ postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, Geonamic
                     std::vector<double> objectives;
                     std::vector<double> constraints;
                     boost::filesystem::path save_ind_dir = save_dir / ("individual_" + std::to_string(i++));
-                    if (!boost::filesystem::exists(save_ind_dir)) boost::filesystem::create_directory(save_ind_dir);
+                    if (!boost::filesystem::exists(save_ind_dir)) boost::filesystem::create_directories(save_ind_dir);
                     std::tie(objectives, constraints) = zonal_eval(ind->getRealDVVector(), ind->getIntDVVector(), save_ind_dir);
                     ind->setObjectives(objectives);
                     ind->setConstraints(constraints);

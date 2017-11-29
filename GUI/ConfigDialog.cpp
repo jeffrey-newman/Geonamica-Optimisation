@@ -6,6 +6,7 @@
 #include "ConfigDialog.h"
 #include "ConfigPages.h"
 #include "MainWindow.hpp"
+#include "PathifyQt.hpp"
 
 GeonamicaPolicyParameters dummy_params;
 
@@ -146,8 +147,18 @@ void ConfigDialog::initialise(int argc, char **argv)
 }
 
 bool
-ConfigDialog::CheckNeededDirectoriesExist()
+ConfigDialog::CheckNeededDirectories()
 {
+    pathifyMkQMsg(params->working_dir);
+    pathifyQMsg(params->template_project_dir);
+    //pathify(params.log_dir);
+    pathifyMkQMsg(params->save_dir);
+    pathifyMkQMsg(params->test_dir);
+    if (params->restart_pop_file.first != "no_seed")
+    {
+        pathifyQMsg(params->restart_pop_file);
+    }
+
     if (!boost::filesystem::is_empty(params->working_dir.second))
     {
         QMessageBox msgBox;
@@ -222,7 +233,7 @@ void ConfigDialog::run()
 //    std::cout << "Button clicked" << std::endl
     if (this->opt_needs_initialisation)
     {
-        if (this->CheckNeededDirectoriesExist());
+        if (this->CheckNeededDirectories());
         {
             optsn_cntrl->initialise(*params);
             opt_needs_initialisation = false;
@@ -238,7 +249,7 @@ void ConfigDialog::step()
 {
     if (this->opt_needs_initialisation)
     {
-        if(this->CheckNeededDirectoriesExist())
+        if(this->CheckNeededDirectories())
         {
             optsn_cntrl->initialise(*params);
             opt_needs_initialisation = false;
@@ -252,7 +263,7 @@ void ConfigDialog::test()
 {
     if (this->opt_needs_initialisation)
     {
-        if(this->CheckNeededDirectoriesExist())
+        if(this->CheckNeededDirectories())
         {
             optsn_cntrl->initialise(*params);
             opt_needs_initialisation = false;
@@ -307,6 +318,7 @@ void ConfigDialog::updateParamsValuesInGUI()
     geon_setting_page->updateNumberReplicates(params->replicates);
     geon_setting_page->updateOuputLogMaps(params->save_maps);
     geon_setting_page->updateDriveLetter(QString::fromStdString(params->wine_geoproject_disk_drive));
+    geon_setting_page->updateWhetherThrowExceptns(params->do_throw_excptns);
     
     ea_Page->updatePop(params->pop_size);
     ea_Page->updateHyprvolTerm(params->max_gen_hvol);
@@ -809,6 +821,14 @@ ConfigDialog::changeTestDir(QString new_val)
 {
     this->params->test_dir.first = new_val.toStdString();
     this->params->test_dir.second = this->params->test_dir.first;
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+void
+ConfigDialog::changeDoThrowExceptns(int state)
+{
+    if (state == Qt::Unchecked) this->params->do_throw_excptns = false;
+    else this->params->do_throw_excptns = true;
     is_modified = true;
     opt_needs_initialisation = true;
 }

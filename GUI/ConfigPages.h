@@ -54,6 +54,24 @@
 #include <QWidget>
 #include <ConfigDialog.h>
 
+
+class MyLineEdit : public QLineEdit
+{
+Q_OBJECT
+
+public:
+    MyLineEdit(QWidget *parent = 0);
+    ~MyLineEdit();
+
+signals:
+    void focussed(bool hasFocus);
+
+protected:
+    virtual void focusInEvent(QFocusEvent *e);
+    virtual void focusOutEvent(QFocusEvent *e);
+};
+
+
 class ProblemSpecPage : public QWidget
 {
 Q_OBJECT
@@ -99,13 +117,13 @@ private:
     QListWidget *years_List;
     QListWidget *evaluator_modules_list;
     QListWidget *xpath_List;
-    QLineEdit *rate_edit;
-    QLineEdit *discount_year_zero_edit;
+    MyLineEdit *rate_edit;
+    MyLineEdit *discount_year_zero_edit;
 //    QLineEdit *year_begin_metrics_edit;
 //    QLineEdit *year_end_metrics_edit;
-    QLineEdit *zone_delineation_edit;
-    QLineEdit *zonal_layer_edit;
-    QLineEdit * zonal_map_classes_edit;
+    MyLineEdit *zone_delineation_edit;
+    MyLineEdit *zonal_layer_edit;
+    MyLineEdit * zonal_map_classes_edit;
     QTextEdit * help_box;
 
 };
@@ -149,31 +167,33 @@ public:
     void updateNumberReplicates(int number);
     void updateOuputLogMaps(std::vector<std::string> ouput_maps);
     void updateDriveLetter(QString letter);
+    void updateWhetherThrowExceptns(bool do_throw);
 
     signals:
     void outputLogMapsChanged(QVector<QString> logMapsLists);
 
 private:
     QListWidget *save_map_List;
-    QLineEdit *timeout_edit;
-    QLineEdit *wine_edit;
-    QLineEdit *geon_edit;
-    QLineEdit *working_dir_edit;
-    QLineEdit *wine_prefix_edit;
-    QLineEdit *saving_dir_edit;
-    QLineEdit *testing_dir_edit;
+    MyLineEdit *timeout_edit;
+    MyLineEdit *wine_edit;
+    MyLineEdit *geon_edit;
+    MyLineEdit *working_dir_edit;
+    MyLineEdit *wine_prefix_edit;
+    MyLineEdit *saving_dir_edit;
+    MyLineEdit *testing_dir_edit;
     QCheckBox* prefix_env_var_CheckBox;
-    QLineEdit *windows_env_var_edit;
+    MyLineEdit *windows_env_var_edit;
     QCheckBox* log_checkbox;
-    QLineEdit *geoproj_directory_edit;
-    QLineEdit *geoproj_file_edit;
-    QLineEdit *obj_log_file_edit;
-    QLineEdit *plot_log_file_edit;
-    QLineEdit *year_begin_save_edit;
-    QLineEdit *year_end_save_edit;
+    MyLineEdit *geoproj_directory_edit;
+    MyLineEdit *geoproj_file_edit;
+    MyLineEdit *obj_log_file_edit;
+    MyLineEdit *plot_log_file_edit;
+//    MyLineEdit *year_begin_save_edit;
+//    MyLineEdit *year_end_save_edit;
     QSpinBox *replicates_SpinBox;
     QTextEdit * help_box;
-    QLineEdit * driver_letter_edit;
+    MyLineEdit * driver_letter_edit;
+    QCheckBox* do_throw_exceptns_CheckBox;
 
 };
 

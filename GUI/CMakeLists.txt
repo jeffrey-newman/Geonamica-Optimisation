@@ -20,12 +20,6 @@ IF (USE_QT)
     SET(Geon_Optimiser_GUI_SRCS
             TimeSeriesQtChart.h
             TimeSeriesQtChart.cpp
-            #        nsgaiirunningpage.cpp
-            #        nsgaiirunningpage.h
-            #        optimisationwizardpage.cpp
-            #        optimisationwizardpage.h
-            #        optimiserthread.cpp
-            #        optimiserthread.h
             OptimiserController.cpp
             OptimiserController.h
             OptimiserWorker.cpp
@@ -34,8 +28,6 @@ IF (USE_QT)
             MetricQtSignal.h
             GeonamicOptGUICheckpoints.cpp
             GeonamicaOptGUICheckpoints.h
-            #        nsgaiiguimainwindow.ui
-            #        optimisationwizardpage.ui
             ParetoFrontQtChart.cpp
             ParetoFrontQtChart.h
             FrontQtSignal.cpp
@@ -51,12 +43,14 @@ IF (USE_QT)
             ConfigPages.h
             GeonamicaPolicyParametersQtMetaTyping.cpp
             GeonamicaPolicyParametersQtMetaTyping.hpp
+            PathifyQt.cpp
+            PathifyQt.hpp
             main.cpp
             )
 ELSE(USE_QT)
     SET(Geon_Optimiser_GUI_SRCS
             main.cpp
-            RandomVector.hpp)
+            RandomVector.hpp )
 ENDIF()
 
 SET(UI_LINK_LIBS
@@ -65,8 +59,8 @@ IF (USE_QT)
     SET(UI_LINK_LIBS ${UI_LINK_LIBS} Qt5::Widgets Qt5::Gui Qt5::Charts)
 ENDIF()
 
-add_executable(geonoptgui ${Geon_Optimiser_GUI_SRCS} )
-target_link_libraries(geonoptgui ${UI_LINK_LIBS} )
+add_executable(geonopt ${Geon_Optimiser_GUI_SRCS} )
+target_link_libraries(geonopt ${UI_LINK_LIBS} )
 
 #target_compile_definitions(geonoptgui PUBLIC "-DMAGICKCORE_QUANTUM_DEPTH=16" PUBLIC "-DMAGICKCORE_HDRI_ENABLE=0")
 #IF(USE_VTK)

@@ -80,6 +80,8 @@ public slots:
     void changeDriveLetter(QString new_val);
     void changeZonalClasses(QString new_val);
     void duplicateSlot();
+    void changeDoThrowExceptns(int state);
+
 
 
 private:
@@ -106,7 +108,7 @@ private:
     void setCurrentFile(const QString &fileName);
     QString strippedName(const QString &fullFileName);
     bool
-    CheckNeededDirectoriesExist();
+    CheckNeededDirectories();
 
 
     QString curFile;

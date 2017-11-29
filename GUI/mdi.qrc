@@ -11,6 +11,15 @@
     <file>images/update.png</file>
     <file>Help/ObjMap.html</file>
     <file>Help/EvalModules.html</file>
+    <file>Help/GeonamicaCommand.html</file>
+    <file>Help/SaveMaps.html</file>
+    <file>Help/timeout.html</file>
+    <file>Help/WindDriveLetter.html</file>
+    <file>Help/WineCmd.html</file>
+    <file>Help/WinePrefixPath.html</file>
+    <file>Help/WinePrefixPath2.html</file>
+    <file>Help/Workingdirectory.html</file>
     <file>Help/XPathDVs.html</file>
+    <file>Help/ZonalOptimisation.html</file>
 </qresource>
 </RCC>

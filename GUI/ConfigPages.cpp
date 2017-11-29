@@ -5,6 +5,29 @@
 
 #include "ConfigPages.h"
 
+MyLineEdit::MyLineEdit(QWidget *parent)
+    : QLineEdit(parent)
+{
+    this->setFocusPolicy(Qt::StrongFocus);
+}
+
+MyLineEdit::~MyLineEdit()
+{}
+
+void MyLineEdit::focusInEvent(QFocusEvent *e)
+{
+//    std::cout << "focussedIn!" << std::endl;
+    emit(focussed(true));
+    QLineEdit::focusInEvent(e);
+}
+
+void MyLineEdit::focusOutEvent(QFocusEvent *e)
+{
+//    std::cout << "focussedOut!" << std::endl;
+    QLineEdit::focusOutEvent(e);
+//    emit(focussed(false));
+}
+
 void
 displayHelp(QString f, QTextEdit* help_box)
 {
@@ -31,10 +54,10 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
 //      discount_year_zero_edit(new QLineEdit),
 //      year_begin_metrics_edit(new QLineEdit),
 //      year_end_metrics_edit(new QLineEdit),
-      zone_delineation_edit(new QLineEdit),
-      zonal_layer_edit(new QLineEdit),
+      zone_delineation_edit(new MyLineEdit(this)),
+      zonal_layer_edit(new MyLineEdit(this)),
       evaluator_modules_list(new QListWidget),
-        zonal_map_classes_edit(new QLineEdit),
+        zonal_map_classes_edit(new MyLineEdit(this)),
       help_box(_help_box)
 {
     QGroupBox *objectives_Group = new QGroupBox(tr("Objectives"));
@@ -101,6 +124,7 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     connect(evaluator_modules_list, &QListWidget::itemClicked, this, &ProblemSpecPage::displayObjModuleHelp);
     connect(xpath_List, &QListWidget::itemClicked, this, &ProblemSpecPage::displayXPathDVsHelp);
 
+
 //    connect(objectives_Label, &QLabel::)
 
     ///////
@@ -125,11 +149,13 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
 
     zonal_Group->setLayout(zonal_Layout);
 
-    connect(zone_delineation_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZoneDelineation);
-    connect(zonal_layer_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalLayer);
-     connect(zonal_map_classes_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalClasses);
+    connect(zone_delineation_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZoneDelineation);
+    connect(zonal_layer_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalLayer);
+     connect(zonal_map_classes_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeZonalClasses);
 
-    connect(zone_delineation_edit, &QLineEdit::
+    connect(zone_delineation_edit, &MyLineEdit::focussed, this, &ProblemSpecPage::displayZonalOptimisationHelp);
+    connect(zonal_layer_edit, &MyLineEdit::focussed, this, &ProblemSpecPage::displayZonalOptimisationHelp);
+    connect(zonal_map_classes_edit, &MyLineEdit::focussed, this, &ProblemSpecPage::displayZonalOptimisationHelp);
 
     ///////
 
@@ -324,25 +350,26 @@ void ProblemSpecPage::displayZonalOptimisationHelp()
 GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent)
     : QWidget(parent),
       save_map_List(new QListWidget),
-      timeout_edit(new QLineEdit),
-      wine_edit(new QLineEdit),
-      geon_edit(new QLineEdit),
-      working_dir_edit(new QLineEdit),
-      wine_prefix_edit(new QLineEdit),
-      saving_dir_edit(new QLineEdit),
-      testing_dir_edit(new QLineEdit),
+      timeout_edit(new MyLineEdit),
+      wine_edit(new MyLineEdit),
+      geon_edit(new MyLineEdit),
+      working_dir_edit(new MyLineEdit),
+      wine_prefix_edit(new MyLineEdit),
+      saving_dir_edit(new MyLineEdit),
+      testing_dir_edit(new MyLineEdit),
       log_checkbox(new QCheckBox(tr("Log the optimisation (i.e. for debugging)"))),
       prefix_env_var_CheckBox(new QCheckBox(tr("Set wine prefix environment variable on system call"))),
-      windows_env_var_edit(new QLineEdit),
-      geoproj_directory_edit(new QLineEdit),
-      geoproj_file_edit(new QLineEdit),
-      obj_log_file_edit(new QLineEdit),
-      plot_log_file_edit(new QLineEdit),
+      windows_env_var_edit(new MyLineEdit),
+      geoproj_directory_edit(new MyLineEdit),
+      geoproj_file_edit(new MyLineEdit),
+      obj_log_file_edit(new MyLineEdit),
+      plot_log_file_edit(new MyLineEdit),
 //      year_begin_save_edit(new QLineEdit),
 //      year_end_save_edit(new QLineEdit),
       replicates_SpinBox(new QSpinBox),
       help_box(_help_box),
-      driver_letter_edit(new QLineEdit)
+      driver_letter_edit(new MyLineEdit),
+      do_throw_exceptns_CheckBox(new QCheckBox(tr("Throw exceptions halting optimisation")))
 {
     QGroupBox* system_call_group = new QGroupBox(tr("System commands to run Geonamica"));
 
@@ -370,7 +397,9 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     connect(wine_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWineCmd);
     connect(geon_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeGeonCmd);
 
-
+    connect(timeout_edit, &MyLineEdit::focussed, this, &GeonSettingsPage::displayTimeoutHelp);
+    connect(wine_edit, &MyLineEdit::focussed, this, &GeonSettingsPage::displayWineCmdHelp);
+    connect(geon_edit, &MyLineEdit::focussed, this, &GeonSettingsPage::displayGeonamicaCmdHelp);
 
     //////
 
@@ -402,19 +431,24 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
     geon_env_Layout->addWidget(testing_dir_label, 6, 0);
     geon_env_Layout->addWidget(testing_dir_edit, 6, 1);
     geon_env_Layout->addWidget(log_checkbox, 7, 0);
+    geon_env_Layout->addWidget(do_throw_exceptns_CheckBox, 8, 0);
 
 
     geonamica_config_group->setLayout(geon_env_Layout);
 
-    connect(working_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWorkingDirectory);
-    connect(wine_prefix_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changePrefixPath);
-    connect(driver_letter_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDriveLetter);
-    connect(saving_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeSaveDir);
-    connect(testing_dir_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeTestDir);
-    connect(windows_env_var_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWindowsEnvVar);
+    connect(working_dir_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWorkingDirectory);
+    connect(wine_prefix_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changePrefixPath);
+    connect(driver_letter_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeDriveLetter);
+    connect(saving_dir_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeSaveDir);
+    connect(testing_dir_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeTestDir);
+    connect(windows_env_var_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeWindowsEnvVar);
     connect(prefix_env_var_CheckBox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeWhetherPrefixEnvVarSet);
     connect(log_checkbox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeDoLog);
+    connect(do_throw_exceptns_CheckBox, &QCheckBox::stateChanged, config_dialogue, &ConfigDialog::changeDoThrowExceptns);
 
+    connect(working_dir_edit, &MyLineEdit::focussed, this, &GeonSettingsPage::displayWorkDirHelp);
+    connect(wine_prefix_edit, &MyLineEdit::focussed, this, &GeonSettingsPage::displayWinePrefixHelp);
+    connect(driver_letter_edit, &MyLineEdit::focussed, this, &GeonSettingsPage::displayDriverLetterHelp);
 
     //////
 
@@ -441,11 +475,10 @@ GeonSettingsPage::GeonSettingsPage(ConfigDialog* config_dialogue, QTextEdit * _h
 
     geonamica_files_group->setLayout(geon_files_Layout);
 
-    connect(geoproj_directory_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeGeoprojDirectory);
-    connect(geoproj_file_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeGeoprojectFile);
-    connect(obj_log_file_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeLogFileForObjective);
-    connect(plot_log_file_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeLogFileForPostOptimisationSave);
-
+    connect(geoproj_directory_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeGeoprojDirectory);
+    connect(geoproj_file_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeGeoprojectFile);
+    connect(obj_log_file_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeLogFileForObjective);
+    connect(plot_log_file_edit, &MyLineEdit::textEdited, config_dialogue, &ConfigDialog::changeLogFileForPostOptimisationSave);
 
 
     //////
@@ -670,6 +703,12 @@ void GeonSettingsPage::displayWinePrefixHelp() {
 void GeonSettingsPage::displayDriverLetterHelp() {
     QString f = ":/Help/WindDriveLetter.html";
     displayHelp(f, help_box);
+}
+void
+GeonSettingsPage::updateWhetherThrowExceptns(bool do_throw)
+{
+    if (do_throw) do_throw_exceptns_CheckBox->setCheckState(Qt::Checked);
+    else do_throw_exceptns_CheckBox->setCheckState(Qt::Unchecked);
 }
 
 EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent)

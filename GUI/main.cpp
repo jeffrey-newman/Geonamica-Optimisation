@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         boost::program_options::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
-            ("cfg-file", boost::program_options::value<std::string>()->default_value(""), "Configuration file for optimisation")
+            ("cfg-file", boost::program_options::value<std::string>(&cfg_file.first)->default_value(""), "Configuration file for optimisation")
             ("no-gui", "Run as command line executable without GUI")
             ("test", "Test the optimisation, but do not run it")
             ;
@@ -86,7 +86,17 @@ int main(int argc, char *argv[])
             parameter_loader.processOptions(cfg_file.second.string(), params);
             params.evaluator_id = world.rank();
 
-            boost::mpi::broadcast(world, params, 0);
+            if (vm.count("test"))
+            {
+                // When testing, we want all output to go to the testing directory
+                params.working_dir.first = params.test_dir.first;
+//                params.working_dir.second = params.test_dir.second;
+                params.save_dir.first = params.test_dir.first;
+//                params.save_dir.second = params.test_dir.second;
+            }
+            parameter_loader.checkNeededDirectories(params);
+
+            if (using_mpi) boost::mpi::broadcast(world, params, 0);
 
             GeonamicaOptimiser geon_eval(params);
 
@@ -147,6 +157,7 @@ int main(int argc, char *argv[])
                 std::cout << *max_dvs << std::endl;
 
                 boost::filesystem::path save_rand_dv_dir = params.test_dir.second / "random-dvs";
+                if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_rand_dv_dir);
                 PopulationSPtr pop(new Population);
                 pop =
                     intialisePopulationRandomDVAssignment(params.pop_size, geon_eval.getProblemDefinitions(), rng);
@@ -157,14 +168,23 @@ int main(int argc, char *argv[])
             else
             {
                 // The optimiser
-                NSGAII<RNG> optimiser(rng, eval_server);
+                boost::scoped_ptr<NSGAII<RNG> > optimiser;
+                if (using_mpi)
+                {
+                    optimiser.reset(new NSGAII<RNG>(rng, eval_server));
+                }
+                else
+                {
+                    optimiser.reset(new NSGAII<RNG>(rng, geon_eval));
+                }
+
                 if (eval_strm.is_open())
                 {
-                    optimiser.log(eval_strm, eval_log, NSGAII<RNG>::LVL1);
+                    optimiser->log(eval_strm, eval_log, NSGAII<RNG>::LVL1);
                 }
 
                 // Add the checkpoints
-                createCheckpoints(optimiser, params);
+                createCheckpoints(*optimiser, params);
 
 
                 PopulationSPtr pop(new Population);
@@ -177,10 +197,10 @@ int main(int argc, char *argv[])
                 {
                     pop = restore_population(params.restart_pop_file.second);
                 }
+                optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 
-                optimiser.initialiseWithPop(pop);
-                optimiser.run();
-
+                optimiser->initialiseWithPop(pop);
+                optimiser->run();
 
                 //Postprocess the results
                 postProcessResults(geon_eval, pop, params);
@@ -225,18 +245,33 @@ int main(int argc, char *argv[])
     else
     {
         //load parameters
-        GeonamicaPolicyParameters params;
-        boost::mpi::broadcast(world, params, 0);
-        std::cout << "received params\n";
-        params.evaluator_id = world.rank();
-        //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
-        std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
-        std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";
-        boost::filesystem::path eval_log = params.save_dir.second / log_file_name;
-        std::ofstream eval_strm(eval_log.c_str());
-        boost::shared_ptr<GeonamicaOptimiser> geon_eval(new GeonamicaOptimiser(params));
-        ParallelEvaluatePopClientNonBlocking eval_client(env, world, geon_eval->getProblemDefinitions(), *geon_eval);
-        eval_client();
+        try
+        {
+            GeonamicaPolicyParameters params;
+            boost::mpi::broadcast(world, params, 0);
+//            std::cout << "received params\n";
+            params.evaluator_id = world.rank();
+            //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
+            std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
+            std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";
+            boost::filesystem::path eval_log = params.save_dir.second / log_file_name;
+            std::ofstream eval_strm(eval_log.c_str());
+            boost::shared_ptr<GeonamicaOptimiser> geon_eval(new GeonamicaOptimiser(params));
+            ParallelEvaluatePopClientNonBlocking eval_client(env, world, geon_eval->getProblemDefinitions(), *geon_eval);
+            eval_client();
+        }
+        catch(std::exception& e)
+        {
+            std::cerr << "Error: " << e.what() << "\n";
+            std::cerr << "Unrecoverable; closing down optimiser worker" << world.rank() << "\n";
+            return EXIT_FAILURE;
+        }
+        catch(...)
+        {
+            std::cerr << "Unknown error!" << "\n";
+            std::cerr << "Unrecoverable; closing down optimiser worker" << world.rank() << "\n";
+            return EXIT_FAILURE;
+        }
     }
 
 

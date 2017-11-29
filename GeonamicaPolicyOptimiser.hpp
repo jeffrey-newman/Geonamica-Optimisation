@@ -151,30 +151,38 @@ private:
     std::stringstream bat_file_contents;
     std::stringstream sh_file_contents;
     
-    //Copies entire directory - so that each geoproject is running in a different directory.
-    bool
-    copyDir(   boost::filesystem::path const & source,
-                    boost::filesystem::path const & destination );
-
-    //Copies entire directory - so that each geoproject is running in a different directory.
-    bool
-    copyFilesInDir(
-            boost::filesystem::path const & source,
-            boost::filesystem::path const & destination
-    );
-
-
-    
 public:
     GeonamicaOptimiser( GeonamicaPolicyParameters & _params);
 
     ~GeonamicaOptimiser();
 
+    std::pair<std::vector<double>, std::vector<double> > &
+    operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars);
+
+    std::pair<std::vector<double>, std::vector<double> > &
+    operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
+               boost::filesystem::path save_path);
+
+    ProblemDefinitionsSPtr getProblemDefinitions();
+
+private:
+
+    //Copies entire directory - so that each geoproject is running in a different directory.
+    bool
+    copyDir(   boost::filesystem::path const & source,
+               boost::filesystem::path const & destination );
+
+    //Copies entire directory - so that each geoproject is running in a different directory.
+    bool
+    copyFilesInDir(
+        boost::filesystem::path const & source,
+        boost::filesystem::path const & destination
+    );
+
     void
     runGeonamica(std::ofstream & logging_file);
     
-    double
-    sumMap(blink::raster::gdal_raster<double> & map);
+
 
     template<typename T> void
     setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_details, T new_value);
@@ -196,15 +204,23 @@ public:
     calculate(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
               boost::filesystem::path save_path = "no_path", boost::filesystem::path _logfile = "unspecified");
 
-    std::pair<std::vector<double>, std::vector<double> > &
-    operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars);
-    
-    std::pair<std::vector<double>, std::vector<double> > &
-    operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
-               boost::filesystem::path save_path);
-    
-    ProblemDefinitionsSPtr getProblemDefinitions();
-    
+    double
+    sumMap(blink::raster::gdal_raster<double> & map);
+
+    double
+    sumMap(const boost::filesystem::path &map_path_year, int recurse_depth = 0);
+
+    void
+    makeZonalMap(const std::vector<int> &int_decision_vars, int recurse_depth = 0);
+
+    void
+    makeZonalMap(int min_delineated_id, const std::vector<int> &zonal_values, blink::raster::gdal_raster<int> & zonal_map);
+
+    template <typename T> void
+    saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &save_path, int recurse_depth = 0) const;
+
+    template <typename T> void
+    saveMap(blink::raster::gdal_raster<T> & map, const boost::filesystem::path save_path, const SaveMapDetails & save_details) const;
 };
 
 

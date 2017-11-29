@@ -374,8 +374,8 @@ struct SaveMapParser : boost::spirit::qi::grammar<std::string::iterator, boost::
 //    }
 
 
-template <typename T>
-void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_path, SaveMapDetails & save_details)
+template <typename T> void
+GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::filesystem::path save_path, const SaveMapDetails & save_details) const
 {
     if (save_details.diff_raster.first != "no_diff")
     {
@@ -741,18 +741,11 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
 //            if (val != no_data_val)
             }
 
-
-
 //            qi::rule<std::string::iterator> zonal_categories_parser = +(qi::int_[ph::push_back(ph::ref(this->zone_categories), qi::_1)]);
             boost::spirit::qi::phrase_parse(params.zonal_map_classes.begin(), params.zonal_map_classes.end(), (+qi::int_)[ph::ref(this->zone_categories) = qi::_1], qi::space);
             int_lowerbounds.resize(delineations_ids.size(), 0);
             int_upperbounds.resize(delineations_ids.size(), this->zone_categories.size() - 1);
 
-
-            params.min_or_max.push_back(
-                    MINIMISATION);  // For minimising the area which has a restrictive (and stimulating?) zonal policies.
-            objectives_and_constraints.first.push_back(std::numeric_limits<double>::max());
-//            num_objectives++;
         }
 
         // Parse list of decision variables mapped to the geoproject file through xpaths
@@ -813,8 +806,8 @@ void saveMap(blink::raster::gdal_raster<T> & map, boost::filesystem::path save_p
 
         // Now make batch and running commands for running Geonamica.
         std::stringstream run_command_ss;
-        run_bat_file = params.save_dir.second / "run_geonamica.bat";
-        run_sh_file = params.save_dir.second / "run_wine.sh";
+        run_bat_file = params.save_dir.second / ("run_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
+        run_sh_file = params.save_dir.second / ("run_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
 
         std::ofstream bat_file(run_bat_file.string().c_str());
         std::ofstream sh_file(run_sh_file.string().c_str());
@@ -928,6 +921,47 @@ GeonamicaOptimiser::runGeonamica(std::ofstream & logging_file)
         t->report();
     }
 
+}
+
+double
+GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int recurse_depth)
+{
+    if (recurse_depth > 1) return 0.0;
+    double sum;
+    try
+    {
+        blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(map_path_year, GA_ReadOnly);
+        sum = sumMap(map);
+    }
+    catch (blink::raster::insufficient_memory_for_raster_block& ex)
+    {
+        if (params.do_throw_excptns) throw ex;
+        else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
+        return 0.0;
+    }
+    catch (blink::raster::opening_raster_failed& ex)
+    {
+        if (recurse_depth > 0)
+        {
+            if (params.do_throw_excptns) throw ex;
+            else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
+            return 0.0;
+        }
+        std::this_thread::sleep_for (std::chrono::seconds(3));
+        this->sumMap(map_path_year, 1);
+    }
+    catch (blink::raster::reading_from_raster_failed& ex)
+    {
+        if (recurse_depth > 0)
+        {
+            if (params.do_throw_excptns) throw ex;
+            else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
+            return 0.0;
+        }
+        std::this_thread::sleep_for (std::chrono::seconds(3));
+        this->sumMap(map_path_year, 1);
+    }
+    return sum;
 }
 
     double
@@ -1097,10 +1131,9 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                                             if(boost::filesystem::exists(map_path_year))
                                             {
                                                 ++num_maps;
-                                                blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(map_path_year, GA_ReadOnly);
+                                                double obj_val = sumMap(map_path_year);
                                                 int years_since_start = year - obj.year_present_val;
-                                                double obj_val = sumMap(map);
-                                                obj_val = obj_val / std::pow((1 + obj.discount_rate), years_since_start);
+                                                obj_val = obj_val / pow((1 + obj.discount_rate), years_since_start);
                                                 obj_vals[metric_num] += obj_val;
                                             }
                                         }
@@ -1108,10 +1141,20 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                         else
                         {
                             ++num_maps;
-                            blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(obj.file_path.second, GA_ReadOnly);
-                            obj_vals[metric_num] = sumMap(map);
+                            double obj_val = sumMap(obj.file_path.second);
+                            obj_vals[metric_num] = obj_val;
                         }
-                        if (num_maps == 0) throw std::runtime_error("Unable to find map " + obj.file_path.second.string() + " to aggregate sum");
+                        if (num_maps == 0)
+                        {
+                            if (params.do_throw_excptns)
+                            {
+                                throw std::runtime_error("Unable to find map " + obj.file_path.second.string() + " to aggregate sum");
+                            }
+                            else
+                            {
+                                std::cout << "Unable to find map " + obj.file_path.second.string() + " to aggregate sum";
+                            }
+                        }
                         ++metric_num;
                     }
 
@@ -1132,15 +1175,22 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
     }
 
 
-    void
+void
     GeonamicaOptimiser::calculate(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
               boost::filesystem::path save_path , boost::filesystem::path _logfile )
     {
 
         if (!is_initialised)
         {
-            throw std::runtime_error(initialisation_error_msgs);
-            return;
+            if (params.do_throw_excptns)
+            {
+                throw std::runtime_error(initialisation_error_msgs);
+                return;
+            }
+            else
+            {
+                std::cout << initialisation_error_msgs;
+            }
         }
 
         boost::filesystem::path initial_path = boost::filesystem::current_path();
@@ -1193,48 +1243,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         }
 
         // Make Zonal map
-        if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
-        {
-            int min_delineated_id = *delineations_ids.begin();
-            int max_delineated_id = *delineations_ids.end();
-            std::vector<int> zonal_values(max_delineated_id - min_delineated_id + 1, -1);
-
-            int zone_dv_index = 0;
-            for (const int &delineation_id : delineations_ids)
-            {
-                zonal_values[delineation_id - min_delineated_id] = int_decision_vars[zone_dv_index++];
-            }
-
-            objectives.back() = 0.0;
-            namespace raster = blink::raster;
-            namespace raster_it = blink::iterator;
-            raster::gdal_raster<int> zonal_map = raster::open_gdal_raster<int>(this->zonal_map_path, GA_Update);
-            auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map), std::ref(zonal_map));
-            if (zones_delineation_no_data_val)
-            {
-                for (auto &&i : zip)
-                {
-                    const int zone = std::get<0>(i);
-                    if (zone != zones_delineation_no_data_val.get())
-                    {
-                        int zone_policy = zonal_values[zone - min_delineated_id];
-                        std::get<1>(i) = zone_policy;
-                    }
-                }
-            }
-
-
-            else
-            {
-                for (auto &&i : zip)
-                {
-                    const int zone = std::get<0>(i);
-                    int zone_policy = zonal_values[zone - min_delineated_id];
-                    std::get<1>(i) = zone_policy;
-                }
-
-            }
-        }
+        makeZonalMap(int_decision_vars);
 
 
         // Manipulate geoproject with xpath dvs
@@ -1248,19 +1257,6 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                 if (dv.dv_type == XPathDV::REAL) setXPathDVValue(doc, dv, real_decision_vars[k++]);
                 else setXPathDVValue(doc, dv, int_decision_vars[j++]);
             }
-//            for (int j = 0; j < int_dv_xpaths.size(); ++j)
-//            {
-//                setAllValuesXMLNode(doc, int_dv_xpaths[j], int_decision_vars[zones.size() + j]);
-//            }
-//            for (int k = 0; k < real_dv_xpaths.size(); ++k)
-//            {
-//                setAllValuesXMLNode(doc, real_dv_xpaths[k], real_decision_vars[k]);
-//            }
-//            int real_dv_temp_index = real_dv_xpaths.size();
-//            for (int l = 0; l < spline_proportion_xpaths.size(); ++l)
-//            {
-//                setSplineCurveProportional(doc, spline_proportion_xpaths[l], spline_curves[l], real_decision_vars[real_dv_temp_index+l]);
-//            }
         }
 
         // Calculate objectives for a number of replicate runs of Geonamica
@@ -1307,14 +1303,10 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                                                                                              std::to_string(year) +
                                                                                              ".png");
                                                         if (save_details.type == SaveMapDetails::CATEGORISED) {
-                                                            blink::raster::gdal_raster<int> map = blink::raster::open_gdal_raster<int>(
-                                                                    map_path_year, GA_ReadOnly);
-                                                            saveMap(map, save_path, save_details);
+                                                            this->saveMap<int>(save_details, map_path_year);
                                                         }
                                                         if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
-                                                            blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(
-                                                                    map_path_year, GA_ReadOnly);
-                                                            saveMap(map, save_path, save_details);
+                                                            this->saveMap<double>(save_details, map_path_year);
                                                         }
 
 
@@ -1324,14 +1316,10 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                                     boost::filesystem::path save_path =
                                             save_replicate_path / (save_details.save_path.first + ".png");
                                     if (save_details.type == SaveMapDetails::CATEGORISED) {
-                                        blink::raster::gdal_raster<int> map = blink::raster::open_gdal_raster<int>(
-                                                save_details.source_raster.second, GA_ReadOnly);
-                                        saveMap(map, save_path, save_details);
+                                        this->saveMap<int>(save_details, save_path);
                                     }
                                     if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
-                                        blink::raster::gdal_raster<double> map = blink::raster::open_gdal_raster<double>(
-                                                save_details.source_raster.second, GA_ReadOnly);
-                                        saveMap(map, save_path, save_details);
+                                        this->saveMap<double>(save_details, save_path);
                                     }
                                 }
                             }
@@ -1399,9 +1387,132 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         }
     }
 
+template <typename T> void
+GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &save_path, int recurse_depth) const
+{
+    try{
+        blink::raster::gdal_raster<T> map = blink::raster::open_gdal_raster<T>(
+            save_details.source_raster.second, GA_ReadOnly);
+        this->saveMap<T>(map, save_path, save_details);
+    }
+    catch (blink::raster::insufficient_memory_for_raster_block& ex)
+    {
+        if (params.do_throw_excptns) throw ex;
+        else std::cout << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+        return;
+    }
+    catch (blink::raster::opening_raster_failed& ex)
+    {
+        if (recurse_depth > 0)
+        {
+            if (params.do_throw_excptns) throw ex;
+            else std::cout << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+            return;
+        }
+        std::this_thread::sleep_for (std::chrono::seconds(3));
+        this->saveMap<T>(save_details, save_path, 1);
+    }
+    catch (blink::raster::reading_from_raster_failed& ex)
+    {
+        if (recurse_depth > 0)
+        {
+            if (params.do_throw_excptns) throw ex;
+            else std::cout << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+            return;
+        }
+        std::this_thread::sleep_for (std::chrono::seconds(3));
+        this->saveMap<T>(save_details, save_path, 1);
+    }
+
+}
 
 
-    std::pair<std::vector<double>, std::vector<double> > &
+void
+GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int recurse_depth)
+{
+    if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
+        {
+            int min_delineated_id = *delineations_ids.begin();
+            int max_delineated_id = *delineations_ids.end();
+            std::vector<int> zonal_values(max_delineated_id - min_delineated_id + 1, -1);
+
+            int zone_dv_index = 0;
+            for (const int &delineation_id : delineations_ids)
+            {
+                zonal_values[delineation_id - min_delineated_id] = int_decision_vars[zone_dv_index++];
+            }
+
+            try
+            {
+                blink::raster::gdal_raster<int> zonal_map = blink::raster::open_gdal_raster<int>(zonal_map_path, GA_Update);
+                makeZonalMap(min_delineated_id, zonal_values, zonal_map);
+            }
+            catch (blink::raster::insufficient_memory_for_raster_block& ex)
+            {
+                if (params.do_throw_excptns) throw ex;
+                else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
+                return;
+            }
+            catch (blink::raster::opening_raster_failed& ex)
+            {
+                if (recurse_depth > 0)
+                {
+                    if (params.do_throw_excptns) throw ex;
+                    else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
+                    return;
+                }
+                std::this_thread::sleep_for (std::chrono::seconds(3));
+                this->makeZonalMap(int_decision_vars, 1);
+            }
+            catch (blink::raster::reading_from_raster_failed& ex)
+            {
+                if (recurse_depth > 0)
+                {
+                    if (params.do_throw_excptns) throw ex;
+                    else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
+                    return;
+                }
+                std::this_thread::sleep_for (std::chrono::seconds(3));
+                this->makeZonalMap(int_decision_vars, 1);
+            }
+
+        }
+
+}
+void
+GeonamicaOptimiser::makeZonalMap(int min_delineated_id,
+                                 const std::vector<int> &zonal_values,
+                                 blink::raster::gdal_raster<int> & zonal_map)
+{
+    auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map), std::ref(zonal_map));
+//    auto zip = blink::iterator::make_zip_iterator(std::ref(zones_delineation_map), std::ref(zonal_map));
+    if (zones_delineation_no_data_val)
+            {
+                for (auto &&i : zip)
+                {
+                    const int zone = std::get<0>(i);
+                    if (zone != zones_delineation_no_data_val.get())
+                    {
+                        int zone_policy = zonal_values[zone - min_delineated_id];
+                        std::get<1>(i) = zone_policy;
+                    }
+                }
+            }
+
+
+            else
+            {
+                for (auto &&i : zip)
+                {
+                    const int zone = std::get<0>(i);
+                    int zone_policy = zonal_values[zone - min_delineated_id];
+                    std::get<1>(i) = zone_policy;
+                }
+
+            }
+}
+
+std::pair<std::vector<double>, std::vector<double> > &
     GeonamicaOptimiser::operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars)
     {
         this->calculate(real_decision_vars, int_decision_vars);
@@ -1422,6 +1533,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
     {
         return (prob_defs);
     }
+
 
 
 

@@ -55,6 +55,7 @@ struct GeonamicaPolicyParameters
     int evaluator_id = 0;
     std::vector<int> rand_seeds { 1000,1001,1002,1003,1004,1005,1006,1007,1008,1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020 };
     CmdLinePaths restart_pop_file;
+    bool do_throw_excptns = false;
 //    int year_start_saving;
 //    int year_end_saving;
 //    std::vector<int> years_metric_calc;
@@ -107,6 +108,7 @@ void serialize(Archive& ar, GeonamicaPolicyParameters& p, const unsigned int ver
     ar & p.evaluator_id;
     ar & p.rand_seeds;
     ar & p.restart_pop_file;
+    ar & p.do_throw_excptns;
 }
 
 }
@@ -116,22 +118,27 @@ class LoadParameters
 {
 
 public:
-    LoadParameters();
 
-    int
+    static int
     processOptions(int argc, char * argv[], GeonamicaPolicyParameters & _params);
 
-    int
+    static int
     processOptions(std::string filepath, GeonamicaPolicyParameters & _params);
 
-    int
+    static int
     saveOptions(std::string filepath, GeonamicaPolicyParameters & _params);
 
+    static void
+    checkNeededDirectories(GeonamicaPolicyParameters & _params);
+
 private:
-    boost::program_options::options_description desc;
-    boost::filesystem::path deafult_working_dir;
-    boost::program_options::variables_map vm;
-    GeonamicaPolicyParameters params;
+    static boost::program_options::options_description
+    getOptionsDescription(GeonamicaPolicyParameters & _params);
+
+//    boost::program_options::options_description desc;
+//    boost::filesystem::path deafult_working_dir;
+//    boost::program_options::variables_map vm;
+//    GeonamicaPolicyParameters params;
 
 };
 
