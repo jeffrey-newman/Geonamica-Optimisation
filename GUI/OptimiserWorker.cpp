@@ -273,7 +273,7 @@ void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
     if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_rand_dv_dir);
     PopulationSPtr pop(new Population);
     pop =
-        intialisePopulationRandomDVAssignment(params_copy.pop_size, geon_eval->getProblemDefinitions(), rng);
+        intialisePopulationRandomDVAssignment(params_copy.pop_size, testing_geon_eval.getProblemDefinitions(), rng);
     //Postprocess the results
     postProcessResults(testing_geon_eval, pop, params_copy, save_rand_dv_dir, false);
 }

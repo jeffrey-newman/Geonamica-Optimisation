@@ -43,7 +43,7 @@ postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, Geonamic
     std::ofstream ofs(save_file.c_str());
     assert(ofs.good());
     boost::archive::xml_oarchive oa(ofs);
-    oa << BOOST_SERIALIZATION_NVP(*pop_2_process);
+    oa << boost::serialization::make_nvp("Population", *pop_2_process);
 
     boost::filesystem::path save_file2 = save_dir /  "final_front.txt";
     std::ofstream ofs2(save_file2.c_str());

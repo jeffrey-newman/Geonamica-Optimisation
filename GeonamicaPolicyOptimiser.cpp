@@ -380,7 +380,12 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 {
     if (save_details.diff_raster.first != "no_diff")
     {
+        double no_data_val = 0;
         boost::optional<T> map_no_data = map.noDataVal();
+        if (map_no_data)
+        {
+            no_data_val = map_no_data.value();
+        }
         blink::raster::gdal_raster<T> diff = blink::raster::open_gdal_raster<T>(save_details.diff_raster.second, GA_ReadOnly);
         boost::optional<T> diff_no_data = diff.noDataVal();
         blink::raster::gdal_raster<T> out = blink::raster::create_temp_gdal_raster_from_model<T>(diff);
@@ -394,15 +399,16 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 const T diff_val = std::get<1>(i);
                 if(map_val == map_no_data.value() || diff_val == diff_no_data.value())
                 {
-                    std::get<2>(i) = map_no_data.value();
+                    std::get<2>(i) = no_data_val;
                 }
+                    T diff_val = map_val - diff_val;
                 else if(map_val != diff_val)
                 {
-                    std::get<2>(i) = map_val - diff_val;
+                    std::get<2>(i) = ;
                 }
                 else
                 {
-                    std::get<2>(i) = map_no_data.value();
+                    std::get<2>(i) = no_data_val;
                 }
             }
         } else
@@ -446,7 +452,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 }
 
 
-    GeonamicaOptimiser::GeonamicaOptimiser( GeonamicaPolicyParameters & _params)
+    GeonamicaOptimiser:: GeonamicaOptimiser( GeonamicaPolicyParameters & _params)
             :
             params(_params),
             eval_count(0),
@@ -1352,14 +1358,22 @@ void
 
                                 boost::filesystem::path save_path = save_replicate_path /
                                     (save_details.save_path.second.stem().string() + "_" + std::to_string(year) + save_details.save_path.second.extension().string());
-                                if (save_details.type == SaveMapDetails::CATEGORISED) {
+                                if (save_details.type == SaveMapDetails::CATEGORISED)
+                                {
                                     this->saveMap<int>(save_details, map_path_year, save_path);
                                 }
-                                if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
+                                else if (save_details.type == SaveMapDetails::LINEAR_GRADIENT)
+                                {
                                     this->saveMap<double>(save_details, map_path_year, save_path);
                                 }
 
 
+                            }
+                            else
+                            {
+                                std::string err_msg = "Attempting to write " + map_path_year.string() + " to file, but raster did not exist on the filesystem";
+                                if (params.do_throw_excptns) throw std::runtime_error(err_msg);
+                                else std::cout << err_msg << "\n";
                             }
                         }
                     } else {
