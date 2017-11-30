@@ -380,15 +380,19 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 {
     if (save_details.diff_raster.first != "no_diff")
     {
-        double no_data_val = 0;
+        T no_data_val = 0;
         boost::optional<T> map_no_data = map.noDataVal();
         if (map_no_data)
         {
             no_data_val = map_no_data.value();
         }
+        else
+        {
+            map.setNoDataVal(no_data_val);
+        }
         blink::raster::gdal_raster<T> diff = blink::raster::open_gdal_raster<T>(save_details.diff_raster.second, GA_ReadOnly);
         boost::optional<T> diff_no_data = diff.noDataVal();
-        blink::raster::gdal_raster<T> out = blink::raster::create_temp_gdal_raster_from_model<T>(diff);
+        blink::raster::gdal_raster<T> out = blink::raster::create_temp_gdal_raster_from_model<T>(map);
         auto zip = blink::iterator::make_zip_range(std::ref(map), std::ref(diff), std::ref(out));
         if (map_no_data || diff_no_data)
         {
@@ -400,11 +404,12 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 if(map_val == map_no_data.value() || diff_val == diff_no_data.value())
                 {
                     std::get<2>(i) = no_data_val;
+                    continue;
                 }
-                    T diff_val = map_val - diff_val;
-                else if(map_val != diff_val)
+                const T difference = map_val - diff_val;
+                if(difference != 0)
                 {
-                    std::get<2>(i) = ;
+                    std::get<2>(i) = diff_val;
                 }
                 else
                 {
@@ -418,13 +423,14 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 
                 const T map_val = std::get<0>(i);
                 const T diff_val = std::get<1>(i);
-                if(map_val != diff_val)
+                const T difference = map_val - diff_val;
+                if(difference != 0)
                 {
-                    std::get<2>(i) = map_val - diff_val;
+                    std::get<2>(i) = diff_val;
                 }
                 else
                 {
-                    std::get<2>(i) = map_no_data.value();
+                    std::get<2>(i) = no_data_val;
                 }
             }
         }
