@@ -1,3 +1,5 @@
 /.project
 /.idea/
 /.directory
+.vscode/settings.json
+.vscode/.cmaketools.json

@@ -205,7 +205,7 @@ private:
     double
     sumMap(blink::raster::gdal_raster<double> & map);
 
-    double
+    boost::optional<double>
     sumMap(const boost::filesystem::path &map_path_year, int recurse_depth = 0);
 
     void
@@ -219,6 +219,9 @@ private:
 
     template <typename T> void
     saveMap(blink::raster::gdal_raster<T> & map, const boost::filesystem::path save_path, const SaveMapDetails & save_details) const;
+
+    void
+    makeWorseObjValues();
 };
 
 

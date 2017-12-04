@@ -318,61 +318,7 @@ struct SaveMapParser : boost::spirit::qi::grammar<std::string::iterator, boost::
         return true;
     }
 
-//    //Copies entire directory - so that each geoproject is running in a different directory.
-//    bool copyDirContents(
-//            boost::filesystem::path const & source,
-//            boost::filesystem::path const & destination
-//    )
-//    {
-//        namespace fs = boost::filesystem;
-//        try
-//        {
-//            // Check whether the function call is valid
-//            if(!fs::exists(source) || !fs::is_directory(source))
-//            {
-//                std::cerr << "Source directory " << source.string()
-//                          << " does not exist or is not a directory." << '\n';
-//                return false;
-//            }
-//            if(!fs::exists(destination) || !fs::is_directory(destination))
-//            {
-//                std::cerr << "Destination directory " << destination.string()
-//                          << " does not exist or is not a directory." << '\n';
-//                return false;
-//            }
-//        }
-//        catch(fs::filesystem_error const & e)
-//        {
-//            std::cerr << e.what() << '\n';
-//            return false;
-//        }
-//        // Iterate through the source directory
-//        for(fs::directory_iterator file(source); file != fs::directory_iterator(); ++file)
-//        {
-//            try
-//            {
-//                fs::path current(file->path());
-//                if(fs::is_directory(current))
-//                {
-//                    // Found directory: Recursion
-//                    if(!copyDir(current, destination / current.filename()))
-//                    {
-//                        return false;
-//                    }
-//                }
-//                else
-//                {
-//                    // Found file: Copy
-//                    fs::copy_file(current, destination / current.filename());
-//                }
-//            }
-//            catch(fs::filesystem_error const & e)
-//            {
-//                std:: cerr << e.what() << '\n';
-//            }
-//        }
-//        return true;
-//    }
+
 
 
 template <typename T> void
@@ -984,7 +930,7 @@ GeonamicaOptimiser::runGeonamica(std::ofstream & logging_file, bool do_save)
 
 }
 
-double
+boost::optional<double>
 GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int recurse_depth)
 {
     if (recurse_depth > 1) return 0.0;
@@ -998,7 +944,7 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
     {
         if (params.do_throw_excptns) throw ex;
         else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
-        return 0.0;
+        return boost::none;
     }
     catch (blink::raster::opening_raster_failed& ex)
     {
@@ -1006,7 +952,7 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
         {
             if (params.do_throw_excptns) throw ex;
             else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
-            return 0.0;
+            return boost::none;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
         this->sumMap(map_path_year, 1);
@@ -1017,10 +963,22 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
         {
             if (params.do_throw_excptns) throw ex;
             else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
-            return 0.0;
+            return boost::none;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
         this->sumMap(map_path_year, 1);
+    }
+    catch (std::exception & ex)
+    {
+            if (params.do_throw_excptns) throw ex;
+            else std::cout << "Error in sumMap for " << map_path_year.string() << ": " << ex.what() << "\n";
+            return boost::none;
+    }
+    catch (...)
+    {
+        if (params.do_throw_excptns) throw std::runtime_error("Error in sumMap for " + map_path_year.string());
+        else std::cout << "Error in sumMap for " << map_path_year.string() << "\n";
+        return boost::none;
     }
     return sum;
 }
@@ -1192,21 +1150,76 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                                             if(boost::filesystem::exists(map_path_year))
                                             {
                                                 ++num_maps;
-                                                double obj_val = sumMap(map_path_year);
-                                                int years_since_start = year - obj.year_present_val;
-                                                obj_val = obj_val / pow((1 + obj.discount_rate), years_since_start);
-                                                obj_vals[metric_num] += obj_val;
+                                                if (boost::optional<double> obj_val = sumMap(map_path_year))
+                                                {
+                                                    int years_since_start = year - obj.year_present_val;
+                                                    *obj_val = *obj_val / pow((1 + obj.discount_rate), years_since_start);
+                                                    if (obj.type == MapObj::MINIMISATION)
+                                                    {
+                                                        if (obj_vals[metric_num] != std::numeric_limits<double>::max())
+                                                        {
+                                                            obj_vals[metric_num] += *obj_val;
+                                                        }
+                                                    }
+                                                    if (obj.type == MapObj::MAXIMISATION)
+                                                    {
+                                                        if (obj_vals[metric_num] != std::numeric_limits<double>::min())
+                                                        {
+                                                            obj_vals[metric_num] += *obj_val;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    if (obj.type == MapObj::MINIMISATION)
+                                                    {
+                                                            obj_vals[metric_num] = std::numeric_limits<double>::max();
+                                                    }
+                                                    if (obj.type == MapObj::MAXIMISATION)
+                                                    {
+                                                            obj_vals[metric_num] = std::numeric_limits<double>::min();
+                                                    }
+                                                }
                                             }
                                         }
                         }
                         else
                         {
                             ++num_maps;
-                            double obj_val = sumMap(obj.file_path.second);
-                            obj_vals[metric_num] = obj_val;
+                            if (boost::optional<double> obj_val = sumMap(obj.file_path.second))
+                            {
+                                if (obj.type == MapObj::MINIMISATION)
+                                {
+                                    if (obj_vals[metric_num] != std::numeric_limits<double>::max())
+                                    {
+                                        obj_vals[metric_num] += *obj_val;
+                                    }
+                                }
+                                if (obj.type == MapObj::MAXIMISATION)
+                                {
+                                    if (obj_vals[metric_num] != std::numeric_limits<double>::min())
+                                    {
+                                        obj_vals[metric_num] += *obj_val;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (obj.type == MapObj::MINIMISATION)
+                                {
+                                    obj_vals[metric_num] = std::numeric_limits<double>::max();
+                                }
+                                if (obj.type == MapObj::MAXIMISATION)
+                                {
+                                    obj_vals[metric_num] = std::numeric_limits<double>::min();
+                                }
+                            }
                         }
                         if (num_maps == 0)
                         {
+                            if (obj.type == MapObj::MINIMISATION) obj_vals[metric_num] = std::numeric_limits<double>::max();
+                            else obj_vals[metric_num] = std::numeric_limits<double>::min();
+
                             if (params.do_throw_excptns)
                             {
                                 throw std::runtime_error("Unable to find map " + obj.file_path.second.string() + " to aggregate sum");
@@ -1221,7 +1234,27 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
 
         BOOST_FOREACH(boost::shared_ptr<evalModuleAPI> evaluator, objective_modules)
                     {
-                        obj_vals[metric_num] = evaluator->calculate(real_decision_vars, int_decision_vars);
+                        try
+                        {
+                            obj_vals[metric_num] = evaluator->calculate(real_decision_vars, int_decision_vars);
+                        }
+                        catch (std::exception & ex)
+                        {
+                            if (evaluator->isMinOrMax() == MINIMISATION) obj_vals[metric_num] = std::numeric_limits<double>::max();
+                            else obj_vals[metric_num] = std::numeric_limits<double>::min();
+
+                            if (params.do_throw_excptns) throw ex;
+                            else std::cout << "Error in evaluation of objective " << evaluator->name() << ": " << ex.what() << "\n";
+                        }
+                        catch (...)
+                        {
+                            if (evaluator->isMinOrMax() == MINIMISATION) obj_vals[metric_num] = std::numeric_limits<double>::max();
+                            else obj_vals[metric_num] = std::numeric_limits<double>::min();
+
+                            if (params.do_throw_excptns) throw std::runtime_error( "Error in evaluation of objective " + evaluator->name());
+                            else std::cout << "Error in evaluation of objective " << evaluator->name() << "\n";
+                        }
+
                         ++metric_num;
                     }
 
@@ -1307,7 +1340,11 @@ void
         }
 
         // Make Zonal map
-        makeZonalMap(int_decision_vars);
+        bool success = makeZonalMap(int_decision_vars);
+        if (!success) 
+        {
+            
+        }
 
 
         // Manipulate geoproject with xpath dvs
@@ -1343,10 +1380,18 @@ void
 
             this->runGeonamica(logging_file, do_save);
             std::vector<double> obj_vals = calcObjectives(logging_file, real_decision_vars, int_decision_vars);
+            for (int i =0; i < obj_vals.size(); ++i)
+            {
+                objectives[i] += obj_vals[i];
+                if (params.is_logging) logging_file << "Objective " << i << " = " << obj_vals[i] << "\n";
+            }
+            obj_vals_across_replicates.push_back(obj_vals);
 
             // If output of running Geonamica is saved.... (this is not logging which is managed by Geopnbamica iotself, but the generation of images of Geonamica logged output.
-            boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
-            if (do_save) {
+
+            if (do_save)
+            {
+                boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
 //                boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
                 //            if (!boost::filesystem::exists(save_replicate_path)) boost::filesystem::create_directory(save_replicate_path);
                 if (boost::filesystem::exists(save_replicate_path)) boost::filesystem::remove_all(save_replicate_path);
@@ -1393,17 +1438,6 @@ void
                         }
                     }
                 }
-            }
-
-            for (int i =0; i < obj_vals.size(); ++i)
-            {
-                objectives[i] += obj_vals[i];
-                if (params.is_logging) logging_file << "Objective " << i << " = " << obj_vals[i] << "\n";
-            }
-            obj_vals_across_replicates.push_back(obj_vals);
-
-            if (do_save)
-            {
                 // print value of each replicate objectives.
                 std::ofstream objectives_stream;
                 objectives_stream.open((save_replicate_path / "objectives.txt").string().c_str());
@@ -1419,13 +1453,12 @@ void
         }
 
         if (params.is_logging) logging_file << "Aggregated objectives across replicates:\n";
-        for (int i =0; i < objectives.size() - 1; ++i)  //-1 as last objective is number of cells with policy.
+        for (int i =0; i < objectives.size(); ++i)  //-1 as last objective is number of cells with policy.
         {
             objectives[i] /= params.replicates;
             if (params.is_logging) logging_file << "Objective " << i << " = " << objectives[i] << "\n";
         }
 
-        if (params.is_logging) logging_file << "Objective " << (objectives.size() - 1) << " = " << objectives.back() << "\n";
 
         if (do_save)
         {
@@ -1497,7 +1530,7 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
 }
 
 
-void
+bool
 GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int recurse_depth)
 {
     if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
@@ -1521,7 +1554,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
             {
                 if (params.do_throw_excptns) throw ex;
                 else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
-                return;
+                return false;
             }
             catch (blink::raster::opening_raster_failed& ex)
             {
@@ -1529,7 +1562,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
                 {
                     if (params.do_throw_excptns) throw ex;
                     else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
-                    return;
+                    return false;
                 }
                 std::this_thread::sleep_for (std::chrono::seconds(3));
                 this->makeZonalMap(int_decision_vars, 1);
@@ -1540,11 +1573,23 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
                 {
                     if (params.do_throw_excptns) throw ex;
                     else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
-                    return;
+                    return false;
                 }
                 std::this_thread::sleep_for (std::chrono::seconds(3));
                 this->makeZonalMap(int_decision_vars, 1);
             }
+             catch (std::exception & ex)
+                        {
+                           if (params.do_throw_excptns) throw ex;
+                            else std::cout << "Error in making zonal layer: " << zonal_map_path.string() << " " << ex.what() << "\n";
+                            return false;
+                        }
+                        catch (...)
+                        {
+                           if (params.do_throw_excptns) throw std::runtime_error("Error in making zonal layer: " + zonal_map_path.string());
+                            else std::cout << "Error in making zonal layer: " << zonal_map_path.string() << "\n";
+                            return false;
+                        }
 
         }
 
