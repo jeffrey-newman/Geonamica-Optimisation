@@ -208,7 +208,7 @@ private:
     boost::optional<double>
     sumMap(const boost::filesystem::path &map_path_year, int recurse_depth = 0);
 
-    void
+    bool
     makeZonalMap(const std::vector<int> &int_decision_vars, int recurse_depth = 0);
 
     void
@@ -221,7 +221,10 @@ private:
     saveMap(blink::raster::gdal_raster<T> & map, const boost::filesystem::path save_path, const SaveMapDetails & save_details) const;
 
     void
-    makeWorseObjValues();
+    makeWorseObjValues(std::vector<double> & objectives);
+
+    void
+    saveMapsAndObjAndConstraints(const boost::filesystem::path &save_path, int replicate_number, std::vector<double> & obj_vals);
 };
 
 

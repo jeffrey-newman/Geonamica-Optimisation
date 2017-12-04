@@ -1343,7 +1343,8 @@ void
         bool success = makeZonalMap(int_decision_vars);
         if (!success) 
         {
-            
+            makeWorseObjValues(objectives);
+            return;
         }
 
 
@@ -1391,63 +1392,7 @@ void
 
             if (do_save)
             {
-                boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
-//                boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
-                //            if (!boost::filesystem::exists(save_replicate_path)) boost::filesystem::create_directory(save_replicate_path);
-                if (boost::filesystem::exists(save_replicate_path)) boost::filesystem::remove_all(save_replicate_path);
-                copyDir(params.working_dir.second, save_replicate_path);
-
-                for(SaveMapDetails &save_details: this->save_img_rqsts)
-                {
-                    if (!(boost::filesystem::exists(save_details.source_raster.second))) {
-                        for(int year: save_details.years) {
-                            boost::filesystem::path map_path_year = save_details.source_raster.second.parent_path() /
-                                    (save_details.source_raster.second.stem().string() + "_" + std::to_string(year) + "-Jan-01 00_00_00" + save_details.source_raster.second.extension().string() );
-
-                            if (boost::filesystem::exists(map_path_year))
-                            {
-
-                                boost::filesystem::path save_path = save_replicate_path /
-                                    (save_details.save_path.second.stem().string() + "_" + std::to_string(year) + save_details.save_path.second.extension().string());
-                                if (save_details.type == SaveMapDetails::CATEGORISED)
-                                {
-                                    this->saveMap<int>(save_details, map_path_year, save_path);
-                                }
-                                else if (save_details.type == SaveMapDetails::LINEAR_GRADIENT)
-                                {
-                                    this->saveMap<double>(save_details, map_path_year, save_path);
-                                }
-
-
-                            }
-                            else
-                            {
-                                std::string err_msg = "Attempting to write " + map_path_year.string() + " to file, but raster did not exist on the filesystem";
-                                if (params.do_throw_excptns) throw std::runtime_error(err_msg);
-                                else std::cout << err_msg << "\n";
-                            }
-                        }
-                    } else {
-                        boost::filesystem::path save_path =
-                            save_replicate_path / (save_details.save_path.first);
-                        if (save_details.type == SaveMapDetails::CATEGORISED) {
-                            this->saveMap<int>(save_details, save_details.source_raster.second, save_path);
-                        }
-                        if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
-                            this->saveMap<double>(save_details, save_details.source_raster.second, save_path);
-                        }
-                    }
-                }
-                // print value of each replicate objectives.
-                std::ofstream objectives_stream;
-                objectives_stream.open((save_replicate_path / "objectives.txt").string().c_str());
-                if (objectives_stream.is_open())
-                {
-                    for (int k = 0; k < obj_vals.size(); ++k)
-                    {
-                        objectives_stream << "Objective " << k << " = " << obj_vals[k] << "\n";
-                    }
-                }
+                saveMapsAndObjAndConstraints(save_path, j, objectives);
             }
 
         }
@@ -1526,7 +1471,80 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
         std::this_thread::sleep_for (std::chrono::seconds(3));
         this->saveMap<T>(save_details, map_path, save_path, 1);
     }
+    catch (std::exception & ex)
+    {
+        if (params.do_throw_excptns) throw ex;
+        else std::cout << "Error in saving: " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+    }
+    catch (...)
+    {
+        if (params.do_throw_excptns) throw std::runtime_error("Error in saving: " + save_details.source_raster.second.string());
+        else std::cout << "Error in saving: " << save_details.source_raster.second.string() << "\n";
+    }
 
+}
+
+void
+GeonamicaOptimiser::saveMapsAndObjAndConstraints(const boost::filesystem::path & save_path, int replicate_number, std::vector<double> & obj_vals)
+{
+
+    boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::__cxx11::to_string(replicate_number));
+//                boost::filesystem::path save_replicate_path = save_path / ("replicate_" + std::to_string(j));
+    //            if (!boost::filesystem::exists(save_replicate_path)) boost::filesystem::create_directory(save_replicate_path);
+    if (exists(save_replicate_path)) remove_all(save_replicate_path);
+    copyDir(params.working_dir.second, save_replicate_path);
+
+    for(SaveMapDetails &save_details: this->save_img_rqsts)
+    {
+        if (!(boost::filesystem::exists(save_details.source_raster.second))) {
+            for(int year: save_details.years) {
+                boost::filesystem::path map_path_year = save_details.source_raster.second.parent_path() /
+                                                        (save_details.source_raster.second.stem().string() + "_" + std::to_string(year) + "-Jan-01 00_00_00" + save_details.source_raster.second.extension().string() );
+
+                if (boost::filesystem::exists(map_path_year))
+                {
+
+                    boost::filesystem::path save_path = save_replicate_path /
+                                                        (save_details.save_path.second.stem().string() + "_" + std::to_string(year) + save_details.save_path.second.extension().string());
+                    if (save_details.type == SaveMapDetails::CATEGORISED)
+                    {
+                        this->saveMap<int>(save_details, map_path_year, save_path);
+                    }
+                    else if (save_details.type == SaveMapDetails::LINEAR_GRADIENT)
+                    {
+                        this->saveMap<double>(save_details, map_path_year, save_path);
+                    }
+
+
+                }
+                else
+                {
+                    std::string err_msg = "Attempting to write " + map_path_year.string() + " to file, but raster did not exist on the filesystem";
+                    if (params.do_throw_excptns) throw std::runtime_error(err_msg);
+                    else std::cout << err_msg << "\n";
+                }
+            }
+        } else {
+            boost::filesystem::path save_path =
+                    save_replicate_path / (save_details.save_path.first);
+            if (save_details.type == SaveMapDetails::CATEGORISED) {
+                this->saveMap<int>(save_details, save_details.source_raster.second, save_path);
+            }
+            if (save_details.type == SaveMapDetails::LINEAR_GRADIENT) {
+                this->saveMap<double>(save_details, save_details.source_raster.second, save_path);
+            }
+        }
+    }
+    // print value of each replicate objectives.
+    std::ofstream objectives_stream;
+    objectives_stream.open((save_replicate_path / "objectives.txt").string().c_str());
+    if (objectives_stream.is_open())
+    {
+        for (int k = 0; k < obj_vals.size(); ++k)
+        {
+            objectives_stream << "Objective " << k << " = " << obj_vals[k] << "\n";
+        }
+    }
 }
 
 
@@ -1592,6 +1610,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
                         }
 
         }
+    return true;
 
 }
 void
@@ -1630,15 +1649,76 @@ GeonamicaOptimiser::makeZonalMap(int min_delineated_id,
 std::pair<std::vector<double>, std::vector<double> > &
     GeonamicaOptimiser::operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars)
     {
-        this->calculate(real_decision_vars, int_decision_vars);
+        try
+        {
+            this->calculate(real_decision_vars, int_decision_vars);
+        }
+        catch (std::exception & ex)
+        {
+            if (params.do_throw_excptns)
+            {
+                throw ex;
+            }
+            else
+            {
+                std::cout << "Error calculating objectives for DV: ";
+                std::for_each(real_decision_vars.begin(), real_decision_vars.end(), [](double i)->void {std::cout << i << " ";}); std::cout << "; ";
+                std::for_each(int_decision_vars.begin(), int_decision_vars.end(), [](int i)->void {std::cout << i << " ";}); std::cout << ". " << ex.what() << "\n";
+            }
+            makeWorseObjValues(this->objectives_and_constraints.first);
+
+        }
+        catch (...)
+        {
+            std::stringstream ss;
+            ss << "Error calculating objectives for DV: ";
+            std::for_each(real_decision_vars.begin(), real_decision_vars.end(), [&ss](double i)->void {ss << i << " ";}); ss << "; ";
+            std::for_each(int_decision_vars.begin(), int_decision_vars.end(), [&ss](int i)->void {ss << i << " ";});
+
+            if (params.do_throw_excptns) throw std::runtime_error(ss.str());
+            else std::cout << ss.str() << "\n";
+
+            makeWorseObjValues(this->objectives_and_constraints.first);
+        }
+
         return (objectives_and_constraints);
     }
 
     std::pair<std::vector<double>, std::vector<double> > &
     GeonamicaOptimiser::operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars, boost::filesystem::path save_path)
     {
-        boost::filesystem::path logging_file = save_path / "log_calculation.log";
-        this->calculate(real_decision_vars, int_decision_vars, save_path, logging_file);
+        try
+        {
+            boost::filesystem::path logging_file = save_path / "log_calculation.log";
+            this->calculate(real_decision_vars, int_decision_vars, save_path, logging_file);
+        }
+        catch (std::exception & ex)
+        {
+            if (params.do_throw_excptns)
+            {
+                throw ex;
+            }
+            else
+            {
+                std::cout << "Error calculating objectives for DV: ";
+                std::for_each(real_decision_vars.begin(), real_decision_vars.end(), [](double i)->void {std::cout << i << " ";}); std::cout << "; ";
+                std::for_each(int_decision_vars.begin(), int_decision_vars.end(), [](int i)->void {std::cout << i << " ";}); std::cout << ". " << ex.what() << "\n";
+            }
+            makeWorseObjValues(this->objectives_and_constraints.first);
+
+        }
+        catch (...)
+        {
+            std::stringstream ss;
+            ss << "Error calculating objectives for DV: ";
+            std::for_each(real_decision_vars.begin(), real_decision_vars.end(), [&ss](double i)->void {ss << i << " ";}); ss << "; ";
+            std::for_each(int_decision_vars.begin(), int_decision_vars.end(), [&ss](int i)->void {ss << i << " ";});
+
+            if (params.do_throw_excptns) throw std::runtime_error(ss.str());
+            else std::cout << ss.str() << "\n";
+
+            makeWorseObjValues(this->objectives_and_constraints.first);
+        }
         return (objectives_and_constraints);
 
     }
@@ -1648,6 +1728,15 @@ std::pair<std::vector<double>, std::vector<double> > &
     {
         return (prob_defs);
     }
+
+void GeonamicaOptimiser::makeWorseObjValues(std::vector<double> & objectives)
+{
+    for (int j = 0; j < objectives.size(); ++j)
+    {
+        if (prob_defs->minimise_or_maximise[j] == MINIMISATION) objectives[j] = std::numeric_limits<double>::max();
+        else objectives[j] = std::numeric_limits<double>::min();
+    }
+}
 
 
 
