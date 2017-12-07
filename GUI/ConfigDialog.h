@@ -81,6 +81,7 @@ public slots:
     void changeZonalClasses(QString new_val);
     void duplicateSlot();
     void changeDoThrowExceptns(int state);
+    void changeEmailAddresses(QVector<QString> new_vals);
 
 
 

@@ -201,6 +201,10 @@ class EAPage : public QWidget
 {
 Q_OBJECT
 
+private slots:
+    void addEmailAddress();
+    void processEmailAddressListChange();
+
 public:
     EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent = 0);
 
@@ -210,6 +214,10 @@ public:
     void updateMaxGenTerm(int gen);
     void updateReseedFile(QString path);
     void updateLoggingFreq(int freq);
+    void updateEmailAddresses(std::vector<std::string> email_addresses);
+
+signals:
+    void emailAddressListChanged(QVector<QString> emailAddressList);
 
 private:
     QSpinBox *pop_SpinBox;
@@ -218,6 +226,7 @@ private:
     QLineEdit *reseed_edit;
     QSpinBox *logging_SpinBox;
     QTextEdit * help_box;
+    QListWidget *email_address_List;
 
 };
 

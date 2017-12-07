@@ -227,6 +227,15 @@ int LoadParameters::saveOptions(std::string filepath, GeonamicaPolicyParameters 
         ofs << "save-freq = " << _params.save_freq << "\n";
         ofs << "reseed = " << _params.restart_pop_file.first << "\n";
         ofs << "throw-exceptns = " << _params.do_throw_excptns << "\n";
+
+        if(!_params.email_addresses_2_send_progress.empty())
+        {
+            std::for_each(_params.email_addresses_2_send_progress.begin(), _params.email_addresses_2_send_progress.end(), [&ofs] (std::string &
+            email_address) {
+                ofs << "email-address = " << email_address << "\n";
+            });
+        }
+
 //        ofs << "year-start-saving = " << _params.year_start_saving << "\n";
 //        ofs << "year-end-saving = " << _params.year_end_saving << "\n";
         
@@ -330,8 +339,9 @@ LoadParameters::getOptionsDescription(GeonamicaPolicyParameters& params)
 
             ("reseed,r", po::value<std::string>(&params.restart_pop_file.first)->default_value("no_seed"),
              "File with saved population as initial seed population for GA")
-            ("throw-exceptns", po::value<bool>(&params.do_throw_excptns)->default_value(false), "Whether to throw exceptions or just print and continue when evaluating objectives with Geonamica"),
-
+            ("throw-exceptns", po::value<bool>(&params.do_throw_excptns)->default_value(false), "Whether to throw exceptions or just print and continue when evaluating objectives with Geonamica")
+            ("email-address", po::value<std::vector<std::string> >(&params.email_addresses_2_send_progress)->multitoken(),
+                "email addresses to send status updates of search as it progresses")
 
             ("cfg-file,c", po::value<std::string>(), "can be specified with '@name', too");
     }

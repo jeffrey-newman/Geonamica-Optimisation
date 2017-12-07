@@ -365,6 +365,7 @@ void ConfigDialog::updateParamsValuesInGUI()
     ea_Page->updateMaxGenTerm(params->max_gen);
     ea_Page->updateReseedFile(QString::fromStdString(params->restart_pop_file.first));
     ea_Page->updateLoggingFreq(params->save_freq);
+    ea_Page->updateEmailAddresses(params->email_addresses_2_send_progress);
     
 }
 
@@ -869,6 +870,16 @@ ConfigDialog::changeDoThrowExceptns(int state)
 {
     if (state == Qt::Unchecked) this->params->do_throw_excptns = false;
     else this->params->do_throw_excptns = true;
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+void
+ConfigDialog::changeEmailAddresses(QVector<QString> new_vals)
+{
+    this->params->email_addresses_2_send_progress.clear();
+    QVectorIterator<QString> i(new_vals);
+    while (i.hasNext())
+        this->params->email_addresses_2_send_progress.push_back(i.next().toStdString());
     is_modified = true;
     opt_needs_initialisation = true;
 }

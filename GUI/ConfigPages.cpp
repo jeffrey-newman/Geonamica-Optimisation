@@ -718,6 +718,7 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
         term_SpinBox(new QSpinBox),
         reseed_edit(new QLineEdit),
         logging_SpinBox(new QSpinBox),
+      email_address_List(new QListWidget),
       help_box(_help_box)
 {
     QGroupBox *parameters_Group = new QGroupBox(tr("NSGAII parameters"));
@@ -797,11 +798,30 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
 
     /////
 
+
+    QGroupBox* email_status_group = new QGroupBox(tr("Email addresses to send GA status updates to"));
+
+    QLabel *email_addresses_Label = new QLabel(tr("Email addresses"));
+    QPushButton* email_addresses_button = new QPushButton(tr("Add new email address"));
+    QGridLayout *email_addresses_Layout = new QGridLayout;
+    email_addresses_Layout->addWidget(email_addresses_Label, 0, 0, 1, 2);
+    email_addresses_Layout->addWidget(email_address_List, 1, 0 , 1, 2);
+    email_addresses_Layout->addWidget(email_addresses_button, 2, 0, 1, 2);
+
+    email_status_group->setLayout(email_addresses_Layout);
+
+    connect(email_address_List, &QListWidget::itemChanged, this, &EAPage::processEmailAddressListChange);
+    connect(this, &EAPage::emailAddressListChanged, config_dialogue, &ConfigDialog::changeEmailAddresses);
+    connect(email_addresses_button, &QPushButton::clicked, this, &EAPage::addEmailAddress);
+//    connect(email_address_List, &QListWidget::itemClicked, this, &EAPage::displaySaveMapHelp);
+
+
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(parameters_Group);
     mainLayout->addWidget(termination_Group);
     mainLayout->addWidget(reseed);
     mainLayout->addWidget(logging);
+    mainLayout->addWidget(email_status_group);
     mainLayout->addStretch(1);
     setLayout(mainLayout);
 }
@@ -829,4 +849,31 @@ void EAPage::updateReseedFile(QString path)
 void EAPage::updateLoggingFreq(int freq)
 {
     logging_SpinBox->setValue(freq);
+}
+void
+EAPage::processEmailAddressListChange()
+{
+    QVector<QString> items;
+    for (int j = 0; j < email_address_List->count() ; ++j)
+    {
+        items.append(email_address_List->item(j)->text());
+    }
+    emit emailAddressListChanged(items);
+}
+void
+EAPage::updateEmailAddresses(std::vector<std::string> email_addresses)
+{
+    BOOST_FOREACH(std::string & address, email_addresses)
+                {
+                    QListWidgetItem * new_item = new QListWidgetItem(email_address_List);
+                    new_item->setText(QString::fromStdString(address));
+                    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
+                }
+}
+void
+EAPage::addEmailAddress()
+{
+    QListWidgetItem * new_item = new QListWidgetItem(email_address_List);
+    new_item->setText(tr("New email address"));
+    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 }

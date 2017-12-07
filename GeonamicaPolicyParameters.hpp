@@ -56,6 +56,7 @@ struct GeonamicaPolicyParameters
     std::vector<int> rand_seeds { 1000,1001,1002,1003,1004,1005,1006,1007,1008,1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020 };
     CmdLinePaths restart_pop_file;
     bool do_throw_excptns = false;
+    std::vector<std::string> email_addresses_2_send_progress;
 //    int year_start_saving;
 //    int year_end_saving;
 //    std::vector<int> years_metric_calc;
@@ -109,6 +110,7 @@ void serialize(Archive& ar, GeonamicaPolicyParameters& p, const unsigned int ver
     ar & p.rand_seeds;
     ar & p.restart_pop_file;
     ar & p.do_throw_excptns;
+    ar & p.email_addresses_2_send_progress;
 }
 
 }

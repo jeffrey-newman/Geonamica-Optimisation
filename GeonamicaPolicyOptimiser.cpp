@@ -702,6 +702,16 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 //            if (val != no_data_val)
             }
 
+            min_delineated_id = *delineations_ids.begin();
+            max_delineated_id = *(--delineations_ids.end());
+            zone_id_lookup.resize(max_delineated_id - min_delineated_id + 1, -1);
+            int index = 0;
+            for (const int &delineation_id : delineations_ids)
+            {
+                zone_id_lookup[delineation_id] = index++;
+            }
+
+
 //            qi::rule<std::string::iterator> zonal_categories_parser = +(qi::int_[ph::push_back(ph::ref(this->zone_categories), qi::_1)]);
             boost::spirit::qi::phrase_parse(params.zonal_map_classes.begin(), params.zonal_map_classes.end(), (+qi::int_)[ph::ref(this->zone_categories) = qi::_1], qi::space);
             int_lowerbounds.resize(delineations_ids.size(), 0);
@@ -1553,20 +1563,25 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
 {
     if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
         {
-            int min_delineated_id = *delineations_ids.begin();
-            int max_delineated_id = *delineations_ids.end();
-            std::vector<int> zonal_values(max_delineated_id - min_delineated_id + 1, -1);
+            std::vector<int>::const_iterator first = int_decision_vars.begin();
+//            std::vector<int>::const_iterator last = int_decision_vars.begin() + delineations_ids.size();
+//            std::vector<int> zonal_values(first, last);
 
-            int zone_dv_index = 0;
-            for (const int &delineation_id : delineations_ids)
-            {
-                zonal_values[delineation_id - min_delineated_id] = int_decision_vars[zone_dv_index++];
-            }
+//            int min_delineated_id = *delineations_ids.begin();
+//            int max_delineated_id = *(--delineations_ids.end());
+//            delineations_ids.size();
+//            std::vector<int> zonal_values(max_delineated_id - min_delineated_id + 1, -1);
+//
+//            int zone_dv_index = 0;
+//            for (const int &delineation_id : delineations_ids)
+//            {
+//                zonal_values[delineation_id - min_delineated_id] = int_decision_vars[zone_dv_index++];
+//            }
 
             try
             {
                 blink::raster::gdal_raster<int> zonal_map = blink::raster::open_gdal_raster<int>(zonal_map_path, GA_Update);
-                makeZonalMap(min_delineated_id, zonal_values, zonal_map);
+                makeZonalMap(first, zonal_map);
             }
             catch (blink::raster::insufficient_memory_for_raster_block& ex)
             {
@@ -1614,8 +1629,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
 
 }
 void
-GeonamicaOptimiser::makeZonalMap(int min_delineated_id,
-                                 const std::vector<int> &zonal_values,
+GeonamicaOptimiser::makeZonalMap(std::vector<int>::const_iterator first_zone_dv,
                                  blink::raster::gdal_raster<int> & zonal_map)
 {
     auto zip = blink::iterator::make_zip_range(std::ref(zones_delineation_map), std::ref(zonal_map));
@@ -1627,8 +1641,10 @@ GeonamicaOptimiser::makeZonalMap(int min_delineated_id,
                     const int zone = std::get<0>(i);
                     if (zone != zones_delineation_no_data_val.get())
                     {
-                        int zone_policy = zonal_values[zone - min_delineated_id];
-                        std::get<1>(i) = zone_policy;
+                        int index = this->zone_id_lookup[zone];
+                        int dv_val_for_subregion = *(first_zone_dv + index);
+                        int zone_category = this->zone_categories[dv_val_for_subregion];
+                        std::get<1>(i) = zone_category;
                     }
                 }
             }
@@ -1638,9 +1654,10 @@ GeonamicaOptimiser::makeZonalMap(int min_delineated_id,
             {
                 for (auto &&i : zip)
                 {
-                    const int zone = std::get<0>(i);
-                    int zone_policy = zonal_values[zone - min_delineated_id];
-                    std::get<1>(i) = zone_policy;
+                    int index = this->zone_id_lookup[zone];
+                    int dv_val_for_subregion = *(first_zone_dv + index);
+                    int zone_category = this->zone_categories[dv_val_for_subregion];
+                    std::get<1>(i) = zone_category;
                 }
 
             }

@@ -89,6 +89,9 @@ private:
     boost::optional<int> zones_delineation_no_data_val;
     std::vector<int> zone_categories;
     std::set<int> delineations_ids;
+    std::vector<int> zone_id_lookup; // maps the index of the vector as the nth zonal decision variable to the subregion id in subregion map.
+    int min_delineated_id;
+    int max_delineated_id;
     
     boost::filesystem::path logfile;
     boost::filesystem::path previous_logfile;
@@ -212,7 +215,8 @@ private:
     makeZonalMap(const std::vector<int> &int_decision_vars, int recurse_depth = 0);
 
     void
-    makeZonalMap(int min_delineated_id, const std::vector<int> &zonal_values, blink::raster::gdal_raster<int> & zonal_map);
+    makeZonalMap(std::vector<int>::const_iterator first_zone_dv,
+                 blink::raster::gdal_raster<int> & zonal_map);
 
     template <typename T> void
     saveMap(const SaveMapDetails &save_details, const boost::filesystem::path &map_path, const boost::filesystem::path &save_path, int recurse_depth = 0) const;

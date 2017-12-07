@@ -20,19 +20,28 @@ createCheckpoints(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params)
     boost::shared_ptr<Hypervolume> hvol(new Hypervolume(1, params.save_dir.second, Hypervolume::TERMINATION, params.max_gen_hvol));
 //    boost::shared_ptr<MetricLinePlot> hvol_plot(new MetricLinePlot(hvol));
     boost::shared_ptr<MaxGenCheckpoint> maxgen(new MaxGenCheckpoint(params.max_gen));
-    std::string mail_subj("Hypervolume of front from Zonal calibrator ");
-    boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(10, hvol, mail_subj));
-    std::string jeffs_address("jeffrey.newman@adelaide.edu.au");
-    mail->addAddress(jeffs_address);
+
+    std::string mail_subj("Hypervolume of front from Geonamica optimiser");
+    boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(params.save_freq, hvol, mail_subj));
+    if (!params.email_addresses_2_send_progress.empty())
+    {
+        for(std::string address: params.email_addresses_2_send_progress)
+        {
+            mail->addAddress(address);
+        }
+    }
+
     boost::shared_ptr<SignalCheckpoint> signal_handler(new SignalCheckpoint(SIGINT));
 
 //    boost::shared_ptr<PlotFrontVTK> plotfront(new PlotFrontVTK);
     optimiser.add_checkpoint(save_pop);
     optimiser.add_checkpoint(save_front);
     optimiser.add_checkpoint(hvol);
-    optimiser.add_checkpoint(mail);
-//    optimiser.add_checkpoint(hvol_plot);
-//    optimiser.add_checkpoint(plotfront);
+    if (!params.email_addresses_2_send_progress.empty())
+    {
+        optimiser.add_checkpoint(mail);
+    }
+
     optimiser.add_checkpoint(maxgen);
     optimiser.add_checkpoint(signal_handler);
 }

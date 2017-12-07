@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
             if (cfg_file.first.empty())
             {
                 std::cerr << "Must specify path to cfg file when using --no-gui\n";
+                if (using_mpi) env.abort(EXIT_FAILURE);
                 return EXIT_FAILURE;
             }
             else
@@ -77,6 +78,7 @@ int main(int argc, char *argv[])
                 if (!success)
                 {
                     std::cerr << "Must specify path to existing cfg file when using --no-gui\n";
+                    if (using_mpi) env.abort(EXIT_FAILURE);
                     return EXIT_FAILURE;
                 }
             }
@@ -274,10 +276,5 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
     }
-
-
-
-
-
 
 }
