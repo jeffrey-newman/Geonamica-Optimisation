@@ -708,7 +708,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
             int index = 0;
             for (const int &delineation_id : delineations_ids)
             {
-                zone_id_lookup[delineation_id] = index++;
+                zone_id_lookup[delineation_id - min_delineated_id] = index++;
             }
 
 
@@ -1638,10 +1638,10 @@ GeonamicaOptimiser::makeZonalMap(std::vector<int>::const_iterator first_zone_dv,
             {
                 for (auto &&i : zip)
                 {
-                    const int zone = std::get<0>(i);
-                    if (zone != zones_delineation_no_data_val.get())
+                    const int subregion_id = std::get<0>(i);
+                    if (subregion_id != zones_delineation_no_data_val.get())
                     {
-                        int index = this->zone_id_lookup[zone];
+                        int index = this->zone_id_lookup[subregion_id - min_delineated_id];
                         int dv_val_for_subregion = *(first_zone_dv + index);
                         int zone_category = this->zone_categories[dv_val_for_subregion];
                         std::get<1>(i) = zone_category;
@@ -1654,7 +1654,8 @@ GeonamicaOptimiser::makeZonalMap(std::vector<int>::const_iterator first_zone_dv,
             {
                 for (auto &&i : zip)
                 {
-                    int index = this->zone_id_lookup[zone];
+                    const int subregion_id = std::get<0>(i);
+                    int index = this->zone_id_lookup[subregion_id - min_delineated_id];
                     int dv_val_for_subregion = *(first_zone_dv + index);
                     int zone_category = this->zone_categories[dv_val_for_subregion];
                     std::get<1>(i) = zone_category;
