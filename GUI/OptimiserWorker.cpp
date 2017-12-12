@@ -62,7 +62,7 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
             }
             else
             {
-                pop = restore_population(params.restart_pop_file.second);
+                pop = restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions());
             }
             nsgaii_objs->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 
@@ -106,7 +106,7 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
             }
             else
             {
-                pop = restore_population(params.restart_pop_file.second);
+                pop = restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions());
             }
             nsgaii_objs_pll->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 

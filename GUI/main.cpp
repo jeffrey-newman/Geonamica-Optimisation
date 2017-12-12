@@ -21,31 +21,25 @@
 #include "MainWindow.hpp"
 #endif
 
-
-
-
-
 int main(int argc, char *argv[])
 {
-
-
     boost::mpi::environment env(argc, argv);
     boost::mpi::communicator world;
     bool using_mpi = false;
     if (world.size() > 1) using_mpi = true;
 
-
-
     if (world.rank() == 0)
     {
 
         CmdLinePaths cfg_file;
+        CmdLinePaths gen_pop_file;
         boost::program_options::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
             ("cfg-file", boost::program_options::value<std::string>(&cfg_file.first)->default_value(""), "Configuration file for optimisation")
             ("no-gui", "Run as command line executable without GUI")
             ("test", "Test the optimisation, but do not run it")
+                ("generate-pop", boost::program_options::value<std::string>(&gen_pop_file.first), "Generate a random population then quit, saving population to file specified")
             ;
 
         boost::program_options::positional_options_description p;
@@ -58,13 +52,53 @@ int main(int argc, char *argv[])
 
         if (vm.count("help")) {
             std::cout << desc << "\n";
+            if (using_mpi) env.abort(EXIT_SUCCESS);
             return EXIT_SUCCESS;
         }
 
+        if (vm.count("generate-pop"))
+        {
+            if (cfg_file.first.empty())
+            {
+                std::cerr << "Must specify path to cfg file when using --no-gui\n";
+                if (using_mpi) env.abort(EXIT_FAILURE);
+                return EXIT_FAILURE;
+            }
+            else
+            {
+                bool success = pathify(cfg_file);
+                if (!success)
+                {
+                    std::cerr << "Must specify path to existing cfg file when using --no-gui\n";
+                    if (using_mpi) env.abort(EXIT_FAILURE);
+                    return EXIT_FAILURE;
+                }
+            }
+
+            // The random number generator
+            typedef std::mt19937 RNG;
+            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+            RNG rng(seed);
+
+            //Getting problem characteristics
+            LoadParameters parameter_loader;
+            GeonamicaPolicyParameters params;
+            std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
+            parameter_loader.processOptions(cfg_file.second.string(), params);
+            parameter_loader.checkNeededDirectories(params);
+            GeonamicaOptimiser geon_eval(params);
+
+            //Generate and save the population
+            PopulationSPtr pop(new Population);
+            pop = intialisePopulationRandomDVAssignment(params.pop_size, geon_eval.getProblemDefinitions(), rng);
+            gen_pop_file.second = boost::filesystem::path(gen_pop_file.first);
+            print(pop, gen_pop_file.second);
+            if (using_mpi) env.abort(EXIT_SUCCESS);
+            return EXIT_SUCCESS;
+        }
 
         if (vm.count("no-gui"))
         {
-
 
             if (cfg_file.first.empty())
             {
@@ -167,6 +201,13 @@ int main(int argc, char *argv[])
                 //Postprocess the results
                 postProcessResults(geon_eval, pop, params, save_rand_dv_dir, false);
 
+                if (not(params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty()))
+                {
+                    PopulationSPtr pop(new Population);
+                    pop = restore_population(params.restart_pop_file.second, problem_defs);
+                    postProcessResults(geon_eval, pop, params);
+                }
+
             }
             else
             {
@@ -191,14 +232,14 @@ int main(int argc, char *argv[])
 
 
                 PopulationSPtr pop(new Population);
-                if (params.restart_pop_file.first == "no_seed")
+                if (params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty())
                 {
                     pop =
                         intialisePopulationRandomDVAssignment(params.pop_size, geon_eval.getProblemDefinitions(), rng);
                 }
                 else
                 {
-                    pop = restore_population(params.restart_pop_file.second);
+                    pop = restore_population(params.restart_pop_file.second, geon_eval.getProblemDefinitions());
                 }
                 optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 
