@@ -198,6 +198,9 @@ private:
 //    setSplineCurveProportional(pugi::xml_document & doc, std::string xpath_query, std::vector<std::vector<double> > &
 //    base_spline, double factor);
 
+    void
+    removeOldOutputs();
+
     std::vector<double>
     calcObjectives(std::ofstream & logging_file, const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars);
 
