@@ -1137,6 +1137,32 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
 //        }
 //    }
 
+    void
+    GeonamicaOptimiser::removeOldOutputs()
+    {
+
+        for(MapObj & obj: map_objectives)
+        {
+            if (!(boost::filesystem::exists(obj.file_path.second)))
+            {
+                for(int year: obj.years)
+                {
+                    boost::filesystem::path map_path_year = obj.file_path.second.parent_path() / (obj.file_path.second.stem().string() +  "_" + std::to_string(year) + "-Jan-01 00_00_00" + obj.file_path.second.extension().string());
+
+                    if(boost::filesystem::exists(map_path_year))
+                    {
+                        boost::filesystem::remove(map_path_year);
+                    }
+                }
+            }
+            else
+            {
+                boost::filesystem::remove(obj.file_path.second);
+            }
+        }
+    }
+
+
     std::vector<double>
     GeonamicaOptimiser::calcObjectives(std::ofstream & logging_file, const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars)
     {
@@ -1388,6 +1414,11 @@ void
                 boost::filesystem::path prerun_bck_geoproj = working_project.parent_path() / (filename + "_prerunbck" + extnsn);
                 boost::filesystem::copy_file(working_project, prerun_bck_geoproj, boost::filesystem::copy_option::overwrite_if_exists);
             }
+
+            // Clean up (remove) filesd which are used for objectives, so that we know if the file is not present, then
+            // something went wrong with the model run and do not assign the previously computed results for different
+            // decision variables to this evaluation.
+            this->removeOldOutputs();
 
             this->runGeonamica(logging_file, do_save);
             std::vector<double> obj_vals = calcObjectives(logging_file, real_decision_vars, int_decision_vars);
