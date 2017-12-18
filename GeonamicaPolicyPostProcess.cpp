@@ -25,6 +25,8 @@ postProcessResults(GeonamicaOptimiser & zonal_eval, PopulationSPtr pop, Geonamic
         pop_2_process = pop.get();
     }
 
+    ObjectiveValueCompator obj_comparator(0);
+    std::sort(pop_2_process->begin(), pop_2_process->end(), obj_comparator);
 
     int i = 0;
     BOOST_FOREACH(IndividualSPtr ind, *pop_2_process)
