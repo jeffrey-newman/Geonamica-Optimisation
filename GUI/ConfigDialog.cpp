@@ -883,6 +883,23 @@ ConfigDialog::changeEmailAddresses(QVector<QString> new_vals)
     is_modified = true;
     opt_needs_initialisation = true;
 }
+void
+ConfigDialog::evalReseedPop()
+{
+//    std::cout << "Button clicked" << std::endl
+    if (this->CheckNeededDirectories());
+    {
+        if (this->opt_needs_initialisation)
+        {
+
+            optsn_cntrl->initialise(*params);
+            opt_needs_initialisation = false;
+        }
+
+        optsn_cntrl->evalReseedPop();
+    }
+
+}
 
 
 

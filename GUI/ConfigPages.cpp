@@ -769,14 +769,17 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
 
     QLabel* ressed_label = new QLabel(tr("Reseed population file:"));
 //    QLineEdit *reseed_edit = new QLineEdit;
+    QPushButton * eval_reseed_pop_button = new QPushButton(tr("Evaluate"));
 
     QGridLayout* reseed_layout = new QGridLayout;
     reseed_layout->addWidget(ressed_label, 0 , 0);
     reseed_layout->addWidget(reseed_edit, 0 , 1);
+    reseed_layout->addWidget(eval_reseed_pop_button, 1, 1);
 
     reseed->setLayout(reseed_layout);
 
     connect(reseed_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeRessed);
+    connect(eval_reseed_pop_button, &QAbstractButton::clicked, config_dialogue, &ConfigDialog::evalReseedPop);
 
     ////
 

@@ -31,12 +31,14 @@ public:
     void run();
     void step();
     void test(GeonamicaPolicyParameters _params);
+    void evalReseedPop();
 
 signals:
     void runOptimisation();
     void testOptimisation(GeonamicaPolicyParameters _params);
     void intialiseOptimisation(GeonamicaPolicyParameters _params);
     void stepOptimisation();
+    void evalReseedPopInWorker();
 //    void terminateOptimisation();
 
 

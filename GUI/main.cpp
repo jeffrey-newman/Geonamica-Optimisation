@@ -38,7 +38,8 @@ int main(int argc, char *argv[])
             ("help", "produce help message")
             ("cfg-file", boost::program_options::value<std::string>(&cfg_file.first)->default_value(""), "Configuration file for optimisation")
             ("no-gui", "Run as command line executable without GUI")
-            ("test", "Test the optimisation, but do not run it")
+            ("test", "Test the optimisation, but do not run it. Must be used in combination with --no-gui")
+            ("postprocess", "Run the evaluation and save it for the population in the reseed file the ressed file is specified in the cfg file. Must be used in combination with --no-gui")
                 ("generate-pop", boost::program_options::value<std::string>(&gen_pop_file.first), "Generate a random population then quit, saving population to file specified")
             ;
 
@@ -164,6 +165,17 @@ int main(int argc, char *argv[])
             unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
             RNG rng(seed);
 
+            // The optimiser
+            boost::scoped_ptr<NSGAII<RNG> > optimiser;
+            if (using_mpi)
+            {
+                optimiser.reset(new NSGAII<RNG>(rng, eval_server));
+            }
+            else
+            {
+                optimiser.reset(new NSGAII<RNG>(rng, geon_eval));
+            }
+
             if (vm.count("test"))
             {
                 ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
@@ -174,54 +186,27 @@ int main(int argc, char *argv[])
                 min_dvs->setIntDVs(problem_defs->int_lowerbounds);
                 min_dvs->setRealDVs(problem_defs->real_lowerbounds);
 
-                std::vector<double> objectives;
-                std::vector<double> constraints;
-
-                boost::filesystem::path save_min_dv_dir = params.test_dir.second / "min-dvs";
-                if (!boost::filesystem::exists(save_min_dv_dir)) boost::filesystem::create_directories(save_min_dv_dir);
-                std::tie(objectives, constraints) = geon_eval(min_dvs->getRealDVVector(), min_dvs->getIntDVVector(), save_min_dv_dir);
-                min_dvs->setObjectives(objectives);
-                min_dvs->setConstraints(constraints);
-                std::cout << "All dvs min value: " << std::endl;
-                std::cout << *min_dvs << std::endl;
-
-                boost::filesystem::path save_max_dv_dir = params.test_dir.second / "max-dvs";
-                if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_max_dv_dir);
-                std::tie(objectives, constraints) = geon_eval(max_dvs->getRealDVVector(), max_dvs->getIntDVVector(), save_max_dv_dir);
-                max_dvs->setObjectives(objectives);
-                max_dvs->setConstraints(constraints);
-                std::cout << "All dvs max value: " << std::endl;
-                std::cout << *max_dvs << std::endl;
-
-                boost::filesystem::path save_rand_dv_dir = params.test_dir.second / "random-dvs";
-                if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_rand_dv_dir);
                 PopulationSPtr pop(new Population);
                 pop =
                     intialisePopulationRandomDVAssignment(params.pop_size, geon_eval.getProblemDefinitions(), rng);
+                pop->push_back(max_dvs);
+                pop->push_back(min_dvs);
                 //Postprocess the results
-                postProcessResults(geon_eval, pop, params, save_rand_dv_dir, false);
+                optimiser->postProcess(pop, params.test_dir.second);
 
+            }
+            if(vm.count("postprocess"))
+            {
                 if (not(params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty()))
                 {
+                    ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
                     PopulationSPtr pop(new Population);
                     pop = restore_population(params.restart_pop_file.second, problem_defs);
-                    postProcessResults(geon_eval, pop, params);
+                    optimiser->postProcess(pop, params.save_dir.second);
                 }
-
             }
             else
             {
-                // The optimiser
-                boost::scoped_ptr<NSGAII<RNG> > optimiser;
-                if (using_mpi)
-                {
-                    optimiser.reset(new NSGAII<RNG>(rng, eval_server));
-                }
-                else
-                {
-                    optimiser.reset(new NSGAII<RNG>(rng, geon_eval));
-                }
-
                 if (eval_strm.is_open())
                 {
                     optimiser->log(eval_strm, eval_log, NSGAII<RNG>::LVL1);
@@ -247,7 +232,7 @@ int main(int argc, char *argv[])
                 optimiser->run();
 
                 //Postprocess the results
-                postProcessResults(geon_eval, pop, params);
+                optimiser->postProcess(pop, params.save_dir.second);
             }
 
 
@@ -284,7 +269,7 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
 #endif
         }
-
+        if (using_mpi) env.abort(EXIT_SUCCESS);
     }
     else
     {
@@ -316,6 +301,7 @@ int main(int argc, char *argv[])
             std::cerr << "Unrecoverable; closing down optimiser worker" << world.rank() << "\n";
             return EXIT_FAILURE;
         }
+        return EXIT_SUCCESS;
     }
 
 }

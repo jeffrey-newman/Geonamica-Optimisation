@@ -82,6 +82,7 @@ public slots:
     void duplicateSlot();
     void changeDoThrowExceptns(int state);
     void changeEmailAddresses(QVector<QString> new_vals);
+    void evalReseedPop();
 
 
 

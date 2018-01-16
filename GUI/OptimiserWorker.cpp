@@ -154,7 +154,7 @@ OptimiserWorker::optimise()
 //        nsgaii_objs->optimiser.run();
 
             //Postprocess the results
-            if (nsgaii_objs->optimiser.isFinished()) postProcessResults(*geon_eval, pop, params);
+            if (nsgaii_objs->optimiser.isFinished()) nsgaii_objs->optimiser.postProcess(pop, params.save_dir.second);
         }
         else
         {
@@ -171,7 +171,7 @@ OptimiserWorker::optimise()
 //        nsgaii_objs->optimiser.run();
 
             //Postprocess the results
-            if (nsgaii_objs_pll->optimiser.isFinished()) postProcessResults(*geon_eval, pop, params);
+            if (nsgaii_objs_pll->optimiser.isFinished()) nsgaii_objs_pll->optimiser.postProcess(pop, params.save_dir.second);
         }
 
         std::cout << "Finished running optimisation" << std::endl;
@@ -204,7 +204,7 @@ void OptimiserWorker::step()
             nsgaii_objs->optimiser.step();
 
             //Postprocess the results
-            if (nsgaii_objs->optimiser.isFinished()) postProcessResults(*geon_eval, pop, params);
+            if (nsgaii_objs->optimiser.isFinished()) nsgaii_objs->optimiser.postProcess(pop, params.save_dir.second);
         }
         else
         {
@@ -212,7 +212,7 @@ void OptimiserWorker::step()
             nsgaii_objs_pll->optimiser.step();
 
             //Postprocess the results
-            if (nsgaii_objs_pll->optimiser.isFinished()) postProcessResults(*geon_eval, pop, params);
+            if (nsgaii_objs_pll->optimiser.isFinished()) nsgaii_objs_pll->optimiser.postProcess(pop, params.save_dir.second);
         }https://support.google.com/a/answer/178723?hl=en
 
         std::cout << "Finished running optimisation" << std::endl;
@@ -222,6 +222,20 @@ void OptimiserWorker::step()
         emit error(QString(err.what()));
     }
 
+}
+
+void
+OptimiserWorker::evalReseedPop()
+{
+    PopulationSPtr pop2process(restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions()));
+    if (using_mpi == false)
+    {
+        nsgaii_objs->optimiser.postProcess(pop2process, params.save_dir.second);
+    }
+    else
+    {
+        nsgaii_objs_pll->optimiser.postProcess(pop2process, params.save_dir.second);
+    }
 }
 
 void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
@@ -248,34 +262,17 @@ void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
     min_dvs->setIntDVs(problem_defs->int_lowerbounds);
     min_dvs->setRealDVs(problem_defs->real_lowerbounds);
 
-    std::vector<double> objectives;
-    std::vector<double> constraints;
-
-    boost::filesystem::path save_min_dv_dir = params_copy.test_dir.second / "min-dvs";
-    if (!boost::filesystem::exists(save_min_dv_dir)) boost::filesystem::create_directories(save_min_dv_dir);
-    std::tie(objectives, constraints) = testing_geon_eval(min_dvs->getRealDVVector(), min_dvs->getIntDVVector(), save_min_dv_dir);
-    min_dvs->setObjectives(objectives);
-    min_dvs->setConstraints(constraints);
-    std::cout << "All dvs min value: " << std::endl;
-    std::cout << *min_dvs << std::endl;
-
-    boost::filesystem::path save_max_dv_dir = params_copy.test_dir.second / "max-dvs";
-    if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_max_dv_dir);
-    std::tie(objectives, constraints) = testing_geon_eval(max_dvs->getRealDVVector(), max_dvs->getIntDVVector(), save_max_dv_dir);
-    max_dvs->setObjectives(objectives);
-    max_dvs->setConstraints(constraints);
-    std::cout << "All dvs max value: " << std::endl;
-    std::cout << *max_dvs << std::endl;
-
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::mt19937 rng(seed);
-    boost::filesystem::path save_rand_dv_dir = params_copy.test_dir.second / "random-dvs";
-    if (!boost::filesystem::exists(save_max_dv_dir)) boost::filesystem::create_directories(save_rand_dv_dir);
     PopulationSPtr pop(new Population);
     pop =
-        intialisePopulationRandomDVAssignment(params_copy.pop_size, testing_geon_eval.getProblemDefinitions(), rng);
-    //Postprocess the results
-    postProcessResults(testing_geon_eval, pop, params_copy, save_rand_dv_dir, false);
+        intialisePopulationRandomDVAssignment(params.pop_size, testing_geon_eval.getProblemDefinitions(), rng);
+    pop->push_back(max_dvs);
+    pop->push_back(min_dvs);
+
+    //Make the NSGAII
+    boost::shared_ptr<NSGAIIObjs> testing_nsgaii_objs = getNSGAIIForGeon(testing_geon_eval);
+    testing_nsgaii_objs->optimiser.postProcess(pop, params_copy.test_dir.second);
 }
 
 void OptimiserWorker::terminate()
