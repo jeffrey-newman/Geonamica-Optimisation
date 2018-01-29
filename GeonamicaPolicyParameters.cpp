@@ -190,6 +190,13 @@ int LoadParameters::saveOptions(std::string filepath, GeonamicaPolicyParameters 
                 ofs << "obj-plugins = " << objective_plugin_string << "\n";
             });
         }
+        if (!_params.dvs_plugins.empty())
+        {
+            std::for_each(_params.dvs_plugins.begin(), _params.dvs_plugins.end(), [&ofs] (std::string &
+            dv_plugin_string) {
+                ofs << "dv-plugins = " << dv_plugin_string << "\n";
+            });
+        }
 
 //        ofs << "discount-rate = " << _params.discount_rate << "\n";
 //        ofs << "discount-year-zero = " << _params.discount_start_year << "\n";
@@ -296,6 +303,7 @@ LoadParameters::getOptionsDescription(GeonamicaPolicyParameters& params)
              "relative paths wrt template geoproject directory of objective maps")
 //        ("min-or-max,n",po::value<std::vector<std::string> >(&params.min_or_max_str)->multitoken(), "whether the aggregated value in the obj-maps are to be minimised (specify MIN) or maximised (specify MAX)")
             ("obj-plugins", po::value<std::vector<std::string> >(&params.objectives_plugins)->multitoken(), " paths to objective modules and constructure string. FORMAT: [\"PATH\"]:[\"Constructor_string\"]")
+            ("dv-plugins", po::value<std::vector<std::string> >(&params.dvs_plugins)->multitoken(), " paths to decision variable modules and construct string. FORMAT: [\"PATH\"]:[\"Constructor_string\"]")
             ("zonal-maps,z", po::value<std::string>(&params.rel_path_zonal_map)->default_value("no_zonal_dvs"),
              "name of zonal map (without full path), relative to template geoproject directory. This needs to be GDAL create writable, so NOT ASCII grid format")
             ("zone-delineation,e",

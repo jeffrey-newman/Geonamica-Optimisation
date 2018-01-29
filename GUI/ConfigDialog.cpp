@@ -338,6 +338,7 @@ void ConfigDialog::updateParamsValuesInGUI()
     problem_spec_page->updateZonalMapClasses(QString::fromStdString(params->zonal_map_classes));
     problem_spec_page->updateXpathDVs(params->xpath_dvs);
     problem_spec_page->updateObjModules(params->objectives_plugins);
+    problem_spec_page->updateDVModules(params->dvs_plugins);
     
     geon_setting_page->updateTimeoutCmd(QString::fromStdString(params->timout_cmd));
     geon_setting_page->updateWineCmd(QString::fromStdString(params->wine_cmd));
@@ -857,6 +858,17 @@ void ConfigDialog::changeObjModules(QVector<QString> new_vals)
     is_modified = true;
     opt_needs_initialisation = true;
 }
+
+void ConfigDialog::changeDVModules(QVector<QString> new_vals)
+{
+    this->params->dvs_plugins.clear();
+    QVectorIterator<QString> i(new_vals);
+    while (i.hasNext())
+        this->params->dvs_plugins.push_back(i.next().toStdString());
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
+
 void
 ConfigDialog::changeTestDir(QString new_val)
 {

@@ -50,24 +50,26 @@ struct ZoneCostingCellCountParser : boost::spirit::qi::grammar<std::string::iter
     boost::spirit::qi::rule<std::string::iterator, boost::spirit::qi::space_type> start;
 };
 
-std::string ZonalCostingCellCount::name() const
+const std::string ZonalCostingCellCount::name() const
 {
     return ("Zonal Costing by counting zonal cells");
 }
 
 
-void ZonalCostingCellCount::configure(std::string _configure_string, boost::filesystem::path _geoproj_dir)
+void ZonalCostingCellCount::configure(const std::string _configure_string, const boost::filesystem::path _geoproj_dir)
 {
     //constructor string format: Project:<'path to project'>; ZoneRaster: <'relative path to zone raster'>; ExclusionVals: <valuue1>, <value2>
+    std::string config_string_copy = _configure_string;
     ZoneCostingCellCountParser parser(params);
-    boost::spirit::qi::phrase_parse(_configure_string.begin(), _configure_string.end(), parser, boost::spirit::qi::space);
+    boost::spirit::qi::phrase_parse(config_string_copy.begin(), config_string_copy.end(), parser, boost::spirit::qi::space);
 //    pathify(params.project_path);
     params.zonal_raster.second = _geoproj_dir / params.zonal_raster.first;
 }
 
 
-double ZonalCostingCellCount::calculate(const std::vector<double> &_real_decision_vars,
-                                        const std::vector<int> &_int_decision_vars) const
+std::shared_ptr<const std::vector<double> >
+ZonalCostingCellCount::calculate(const std::vector<double> &_real_decision_vars,
+                                        const std::vector<int> &_int_decision_vars)
 {
     int exclusion_cell_count = 0;
     blink::raster::gdal_raster<int> zonal_map = blink::raster::open_gdal_raster<int>(this->params.zonal_raster.second, GA_ReadOnly);
@@ -83,12 +85,15 @@ double ZonalCostingCellCount::calculate(const std::vector<double> &_real_decisio
             }
         }
     }
-    return double(exclusion_cell_count);
+    std::shared_ptr<std::vector<double> > obj_vals(new std::vector<double>);
+    obj_vals->push_back(double(exclusion_cell_count));
+    return (obj_vals);
 }
 
-MinOrMaxType ZonalCostingCellCount::isMinOrMax() const
+const std::vector<MinOrMaxType>&
+ZonalCostingCellCount::isMinOrMax() const
 {
-    return MINIMISATION;
+    return (min_or_max_types);
 }
 
 

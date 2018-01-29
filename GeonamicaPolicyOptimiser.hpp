@@ -20,7 +20,8 @@
 #include "OpenCVWriterClassified.hpp"
 #include "OpenCVWriterGradient.hpp"
 #include <pugixml.hpp>
-#include "EvaluatorModules/ModuleAPI.hpp"
+#include "Modules/EvaluatorModules/EvaluatorModuleAPI.hpp"
+#include "Modules/DVModules/DVModuleAPI.hpp"
 
 struct MapObj
 {
@@ -82,8 +83,11 @@ private:
 //    std::vector<std::pair<boost::filesystem::path, std::vector<int> > > obj_map_paths_minisation;
 //    std::vector<boost::filesystem::path> obj_map_paths_maximisation;
     std::vector<MapObj> map_objectives;
-    std::vector<boost::shared_ptr<evalModuleAPI> > objective_modules;
-    
+    std::vector<boost::shared_ptr<EvalModuleAPI> > objective_modules;
+    std::vector<boost::shared_ptr<DVModuleAPI> > dv_modules;
+    std::vector<std::pair<int, int> > dv_modules_dv_int_subvector_loc;
+    std::vector<std::pair<int, int> > dv_modules_dv_real_subvector_loc;
+
     boost::filesystem::path zones_delineation_map_path;
     blink::raster::gdal_raster<int> zones_delineation_map;
     boost::optional<int> zones_delineation_no_data_val;
