@@ -87,9 +87,12 @@ public:
 //    void processYearListChange();
     void processOXPathDVListChange();
     void addObjModule();
+    void addDVModule();
     void processObjModuleChange();
     void displayObjMapHelp();
     void displayObjModuleHelp();
+    void processDVModuleChange();
+    void displayDVModuleHelp();
     void displayXPathDVsHelp();
     void displayZonalOptimisationHelp();
 
@@ -102,6 +105,7 @@ public:
     void updateZonalMapClasses(QString values);
     void updateXpathDVs(std::vector<std::string> xpathDVs);
     void updateObjModules(std::vector<std::string> obj_modules);
+    void updateDVModules(std::vector<std::string> obj_modules);
 //    void updateYearsCalculated(std::vector<int> years);
 //    void updateStartYear(int year);
 //    void updateEndYear(int year);
@@ -111,11 +115,13 @@ signals:
 //    void yearsCalculatedChanged(QVector<QString> yearsList);
     void xpathDVsChanged(QVector<QString> xpathDVLists);
     void objModulesChanged(QVector<QString> xpathDVLists);
+    void dvModulesChanged(QVector<QString> xpathDVLists);
 
 private:
     QListWidget *objectives_List;
     QListWidget *years_List;
     QListWidget *evaluator_modules_list;
+    QListWidget *dv_modules_list;
     QListWidget *xpath_List;
     MyLineEdit *rate_edit;
     MyLineEdit *discount_year_zero_edit;

@@ -266,7 +266,7 @@ void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
     std::mt19937 rng(seed);
     PopulationSPtr pop(new Population);
     pop =
-        intialisePopulationRandomDVAssignment(params.pop_size, testing_geon_eval.getProblemDefinitions(), rng);
+        intialisePopulationRandomDVAssignment(params_copy.pop_size, testing_geon_eval.getProblemDefinitions(), rng);
     pop->push_back(max_dvs);
     pop->push_back(min_dvs);
 

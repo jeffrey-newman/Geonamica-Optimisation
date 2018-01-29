@@ -34,7 +34,7 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/bind.hpp>
-#include "EvaluatorModules/boost_placeholder/dll/import.hpp" // for import_alias
+#include "Modules/boost_placeholder/dll/import.hpp" // for import_alias
 #include "ColourMapperParsers.h"
 #include "Evaluation.hpp"
 #include <blink/raster/utility.h> // To open rasters
@@ -126,6 +126,7 @@ struct MapObjParser : boost::spirit::qi::grammar<std::string::iterator, boost::s
         namespace ph = boost::phoenix;
 
         string_parser_quote_delimited = qi::lexeme[qi::lit("\"") >> +(qi::char_ - "\"") >> qi::lit("\"")];
+
         years_parser  = qi::lit("YEARS") >> qi::lit("(") >> *((qi::int_ >> qi::lit(";"))[ph::push_back(ph::ref(this->obj.years), qi::_1)]) >> qi::int_[ph::push_back(ph::ref(this->obj.years), qi::_1)] >> qi::lit(")");
         discounting_parser = qi::lit("DISCOUNTING") >> qi::lit("(") >> qi::lit("RATE") >> qi::lit("=") >> qi::double_[ph::ref(this->obj.discount_rate) = qi::_1]
                                                     >> qi::lit(";")
@@ -154,7 +155,7 @@ struct SaveMapParser : boost::spirit::qi::grammar<std::string::iterator, boost::
 {
 
 
-    SaveMapParser(SaveMapDetails& _save_map) : MapObjParser::base_type(start), save_map(_save_map)
+    SaveMapParser(SaveMapDetails& _save_map) : SaveMapParser::base_type(start), save_map(_save_map)
     {
         namespace qi = boost::spirit::qi;
         namespace ph = boost::phoenix;
@@ -626,6 +627,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
             num_objectives++;
         }
 
+        // Objective plugins/modules for custom objectives
         std::vector<std::string> module_paths;
         std::vector<std::string> constructor_strings;
         namespace qi = boost::spirit::qi;
@@ -636,30 +638,34 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 >> string_parser_quote_delimited[ph::push_back(ph::ref(constructor_strings), qi::_1)]);
 
 //        qi::debug(obj_module_parser);
-        BOOST_FOREACH(std::string & module_info, params.objectives_plugins)
+        for(std::string & module_info: params.objectives_plugins)
                     {
                         boost::spirit::qi::parse(module_info.begin(), module_info.end(), obj_module_parser);
                     }
         for (int j = 0; j < module_paths.size(); ++j)
         {
             boost::filesystem::path module_path(module_paths[j]);
-            boost::shared_ptr<evalModuleAPI> eval_module;
-            eval_module = boost::dll::import<evalModuleAPI>(module_path, "eval_module");
+            boost::shared_ptr<EvalModuleAPI> eval_module;
+            eval_module = boost::dll::import<EvalModuleAPI>(module_path, "eval_module");
             eval_module->configure(constructor_strings[j], params.working_dir.second);
-            if (eval_module->isMinOrMax() == MINIMISATION)
+            const std::vector<MinOrMaxType>& obj_types = eval_module->isMinOrMax();
+            for (const MinOrMaxType obj_type: obj_types)
             {
-                objective_modules.push_back(eval_module);
-                params.min_or_max.push_back(MINIMISATION);
-                objectives_and_constraints.first.push_back(std::numeric_limits<double>::max());
+                if (obj_type == MINIMISATION)
+                {
+                    params.min_or_max.push_back(MINIMISATION);
+                    objectives_and_constraints.first.push_back(std::numeric_limits<double>::max());
+                }
+                else
+                {
+                    params.min_or_max.push_back(MAXIMISATION);
+                    objectives_and_constraints.first.push_back(std::numeric_limits<double>::min());
+                }
+                num_objectives++;
             }
-            else
-            {
-                objective_modules.push_back(eval_module);
-                params.min_or_max.push_back(MAXIMISATION);
-                objectives_and_constraints.first.push_back(std::numeric_limits<double>::min());
-            }
-            num_objectives++;
+            objective_modules.push_back(eval_module);
         }
+
 
         //Logging settings
 //        working_logging = params.working_dir.second / params.rel_path_log_specification_obj;
@@ -667,7 +673,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
         std::string wine_saving_logging = params.wine_working_dir + "\\" + params.rel_path_log_specification_save;
 
         // Zonal optimisation settings
-        if (params.rel_path_zones_delineation_map != "no_zonal_dvs" || params.rel_path_zones_delineation_map.empty())
+        if (not(params.rel_path_zones_delineation_map == "no_zonal_dvs" || params.rel_path_zones_delineation_map.empty()))
         {
             zonal_map_path = params.working_dir.second / params.rel_path_zonal_map;
             if (params.rel_path_zonal_map == "no_zonal_dvs" || params.rel_path_zonal_map.empty())
@@ -737,6 +743,38 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
             }
         }
 
+        // Decision variable plugins/modules for custom decision variables
+        std::vector<std::string> dv_module_paths;
+        std::vector<std::string> dv_constructor_strings;
+        qi::rule<std::string::iterator> dv_module_parser = (string_parser_quote_delimited[ph::push_back(ph::ref(dv_module_paths), qi::_1)]
+            >>  qi::lit(":")
+            >> string_parser_quote_delimited[ph::push_back(ph::ref(dv_constructor_strings), qi::_1)]);
+
+        for(std::string dv_model_info: params.dvs_plugins)
+        {
+            boost::spirit::qi::parse(dv_model_info.begin(), dv_model_info.end(), dv_module_parser);
+        }
+        for (int j = 0; j < module_paths.size(); ++j)
+        {
+            int dv_real_subvector_begin = real_lowerbounds.size();
+            int dv_int_subvector_begin = int_lowerbounds.size();
+            boost::filesystem::path dv_module_path(dv_module_paths[j]);
+            boost::shared_ptr<DVModuleAPI> dv_module;
+            dv_module = boost::dll::import<DVModuleAPI>(dv_module_path, "dv_module");
+            dv_module->configure(dv_constructor_strings[j], params.working_dir.second);
+            const DVModuleAPI::Bounds<double>& dv_module_real_bounds = dv_module->realBounds();
+            real_lowerbounds.insert(real_lowerbounds.end(), dv_module_real_bounds.lower_bounds.begin(),  dv_module_real_bounds.lower_bounds.end());
+            real_upperbounds.insert(real_upperbounds.end(), dv_module_real_bounds.upper_bounds.begin(),  dv_module_real_bounds.upper_bounds.end());
+            const DVModuleAPI::Bounds<int>& dv_module_int_bounds = dv_module->intBounds();
+            int_lowerbounds.insert(int_lowerbounds.end(), dv_module_int_bounds.lower_bounds.begin(),  dv_module_int_bounds.lower_bounds.end());
+            int_upperbounds.insert(int_upperbounds.end(), dv_module_int_bounds.upper_bounds.begin(),  dv_module_int_bounds.upper_bounds.end());
+            int dv_real_subvector_end = real_lowerbounds.size();
+            int dv_int_subvector_end = int_lowerbounds.size();
+            dv_modules_dv_int_subvector_loc.emplace_back(dv_int_subvector_begin, dv_int_subvector_end);
+            dv_modules_dv_real_subvector_loc.emplace_back(dv_real_subvector_begin, dv_real_subvector_end);
+            dv_modules.push_back(dv_module);
+        }
+
 
         //Output images of Geonamica output rasters
         this->save_img_rqsts.resize(params.save_maps.size());
@@ -771,13 +809,13 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 //        objectives_and_constrataints = std::make_pair(std::piecewise_construct, std::make_tuple(num_objectives, std::numeric_limits<double>::max()), std::make_tuple(num_constraints));
 
         setting_env_vars = false;
-        if (!params.windows_env_var.empty() || params.windows_env_var != "unspecified" )
+        if (not(params.windows_env_var.empty() || params.windows_env_var == "unspecified" ))
         {
             setting_env_vars = true;
         }
 
 
-            // Save a copy of the geoproject file as the current Cmd line runner mangles the GUI aspects preventing it from being loadable in the HGUI interface of Metronamica
+            // Save a copy of the geoproject file as the current Cmd line runner mangles the GUI aspects preventing it from being loadable in the GUI interface of Metronamica
 
             std::string extnsn = working_project.extension().string();
             std::string filename = working_project.stem().string();
@@ -1170,7 +1208,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
         if (params.is_logging) t.reset(new boost::timer::auto_cpu_timer(logging_file));
         // For each map, sum the metric.
         int metric_num = 0;
-        std::vector<double> obj_vals(num_objectives, 0);
+        std::vector<double> obj_vals(map_objectives.size(), 0);
 
         for(MapObj & obj: map_objectives)
                     {
@@ -1268,30 +1306,43 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                         ++metric_num;
                     }
 
-        BOOST_FOREACH(boost::shared_ptr<evalModuleAPI> evaluator, objective_modules)
+        BOOST_FOREACH(boost::shared_ptr<EvalModuleAPI> evaluator, objective_modules)
                     {
                         try
                         {
-                            obj_vals[metric_num] = evaluator->calculate(real_decision_vars, int_decision_vars);
+                            std::shared_ptr<const std::vector<double> >  module_objs = evaluator->calculate(real_decision_vars, int_decision_vars);
+                            for (const double& obj : *module_objs)
+                            {
+                                obj_vals.push_back(obj);
+                            }
+                            metric_num += module_objs->size();
                         }
                         catch (std::exception & ex)
                         {
-                            if (evaluator->isMinOrMax() == MINIMISATION) obj_vals[metric_num] = std::numeric_limits<double>::max();
-                            else obj_vals[metric_num] = std::numeric_limits<double>::min();
-
+                            std::vector<double> module_objs;
+                            for(MinOrMaxType obj_type: evaluator->isMinOrMax())
+                            {
+                                if (obj_type == MINIMISATION) module_objs.push_back(std::numeric_limits<double>::max());
+                                else module_objs.push_back(std::numeric_limits<double>::min());
+                                obj_vals.insert(obj_vals.end(), module_objs.begin(), module_objs.end());
+                            }
+                            metric_num += module_objs.size();
                             if (params.do_throw_excptns) throw ex;
                             else std::cout << "Error in evaluation of objective " << evaluator->name() << ": " << ex.what() << "\n";
                         }
                         catch (...)
                         {
-                            if (evaluator->isMinOrMax() == MINIMISATION) obj_vals[metric_num] = std::numeric_limits<double>::max();
-                            else obj_vals[metric_num] = std::numeric_limits<double>::min();
-
+                            std::vector<double> module_objs;
+                            for(MinOrMaxType obj_type: evaluator->isMinOrMax())
+                            {
+                                if (obj_type == MINIMISATION) module_objs.push_back(std::numeric_limits<double>::max());
+                                else module_objs.push_back(std::numeric_limits<double>::min());
+                                obj_vals.insert(obj_vals.end(), module_objs.begin(), module_objs.end());
+                            }
+                            metric_num += module_objs.size();
                             if (params.do_throw_excptns) throw std::runtime_error( "Error in evaluation of objective " + evaluator->name());
                             else std::cout << "Error in evaluation of objective " << evaluator->name() << "\n";
                         }
-
-                        ++metric_num;
                     }
 
 
@@ -1376,35 +1427,52 @@ void
         }
 
         // Make Zonal map
-        bool success = makeZonalMap(int_decision_vars);
-        if (!success) 
+        if (not(params.rel_path_zonal_map == "no_zonal_dvs" || params.rel_path_zonal_map.empty()))
         {
-            makeWorseObjValues(objectives);
-            return;
+            bool success = makeZonalMap(int_decision_vars);
+            if (!success)
+            {
+                makeWorseObjValues(objectives);
+                return;
+            }
         }
 
 
         // Manipulate geoproject with xpath dvs
-        pugi::xml_document doc;
-        pugi::xml_parse_result result = doc.load_file(working_project.string().c_str());
+        pugi::xml_document doc1;
+        pugi::xml_parse_result result1 = doc1.load_file(working_project.string().c_str());
         {
             int k = 0;
             int j = delineations_ids.size();
             for (XPathDV & dv : this->xpath_dvs)
             {
-                if (dv.dv_type == XPathDV::REAL) setXPathDVValue(doc, dv, real_decision_vars[k++]);
-                else setXPathDVValue(doc, dv, int_decision_vars[j++]);
+                if (dv.dv_type == XPathDV::REAL) setXPathDVValue(doc1, dv, real_decision_vars[k++]);
+                else setXPathDVValue(doc1, dv, int_decision_vars[j++]);
             }
+        }
+        doc1.save_file(working_project.string().c_str());
+
+
+        // Call dv modules for remainder of dvs.
+        for (int l = 0; l < dv_modules.size(); ++l)
+        {
+            std::vector<double> module_real_dvs(real_decision_vars.begin() + dv_modules_dv_real_subvector_loc[l].first,
+                                                real_decision_vars.begin() + dv_modules_dv_real_subvector_loc[l].second);
+            std::vector<int> module_int_dvs(int_decision_vars.begin() + dv_modules_dv_int_subvector_loc[l].first,
+                                                int_decision_vars.begin() + dv_modules_dv_int_subvector_loc[l].second);
+            dv_modules[l]->setDVs(module_real_dvs, module_int_dvs, working_project);
         }
 
         // Calculate objectives for a number of replicate runs of Geonamica
+        pugi::xml_document doc2;
+        pugi::xml_parse_result result2 = doc2.load_file(working_project.string().c_str());
         std::vector<std::vector<double> > obj_vals_across_replicates;
         for (int j = 0; j < params.replicates; ++j)
         {
             // Set stochastic seed for landuse model part
             if (params.is_logging) logging_file << "Replicate " << j << "\n";
-            setAllChildValuesOfXMLNode(doc, "/GeonamicaSimulation/model/modelBlocks/modelBlock[@library=\"\" and @name=\"MB_Land_use_model\"]/CompositeModelBlock/modelBlocks/modelBlock[@library=\"CAModel.dll\" and @name=\"MB_Total_potential\"]/TotalPotentialBlock/Seed", params.rand_seeds[j]);
-            doc.save_file(working_project.string().c_str());
+            setAllChildValuesOfXMLNode(doc2, "/GeonamicaSimulation/model/modelBlocks/modelBlock[@library=\"\" and @name=\"MB_Land_use_model\"]/CompositeModelBlock/modelBlocks/modelBlock[@library=\"CAModel.dll\" and @name=\"MB_Total_potential\"]/TotalPotentialBlock/Seed", params.rand_seeds[j]);
+            doc2.save_file(working_project.string().c_str());
 
             if(do_save)
             {
@@ -1415,7 +1483,7 @@ void
                 boost::filesystem::copy_file(working_project, prerun_bck_geoproj, boost::filesystem::copy_option::overwrite_if_exists);
             }
 
-            // Clean up (remove) filesd which are used for objectives, so that we know if the file is not present, then
+            // Clean up (remove) files which are used for objectives, so that we know if the file is not present, then
             // something went wrong with the model run and do not assign the previously computed results for different
             // decision variables to this evaluation.
             this->removeOldOutputs();
@@ -1592,8 +1660,7 @@ GeonamicaOptimiser::saveMapsAndObjAndConstraints(const boost::filesystem::path &
 bool
 GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int recurse_depth)
 {
-    if (params.rel_path_zonal_map != "no_zonal_dvs" || params.rel_path_zonal_map == "")
-        {
+
             std::vector<int>::const_iterator first = int_decision_vars.begin();
 //            std::vector<int>::const_iterator last = int_decision_vars.begin() + delineations_ids.size();
 //            std::vector<int> zonal_values(first, last);
@@ -1655,7 +1722,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
                             return false;
                         }
 
-        }
+
     return true;
 
 }

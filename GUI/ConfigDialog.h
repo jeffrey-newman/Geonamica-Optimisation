@@ -77,6 +77,7 @@ public slots:
 //    void changeDiscountRate(QString new_val);
 //    void changeDiscountYearZero(QString new_val);
     void changeObjModules(QVector<QString> new_vals);
+    void changeDVModules(QVector<QString> new_vals);
     void changeDriveLetter(QString new_val);
     void changeZonalClasses(QString new_val);
     void duplicateSlot();

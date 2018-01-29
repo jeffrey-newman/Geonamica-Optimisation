@@ -37,6 +37,7 @@ struct GeonamicaPolicyParameters
     std::string zonal_map_classes; // values that are valid in the zonal map. The optimisation specifes one fo these for each of the delinatied araas in zones_delineation_map.
     std::vector<std::string> rel_path_obj_maps; // relative paths of objectives maps that we are maximising/minimising relative to (head/root directory)
     std::vector<std::string> objectives_plugins; // vector of objective plugins....
+    std::vector<std::string> dvs_plugins; // vector of objective plugins....
     std::vector<std::string> xpath_dvs;
 //    std::vector<std::string> min_or_max_str;
     std::vector<MinOrMaxType> min_or_max; //vector of whether the objectives in the maps above are minimised or maximised.
@@ -92,6 +93,7 @@ void serialize(Archive& ar, GeonamicaPolicyParameters& p, const unsigned int ver
     ar & p.zonal_map_classes;
     ar & p.rel_path_obj_maps;
     ar & p.objectives_plugins;
+    ar & p.dvs_plugins;
     ar & p.xpath_dvs;
     ar & p.min_or_max;
     ar & p.rel_path_log_specification_obj;

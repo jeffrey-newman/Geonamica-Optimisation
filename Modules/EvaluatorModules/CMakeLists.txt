@@ -1,7 +1,7 @@
 SET(ImplementationCostSrcs
         ImplementationCost.hpp
         ImplementationCost.cpp
-        ModuleAPI.hpp
+        EvaluatorModuleAPI.hpp
         )
 
 add_library(implementcosts SHARED ${ImplementationCostSrcs})
@@ -10,7 +10,7 @@ target_link_libraries(implementcosts ${Boost_LIBRARIES} )
 SET(ZonalCostingCellCountSrcs
         ZonalCostingCellCount.cpp
         ZonalCostingCellCount.h
-        ModuleAPI.hpp
+        EvaluatorModuleAPI.hpp
         ${AHHZ_Raster}
         ${AHHZ_Raster_Utility}
         )
