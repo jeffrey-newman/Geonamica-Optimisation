@@ -96,7 +96,7 @@ LoadParameters::checkNeededDirectories(GeonamicaPolicyParameters & _params)
         //pathify(params.log_dir);
         pathify_mk(_params.save_dir);
         pathify_mk(_params.test_dir);
-        if (_params.restart_pop_file.first != "no_seed")
+        if (!(_params.restart_pop_file.first == "no_seed" or _params.restart_pop_file.first.empty()))
         {
             pathify(_params.restart_pop_file);
         }

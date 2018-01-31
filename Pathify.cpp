@@ -11,6 +11,11 @@
 bool
 pathify(CmdLinePaths & path)
 {
+    if (path.first.empty())
+    {
+        std::cout << "Warning: path given to pathify in Pathify.cpp is empty\n";
+        return false;
+    }
     path.second = boost::filesystem::path(path.first);
     if (!(boost::filesystem::exists(path.second)))
     {
@@ -25,6 +30,11 @@ bool
 pathify_mk(CmdLinePaths & path)
 {
 
+    if (path.first.empty())
+    {
+        std::cout << "Warning: path given to pathify in Pathify.cpp is empty\n";
+        return false;
+    }
         path.second = boost::filesystem::path(path.first);
         if (!(boost::filesystem::exists(path.second)))
         {

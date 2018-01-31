@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
                 optimiser->postProcess(pop, params.test_dir.second);
 
             }
-            if(vm.count("postprocess"))
+            else if(vm.count("postprocess"))
             {
                 if (not(params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty()))
                 {
