@@ -1300,7 +1300,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                             }
                             else
                             {
-                                std::cout << "Unable to find map " + obj.file_path.second.string() + " to aggregate sum";
+                                std::cout << "Unable to find map " + obj.file_path.second.string() + " to aggregate sum\n";
                             }
                         }
                         ++metric_num;
