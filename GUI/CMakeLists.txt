@@ -26,7 +26,7 @@ IF (USE_QT)
             OptimiserWorker.h
             MetricQtSignal.cpp
             MetricQtSignal.h
-            GeonamicOptGUICheckpoints.cpp
+            GeonamicaOptGUICheckpoints.cpp
             GeonamicaOptGUICheckpoints.h
             ParetoFrontQtChart.cpp
             ParetoFrontQtChart.h
