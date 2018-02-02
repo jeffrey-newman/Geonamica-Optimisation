@@ -1378,8 +1378,9 @@ void
         boost::filesystem::current_path(params.working_dir.second);
 
         bool do_save = true;
-        if (save_path == "no_path") do_save = false;
-        if (save_path.empty()) do_save = false;
+        if (save_path.string().compare(0,7,"no_path")) do_save = false;
+        if (save_path.string().compare(0,7,"no_save")) do_save = false;
+        if (save_path.string().empty()) do_save = false;
 
 
         // Cycle log files.
@@ -1410,7 +1411,7 @@ void
                 if (!logging_file.is_open())
                 {
                     params.is_logging = false;
-                    std::cout << "attempt to log failed\n";
+                    std::cout << "attempt to log GeonamicaPolicyOptimiser using " << this->logfile.string() << " failed" << std::endl;
                 }
             }
         }

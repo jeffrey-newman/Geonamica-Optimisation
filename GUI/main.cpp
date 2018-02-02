@@ -252,11 +252,11 @@ int main(int argc, char *argv[])
                 optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
                 optimiser->initialiseWithPop(pop);
 
-                std::cout << " Running the optimisation now...." << std::endl;
+                std::cout << "Running the optimisation now...." << std::endl;
                 optimiser->run();
 
                 //Postprocess the results
-                std::cout << " Finished running the optimisation. Now postprocessing" << std::endl;
+                std::cout << "Finished running the optimisation. Now postprocessing" << std::endl;
                 optimiser->postProcess(pop, params.save_dir.second);
             }
 
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
             boost::mpi::broadcast(world, params, 0);
 //            std::cout << "received params\n";
             params.evaluator_id = world.rank();
-            std::cout << "My worker ID is " << params.evaluator_id;
+            std::cout << "My worker ID is " << params.evaluator_id << std::endl;
             //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
             std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
             std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";
@@ -314,6 +314,10 @@ int main(int argc, char *argv[])
             std::ofstream eval_strm(eval_log.c_str());
             boost::shared_ptr<GeonamicaOptimiser> geon_eval(new GeonamicaOptimiser(params));
             ParallelEvaluatePopClientNonBlocking eval_client(env, world, geon_eval->getProblemDefinitions(), *geon_eval);
+            if (eval_strm.is_open())
+            {
+                eval_client.log(ParallelEvaluatorBase::LVL1, eval_strm);
+            }
             eval_client();
         }
         catch(std::exception& e)
