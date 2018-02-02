@@ -23,6 +23,7 @@
 
 int main(int argc, char *argv[])
 {
+
     boost::mpi::environment env(argc, argv);
     boost::mpi::communicator world;
     bool using_mpi = false;
@@ -30,6 +31,9 @@ int main(int argc, char *argv[])
 
     if (world.rank() == 0)
     {
+        std::cout << "This is Jeffrey Newman's Geonamica Optimiser" << std::endl;
+        if (using_mpi) std::cout << "Running in parallel mode using MPI" << std::endl;
+        else std::cout << "Runnning in serial mode" << std::endl;
 
         CmdLinePaths cfg_file;
         CmdLinePaths gen_pop_file;
@@ -59,9 +63,11 @@ int main(int argc, char *argv[])
 
         if (vm.count("generate-pop"))
         {
+            std::cout << "You have requested that I generate a random population,\n"
+                " based on the optimisation problem configurations you gave me" << std::endl;
             if (cfg_file.first.empty())
             {
-                std::cerr << "Must specify path to cfg file when using --no-gui\n";
+                std::cerr << "I've reached a problem. You must specify a path to a cfg file when using --generate-pop" << std::endl;
                 if (using_mpi) env.abort(EXIT_FAILURE);
                 return EXIT_FAILURE;
             }
@@ -70,7 +76,7 @@ int main(int argc, char *argv[])
                 bool success = pathify(cfg_file);
                 if (!success)
                 {
-                    std::cerr << "Must specify path to existing cfg file when using --no-gui\n";
+                    std::cerr << "I've reached a problem. You must specify a path to an existing cfg file when using --generate-pop" << std::endl;
                     if (using_mpi) env.abort(EXIT_FAILURE);
                     return EXIT_FAILURE;
                 }
@@ -95,15 +101,17 @@ int main(int argc, char *argv[])
             gen_pop_file.second = boost::filesystem::path(gen_pop_file.first);
             print(pop, gen_pop_file.second);
             if (using_mpi) env.abort(EXIT_SUCCESS);
+            std::cout << "I've finished generating that random population you asked for" << std::endl;
             return EXIT_SUCCESS;
         }
 
         if (vm.count("no-gui"))
         {
+            std::cout << "You've asked me to run in command-line mode. I will not display my GUI" << std::endl;
 
             if (cfg_file.first.empty())
             {
-                std::cerr << "Must specify path to cfg file when using --no-gui\n";
+                std::cerr << "I've reached a problem. You must specify a path to a cfg file when using --no-gui" << std::endl;
                 if (using_mpi) env.abort(EXIT_FAILURE);
                 return EXIT_FAILURE;
             }
@@ -112,11 +120,13 @@ int main(int argc, char *argv[])
                 bool success = pathify(cfg_file);
                 if (!success)
                 {
-                    std::cerr << "Must specify path to existing cfg file when using --no-gui\n";
+                    std::cerr << "I've reached a problem. Must specify a path to an existing cfg file when using --no-gui" << std::endl;
                     if (using_mpi) env.abort(EXIT_FAILURE);
                     return EXIT_FAILURE;
                 }
             }
+
+            std::cout << "I'm loading the optimisation problem configuration now" << std::endl;
             LoadParameters parameter_loader;
             GeonamicaPolicyParameters params;
             std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
@@ -136,6 +146,7 @@ int main(int argc, char *argv[])
 
             if (using_mpi) boost::mpi::broadcast(world, params, 0);
 
+            std::cout << "I'm read the configuration. Just setting a few things up now" << std::endl;
             GeonamicaOptimiser geon_eval(params);
 
             boost::shared_ptr<boost::timer::auto_cpu_timer> timer(nullptr);
@@ -176,8 +187,11 @@ int main(int argc, char *argv[])
                 optimiser.reset(new NSGAII<RNG>(rng, geon_eval));
             }
 
+            std::cout << "Things are all set up now. Ready to do some work!" << std::endl;
+
             if (vm.count("test"))
             {
+                std::cout << " Testing the optimisation configuration, as you requested...." << std::endl;
                 ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
                 IndividualSPtr max_dvs(new Individual(problem_defs));
                 max_dvs->setIntDVs(problem_defs->int_upperbounds);
@@ -197,12 +211,19 @@ int main(int argc, char *argv[])
             }
             else if(vm.count("postprocess"))
             {
+                std::cout << " Postprocessing the population file you gave me...." << std::endl;
                 if (not(params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty()))
                 {
                     ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
                     PopulationSPtr pop(new Population);
                     pop = restore_population(params.restart_pop_file.second, problem_defs);
                     optimiser->postProcess(pop, params.save_dir.second);
+                }
+                else
+                {
+                    std::cerr << "I've reached a problem. Must specify a path to a population file when using --postprocess within the configuration" << std::endl;
+                    if (using_mpi) env.abort(EXIT_FAILURE);
+                    return EXIT_FAILURE;
                 }
             }
             else
@@ -219,19 +240,23 @@ int main(int argc, char *argv[])
                 PopulationSPtr pop(new Population);
                 if (params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty())
                 {
+                    std::cout << "Creating the population" << std::endl;
                     pop =
                         intialisePopulationRandomDVAssignment(params.pop_size, geon_eval.getProblemDefinitions(), rng);
                 }
                 else
                 {
+                    std::cout << "Restoring the population" << std::endl;
                     pop = restore_population(params.restart_pop_file.second, geon_eval.getProblemDefinitions());
                 }
                 optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
-
                 optimiser->initialiseWithPop(pop);
+
+                std::cout << " Running the optimisation now...." << std::endl;
                 optimiser->run();
 
                 //Postprocess the results
+                std::cout << " Finished running the optimisation. Now postprocessing" << std::endl;
                 optimiser->postProcess(pop, params.save_dir.second);
             }
 
@@ -273,6 +298,7 @@ int main(int argc, char *argv[])
     }
     else
     {
+        std::cout << "This is a worker for the Geonamica optimisation, reporting for duty!" << std::endl;
         //load parameters
         try
         {
@@ -280,6 +306,7 @@ int main(int argc, char *argv[])
             boost::mpi::broadcast(world, params, 0);
 //            std::cout << "received params\n";
             params.evaluator_id = world.rank();
+            std::cout << "My worker ID is " << params.evaluator_id;
             //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
             std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
             std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";

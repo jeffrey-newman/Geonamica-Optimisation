@@ -480,7 +480,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                     std::stringstream msg;
                     msg << "Could not find wine prefix on system: " << params.wine_prefix_path.first;
                     initialisation_error_msgs += msg.str() + "; ";
-                    std::cout << msg.str() <<  std::endl;
+                    std::cerr << msg.str() <<  std::endl;
                     is_initialised = false;
                 }
 
@@ -498,7 +498,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 msg << "Could not find dosdevices in " << params.wine_prefix_path.second
                     << " Is wine installed?";
                 initialisation_error_msgs += msg.str() + "; ";
-                std::cout << msg.str() <<  std::endl;
+                std::cerr << msg.str() <<  std::endl;
                 is_initialised = false;
             }
 
@@ -538,7 +538,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                                         msg << "Creating symlink from " << params.working_dir.second
                                             << " to " << symlinkpath_ext << " failed";
                                         initialisation_error_msgs += msg.str() + "; ";
-                                        std::cout << msg.str() <<  std::endl;
+                                        std::cerr << msg.str() <<  std::endl;
                                         is_initialised = false;
                                     }
 
@@ -552,7 +552,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                                     std::stringstream msg;
                                     msg << "Could not make a symlink to the working drive for winedrive";
                                     initialisation_error_msgs += msg.str() + "; ";
-                                    std::cout << msg.str() <<  std::endl;
+                                    std::cerr << msg.str() <<  std::endl;
                                     is_initialised = false;
                                 }
 
@@ -580,7 +580,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                     msg << "Creating symlink from " << params.working_dir.second
                         << " to " << symlinkpath_ext << " failed";
                     initialisation_error_msgs += msg.str() + "; ";
-                    std::cout << msg.str() <<  std::endl;
+                    std::cerr << msg.str() <<  std::endl;
                     is_initialised = false;
                 }
                 params.wine_working_dir = params.wine_geoproject_disk_drive;
@@ -681,7 +681,7 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
                 std::stringstream msg;
                 msg << "Error: Zonal delineation map specified, but not the zonal map layer in Metronamica";
                 initialisation_error_msgs += msg.str() + "; ";
-                std::cout << msg.str() <<  std::endl;
+                std::cerr << msg.str() <<  std::endl;
                 is_initialised = false;
             }
 
@@ -991,7 +991,7 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
     catch (blink::raster::insufficient_memory_for_raster_block& ex)
     {
         if (params.do_throw_excptns) throw ex;
-        else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
+        else std::cerr << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
         return boost::none;
     }
     catch (blink::raster::opening_raster_failed& ex)
@@ -999,7 +999,7 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
         if (recurse_depth > 0)
         {
             if (params.do_throw_excptns) throw ex;
-            else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
+            else std::cerr << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
             return boost::none;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
@@ -1010,7 +1010,7 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
         if (recurse_depth > 0)
         {
             if (params.do_throw_excptns) throw ex;
-            else std::cout << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
+            else std::cerr << "Error in opening " << map_path_year.string() << " " << ex.what() << "\n";
             return boost::none;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
@@ -1019,13 +1019,13 @@ GeonamicaOptimiser::sumMap(const boost::filesystem::path &map_path_year, int rec
     catch (std::exception & ex)
     {
             if (params.do_throw_excptns) throw ex;
-            else std::cout << "Error in sumMap for " << map_path_year.string() << ": " << ex.what() << "\n";
+            else std::cerr << "Error in sumMap for " << map_path_year.string() << ": " << ex.what() << "\n";
             return boost::none;
     }
     catch (...)
     {
         if (params.do_throw_excptns) throw std::runtime_error("Error in sumMap for " + map_path_year.string());
-        else std::cout << "Error in sumMap for " << map_path_year.string() << "\n";
+        else std::cerr << "Error in sumMap for " << map_path_year.string() << "\n";
         return boost::none;
     }
     return sum;
@@ -1300,7 +1300,7 @@ GeonamicaOptimiser::setXPathDVValue(pugi::xml_document & doc, XPathDV& xpath_det
                             }
                             else
                             {
-                                std::cout << "Unable to find map " + obj.file_path.second.string() + " to aggregate sum";
+                                std::cerr << "Unable to find map " + obj.file_path.second.string() + " to aggregate sum";
                             }
                         }
                         ++metric_num;
@@ -1555,7 +1555,7 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
     catch (blink::raster::insufficient_memory_for_raster_block& ex)
     {
         if (params.do_throw_excptns) throw ex;
-        else std::cout << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+        else std::cerr << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
         return;
     }
     catch (blink::raster::opening_raster_failed& ex)
@@ -1563,7 +1563,7 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
         if (recurse_depth > 0)
         {
             if (params.do_throw_excptns) throw ex;
-            else std::cout << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+            else std::cerr << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
             return;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
@@ -1574,7 +1574,7 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
         if (recurse_depth > 0)
         {
             if (params.do_throw_excptns) throw ex;
-            else std::cout << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+            else std::cerr << "Error in opening " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
             return;
         }
         std::this_thread::sleep_for (std::chrono::seconds(3));
@@ -1583,12 +1583,12 @@ GeonamicaOptimiser::saveMap(const SaveMapDetails &save_details, const boost::fil
     catch (std::exception & ex)
     {
         if (params.do_throw_excptns) throw ex;
-        else std::cout << "Error in saving: " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
+        else std::cerr << "Error in saving: " << save_details.source_raster.second.string() << " " << ex.what() << "\n";
     }
     catch (...)
     {
         if (params.do_throw_excptns) throw std::runtime_error("Error in saving: " + save_details.source_raster.second.string());
-        else std::cout << "Error in saving: " << save_details.source_raster.second.string() << "\n";
+        else std::cerr << "Error in saving: " << save_details.source_raster.second.string() << "\n";
     }
 
 }
@@ -1630,7 +1630,7 @@ GeonamicaOptimiser::saveMapsAndObjAndConstraints(const boost::filesystem::path &
                 {
                     std::string err_msg = "Attempting to write " + map_path_year.string() + " to file, but raster did not exist on the filesystem";
                     if (params.do_throw_excptns) throw std::runtime_error(err_msg);
-                    else std::cout << err_msg << "\n";
+                    else std::cerr << err_msg << "\n";
                 }
             }
         } else {
@@ -1684,7 +1684,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
             catch (blink::raster::insufficient_memory_for_raster_block& ex)
             {
                 if (params.do_throw_excptns) throw ex;
-                else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
+                else std::cerr << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
                 return false;
             }
             catch (blink::raster::opening_raster_failed& ex)
@@ -1692,7 +1692,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
                 if (recurse_depth > 0)
                 {
                     if (params.do_throw_excptns) throw ex;
-                    else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
+                    else std::cerr << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
                     return false;
                 }
                 std::this_thread::sleep_for (std::chrono::seconds(3));
@@ -1703,7 +1703,7 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
                 if (recurse_depth > 0)
                 {
                     if (params.do_throw_excptns) throw ex;
-                    else std::cout << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
+                    else std::cerr << "Error in opening " << zonal_map_path.string() << " " << ex.what() << "\n";
                     return false;
                 }
                 std::this_thread::sleep_for (std::chrono::seconds(3));
@@ -1712,13 +1712,13 @@ GeonamicaOptimiser::makeZonalMap(const std::vector<int> &int_decision_vars, int 
              catch (std::exception & ex)
                         {
                            if (params.do_throw_excptns) throw ex;
-                            else std::cout << "Error in making zonal layer: " << zonal_map_path.string() << " " << ex.what() << "\n";
+                            else std::cerr << "Error in making zonal layer: " << zonal_map_path.string() << " " << ex.what() << "\n";
                             return false;
                         }
                         catch (...)
                         {
                            if (params.do_throw_excptns) throw std::runtime_error("Error in making zonal layer: " + zonal_map_path.string());
-                            else std::cout << "Error in making zonal layer: " << zonal_map_path.string() << "\n";
+                            else std::cerr << "Error in making zonal layer: " << zonal_map_path.string() << "\n";
                             return false;
                         }
 
