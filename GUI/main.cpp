@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
                 pop->push_back(max_dvs);
                 pop->push_back(min_dvs);
                 //Postprocess the results
-                optimiser->postProcess(pop, params.test_dir.second);
+                optimiser->savePop(pop, params.test_dir.second, "tested_pop");
 
             }
             else if(vm.count("postprocess"))
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
                     ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
                     PopulationSPtr pop(new Population);
                     pop = restore_population(params.restart_pop_file.second, problem_defs);
-                    optimiser->postProcess(pop, params.save_dir.second);
+                    optimiser->savePop(pop, params.save_dir.second, "post_processed_pop");
                 }
                 else
                 {
@@ -251,13 +251,14 @@ int main(int argc, char *argv[])
                 }
                 optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
                 optimiser->initialiseWithPop(pop);
+                optimiser->savePop(pop, params.save_dir.second, "initial_pop");
 
                 std::cout << "Running the optimisation now...." << std::endl;
                 optimiser->run();
 
                 //Postprocess the results
                 std::cout << "Finished running the optimisation. Now postprocessing" << std::endl;
-                optimiser->postProcess(pop, params.save_dir.second);
+                optimiser->savePop(pop, params.save_dir.second, "final_pop");
             }
 
 
@@ -274,7 +275,7 @@ int main(int argc, char *argv[])
             QApplication a(argc, argv);
             QCoreApplication::setApplicationName("Geonamica Optimisation Utility");
             QCoreApplication::setOrganizationName("BNHCRC / EnvirocareInformatics / University of Adelaide");
-            QCoreApplication::setApplicationVersion("0.1 Alpha");
+            QCoreApplication::setApplicationVersion("0.2 Alpha");
 
             qRegisterMetaType<QVector<std::pair<double, double> >>();
 

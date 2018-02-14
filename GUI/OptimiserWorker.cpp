@@ -67,6 +67,7 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
             nsgaii_objs->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 
             nsgaii_objs->optimiser.initialiseWithPop(pop);
+            nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "initial_pop");
         }
 //    nsgaii_objs->optimiser.log();
         catch (std::runtime_error err)
@@ -111,6 +112,7 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
             nsgaii_objs_pll->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 
             nsgaii_objs_pll->optimiser.initialiseWithPop(pop);
+            nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "initial_pop");
         }
 //    nsgaii_objs->optimiser.log();
         catch (std::runtime_error err)
@@ -154,7 +156,8 @@ OptimiserWorker::optimise()
 //        nsgaii_objs->optimiser.run();
 
             //Postprocess the results
-            if (nsgaii_objs->optimiser.isFinished()) nsgaii_objs->optimiser.postProcess(pop, params.save_dir.second);
+            if (nsgaii_objs->optimiser.isFinished())
+                nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "final_pop");
         }
         else
         {
@@ -171,7 +174,8 @@ OptimiserWorker::optimise()
 //        nsgaii_objs->optimiser.run();
 
             //Postprocess the results
-            if (nsgaii_objs_pll->optimiser.isFinished()) nsgaii_objs_pll->optimiser.postProcess(pop, params.save_dir.second);
+            if (nsgaii_objs_pll->optimiser.isFinished())
+                nsgaii_objs_pll->optimiser.savePop(pop, params.save_dir.second, "final_pop");
         }
 
         std::cout << "Finished running optimisation" << std::endl;
@@ -204,7 +208,8 @@ void OptimiserWorker::step()
             nsgaii_objs->optimiser.step();
 
             //Postprocess the results
-            if (nsgaii_objs->optimiser.isFinished()) nsgaii_objs->optimiser.postProcess(pop, params.save_dir.second);
+            if (nsgaii_objs->optimiser.isFinished())
+                nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "final_pop");
         }
         else
         {
@@ -212,7 +217,8 @@ void OptimiserWorker::step()
             nsgaii_objs_pll->optimiser.step();
 
             //Postprocess the results
-            if (nsgaii_objs_pll->optimiser.isFinished()) nsgaii_objs_pll->optimiser.postProcess(pop, params.save_dir.second);
+            if (nsgaii_objs_pll->optimiser.isFinished())
+                nsgaii_objs_pll->optimiser.savePop(pop, params.save_dir.second, "final_pop");
         }https://support.google.com/a/answer/178723?hl=en
 
         std::cout << "Finished running optimisation" << std::endl;
@@ -230,11 +236,11 @@ OptimiserWorker::evalReseedPop()
     PopulationSPtr pop2process(restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions()));
     if (using_mpi == false)
     {
-        nsgaii_objs->optimiser.postProcess(pop2process, params.save_dir.second);
+        nsgaii_objs->optimiser.savePop(pop2process, params.save_dir.second, "reseeded_pop");
     }
     else
     {
-        nsgaii_objs_pll->optimiser.postProcess(pop2process, params.save_dir.second);
+        nsgaii_objs_pll->optimiser.savePop(pop2process, params.save_dir.second, "reseeded_pop");
     }
 }
 
@@ -272,7 +278,7 @@ void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
 
     //Make the NSGAII
     boost::shared_ptr<NSGAIIObjs> testing_nsgaii_objs = getNSGAIIForGeon(testing_geon_eval);
-    testing_nsgaii_objs->optimiser.postProcess(pop, params_copy.test_dir.second);
+    testing_nsgaii_objs->optimiser.savePop(pop, params_copy.test_dir.second, "tested_pop");
 }
 
 void OptimiserWorker::terminate()
