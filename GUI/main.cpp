@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 
             if (using_mpi) boost::mpi::broadcast(world, params, 0);
 
-            std::cout << "I'm read the configuration. Just setting a few things up now" << std::endl;
+            std::cout << "I've read the configuration. Just setting a few things up now" << std::endl;
             GeonamicaOptimiser geon_eval(params);
 
             boost::shared_ptr<boost::timer::auto_cpu_timer> timer(nullptr);
