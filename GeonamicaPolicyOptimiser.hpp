@@ -164,7 +164,7 @@ public:
 
     std::pair<std::vector<double>, std::vector<double> > &
     operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars,
-               boost::filesystem::path save_path);
+               boost::filesystem::path & save_path);
 
     ProblemDefinitionsSPtr getProblemDefinitions();
 
