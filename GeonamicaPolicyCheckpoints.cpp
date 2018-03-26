@@ -15,8 +15,10 @@ template<typename RNG>
 void
 createCheckpoints(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params)
 {
-    boost::shared_ptr<SavePopCheckpoint> save_pop(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
-    boost::shared_ptr<SaveFirstFrontCheckpoint> save_front(new SaveFirstFrontCheckpoint(params.save_freq, params.save_dir.second));
+    boost::shared_ptr<SavePopCheckpoint> save_pop;
+    if (params.save_freq > 0) save_pop.reset(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
+    boost::shared_ptr<SaveFirstFrontCheckpoint> save_front;
+    if (params.save_freq > 0) save_front.reset(new SaveFirstFrontCheckpoint(params.save_freq, params.save_dir.second));
     boost::shared_ptr<Hypervolume> hvol(new Hypervolume(1, params.save_dir.second, Hypervolume::TERMINATION, params.max_gen_hvol));
 //    boost::shared_ptr<MetricLinePlot> hvol_plot(new MetricLinePlot(hvol));
     boost::shared_ptr<MaxGenCheckpoint> maxgen(new MaxGenCheckpoint(params.max_gen));
@@ -34,8 +36,8 @@ createCheckpoints(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params)
     boost::shared_ptr<SignalCheckpoint> signal_handler(new SignalCheckpoint(SIGINT));
 
 //    boost::shared_ptr<PlotFrontVTK> plotfront(new PlotFrontVTK);
-    optimiser.add_checkpoint(save_pop);
-    optimiser.add_checkpoint(save_front);
+    if (params.save_freq > 0) optimiser.add_checkpoint(save_pop);
+    if (params.save_freq > 0) optimiser.add_checkpoint(save_front);
     optimiser.add_checkpoint(hvol);
     if (!params.email_addresses_2_send_progress.empty())
     {

@@ -26,32 +26,39 @@ template<typename RNG>
 void
 createCheckpointsQtGUI(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread)
 {
-    boost::shared_ptr<SavePopCheckpoint> save_pop(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
-    boost::shared_ptr<SaveFirstFrontCheckpoint> save_front(new SaveFirstFrontCheckpoint(params.save_freq, params.save_dir.second));
+    boost::shared_ptr<SavePopCheckpoint> save_pop;
+    if (params.save_freq > 0) save_pop.reset(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
+    boost::shared_ptr<SaveFirstFrontCheckpoint> save_front;
+    if (params.save_freq > 0) save_front.reset(new SaveFirstFrontCheckpoint(params.save_freq, params.save_dir.second));
     boost::shared_ptr<Hypervolume> hvol(new Hypervolume(1, params.save_dir.second, Hypervolume::TERMINATION, params.max_gen_hvol));
     boost::shared_ptr<MaxGenCheckpoint> maxgen(new MaxGenCheckpoint(params.max_gen));
 
     std::string mail_subj("Hypervolume of front from Geonamica optimiser");
-    boost::shared_ptr<MailCheckpoint> mail(new MailCheckpoint(params.save_freq, hvol, mail_subj));
-    if (!params.email_addresses_2_send_progress.empty())
+    boost::shared_ptr<MailCheckpoint> mail;
+    if (params.save_freq > 0)
     {
-        for(std::string address: params.email_addresses_2_send_progress)
+        mail.reset(new MailCheckpoint(params.save_freq, hvol, mail_subj));
+        if (!params.email_addresses_2_send_progress.empty())
         {
-            mail->addAddress(address);
+            for(std::string address: params.email_addresses_2_send_progress)
+            {
+                mail->addAddress(address);
+            }
         }
     }
+
 
     boost::shared_ptr<SignalCheckpoint> signal_handler(new SignalCheckpoint(SIGINT));
     boost::shared_ptr<MetricQtSignal> hvol_plot_signal(new MetricQtSignal(hvol));
     boost::shared_ptr<FrontQtSignal> front_plot_signal(new FrontQtSignal);
 //    boost::shared_ptr<QtDialogueCheckpoint> ask_continue(new QtDialogueCheckpoint);
 
-    optimiser.add_checkpoint(save_pop);
-    optimiser.add_checkpoint(save_front);
+    if (params.save_freq > 0) optimiser.add_checkpoint(save_pop);
+    if (params.save_freq > 0) optimiser.add_checkpoint(save_front);
     optimiser.add_checkpoint(hvol);
     if (!params.email_addresses_2_send_progress.empty())
     {
-        optimiser.add_checkpoint(mail);
+        if (params.save_freq > 0) optimiser.add_checkpoint(mail);
     }
     optimiser.add_checkpoint(maxgen);
     optimiser.add_checkpoint(signal_handler);

@@ -34,15 +34,15 @@ ENDIF()
 
 
 # Find where Magick++-config lives
-find_program(MAGICK_CONFIG "Magick++-config")
+#find_program(MAGICK_CONFIG "Magick++-config")
 # Ask about CXX and lib flags/locations
-execute_process(COMMAND "${MAGICK_CONFIG}" "--cxxflags" OUTPUT_VARIABLE MAGICK_CXX_FLAGS)
-execute_process(COMMAND "${MAGICK_CONFIG}" "--libs" OUTPUT_VARIABLE MAGICK_LD_FLAGS)
+#execute_process(COMMAND "${MAGICK_CONFIG}" "--cxxflags" OUTPUT_VARIABLE MAGICK_CXX_FLAGS)
+#execute_process(COMMAND "${MAGICK_CONFIG}" "--libs" OUTPUT_VARIABLE MAGICK_LD_FLAGS)
 #message(STATUS "${MAGICK_CXX_FLAGS}")
 #message(STATUS "${MAGICK_LD_FLAGS}")
 # Remove trailing whitespace (CMAKE warns about this)
-string(STRIP "${MAGICK_CXX_FLAGS}" MAGICK_CXX_FLAGS)
-string(STRIP "${MAGICK_LD_FLAGS}" MAGICK_LD_FLAGS)
+#string(STRIP "${MAGICK_CXX_FLAGS}" MAGICK_CXX_FLAGS)
+#string(STRIP "${MAGICK_LD_FLAGS}" MAGICK_LD_FLAGS)
 
 
 # Define required for how hypervolume is calculated.
@@ -57,7 +57,7 @@ INCLUDE_DIRECTORIES(${AHHZ_RASTER_UTIL} )
 INCLUDE_DIRECTORIES(${AHHZ_RASTER_ITERATOR})
 INCLUDE_DIRECTORIES(${PARALLEL-NSGAII})
 include_directories("${CMAKE_SOURCE_DIR}/pugixml-1.7/src/")
-include_directories(${ImageMagick_Magick++_INCLUDE_DIR})
+#include_directories(${ImageMagick_Magick++_INCLUDE_DIR})
 include_directories(${RASTER2IMAGE})
 #INCLUDE_DIRECTORIES(${MCL})
 
@@ -95,11 +95,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 # ...
 # target_link_libraries(yourBinary ${LIBS})
 
-SET(MagickLibs
-        ${ImageMagick_Magick++_LIBRARY}
-        ${ImageMagick_MagickWand_LIBRARY}
-        ${ImageMagick_MagickCore_LIBRARY}
-        )
+#SET(MagickLibs
+#        ${ImageMagick_Magick++_LIBRARY}
+#        ${ImageMagick_MagickWand_LIBRARY}
+#        ${ImageMagick_MagickCore_LIBRARY}
+#        )
 
 
 file(GLOB_RECURSE AHHZ_Raster
@@ -314,4 +314,4 @@ target_link_libraries(geonoptcommon ${GDAL_LIBRARY} ${CMAKE_DL_LIBS} ${Boost_LIB
 
 SET(USE_QT CACHE BOOL "Set to on to build qt gui with chart visualisation")
 add_subdirectory(GUI)
-add_subdirectory(EvaluatorModules)
+add_subdirectory(Modules)

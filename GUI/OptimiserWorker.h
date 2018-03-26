@@ -31,6 +31,7 @@ public slots:
     void optimise();
     void step();
     void test(GeonamicaPolicyParameters params_copy);
+    void evalReseedPop();
     void terminate();
 
 signals:

@@ -10,6 +10,15 @@
 bool
 pathifyQMsg(CmdLinePaths & path)
 {
+    if (path.first.empty())
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Warning: empty path given to pathifyQMsg");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        int ret = msgBox.exec();
+        return false;
+    }
     path.second = boost::filesystem::path(path.first);
     if (!(boost::filesystem::exists(path.second)))
     {
@@ -26,7 +35,15 @@ pathifyQMsg(CmdLinePaths & path)
 bool
 pathifyMkQMsg(CmdLinePaths & path)
 {
-
+    if (path.first.empty())
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Warning: empty path given to pathifyQMsg");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        int ret = msgBox.exec();
+        return false;
+    }
     path.second = boost::filesystem::path(path.first);
     if (!(boost::filesystem::exists(path.second)))
     {

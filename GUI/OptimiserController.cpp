@@ -25,6 +25,7 @@ OptimiserController::OptimiserController(MainWindow * main_window)
     QObject::connect(this, SIGNAL(intialiseOptimisation(GeonamicaPolicyParameters)), worker, SLOT(initialise(GeonamicaPolicyParameters)));
     QObject::connect(this, SIGNAL(stepOptimisation()), worker, SLOT(step()));
     QObject::connect(this, SIGNAL(runOptimisation()), worker, SLOT(optimise()));
+    QObject::connect(this, SIGNAL(evalReseedPopInWorker()), worker, SLOT(evalReseedPop()));
 
     QObject::connect(&optimiser_thread, SIGNAL(finished()), worker, SLOT(deleteLater()));
     QObject::connect(worker, SIGNAL(nextHypervolumeMetric(int, double)), hypervolume_chart, SLOT(addNextMetricValue(int, double)));
@@ -76,6 +77,11 @@ void OptimiserController::step()
 void OptimiserController::test(GeonamicaPolicyParameters _params)
 {
     emit testOptimisation(_params);
+}
+void
+OptimiserController::evalReseedPop()
+{
+    emit evalReseedPopInWorker();
 }
 
 

@@ -57,6 +57,7 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
       zone_delineation_edit(new MyLineEdit(this)),
       zonal_layer_edit(new MyLineEdit(this)),
       evaluator_modules_list(new QListWidget),
+      dv_modules_list(new QListWidget),
         zonal_map_classes_edit(new MyLineEdit(this)),
       help_box(_help_box)
 {
@@ -74,6 +75,9 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     QLabel *evaluator_modules_Label = new QLabel(tr("Evaluator Modules for other objective values:"));
 //    QListWidget *objectives_List = new QListWidget;
     QPushButton* evaluator_modules_button = new QPushButton(tr("Add new evaluator module"));
+    QLabel *dv_modules_Label = new QLabel(tr("Decision variable modules for other objective values:"));
+//    QListWidget *objectives_List = new QListWidget;
+    QPushButton* dv_modules_button = new QPushButton(tr("Add new decision variable module"));
     
 //    QLabel *year_begin_label = new QLabel(tr("Start calculating map aggregation in year:"));
 //    QLabel *year_end_label = new QLabel(tr("End calculating map aggregation in year:"));
@@ -94,6 +98,9 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     objectives_Layout->addWidget(evaluator_modules_Label,7,0,1,2);
     objectives_Layout->addWidget(evaluator_modules_list,8,0,1,2);
     objectives_Layout->addWidget(evaluator_modules_button,9,0,1,2);
+    objectives_Layout->addWidget(dv_modules_Label,10,0,1,2);
+    objectives_Layout->addWidget(dv_modules_list,11,0,1,2);
+    objectives_Layout->addWidget(dv_modules_button,12,0,1,2);
 //    objectives_Layout->addWidget(rate_label,10,0);
 //    objectives_Layout->addWidget(rate_edit,10,1);
 //    objectives_Layout->addWidget(year_zero_label,11,0);
@@ -120,8 +127,13 @@ ProblemSpecPage::ProblemSpecPage(ConfigDialog * config_dialogue, QTextEdit * _he
     connect(this, &ProblemSpecPage::objModulesChanged, config_dialogue, &ConfigDialog::changeObjModules);
     connect(evaluator_modules_button, &QPushButton::clicked, this, &ProblemSpecPage::addObjModule);
 
+    connect(dv_modules_list, &QListWidget::itemChanged, this, &ProblemSpecPage::processDVModuleChange);
+    connect(this, &ProblemSpecPage::dvModulesChanged, config_dialogue, &ConfigDialog::changeDVModules);
+    connect(dv_modules_button, &QPushButton::clicked, this, &ProblemSpecPage::addDVModule);
+
     connect(objectives_List, &QListWidget::itemClicked, this, &ProblemSpecPage::displayObjMapHelp);
     connect(evaluator_modules_list, &QListWidget::itemClicked, this, &ProblemSpecPage::displayObjModuleHelp);
+    connect(dv_modules_list, &QListWidget::itemClicked, this, &ProblemSpecPage::displayDVModuleHelp);
     connect(xpath_List, &QListWidget::itemClicked, this, &ProblemSpecPage::displayXPathDVsHelp);
 
 
@@ -322,6 +334,34 @@ void ProblemSpecPage::processObjModuleChange()
     emit objModulesChanged(items);
 }
 
+
+void ProblemSpecPage::updateDVModules(std::vector<std::string> dv_modules)
+{
+    BOOST_FOREACH(std::string & dv_module, dv_modules)
+                {
+                    QListWidgetItem * new_item = new QListWidgetItem(dv_modules_list);
+                    new_item->setText(QString::fromStdString(dv_module));
+                    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
+                }
+}
+
+void ProblemSpecPage::addDVModule()
+{
+    QListWidgetItem * new_item = new QListWidgetItem(dv_modules_list);
+    new_item->setText(tr("New decision variable module specification"));
+    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
+}
+
+void ProblemSpecPage::processDVModuleChange()
+{
+    QVector<QString> items;
+    for (int j = 0; j < dv_modules_list->count() ; ++j)
+    {
+        items.append(dv_modules_list->item(j)->text());
+    }
+    emit dvModulesChanged(items);
+}
+
 void ProblemSpecPage::displayObjMapHelp()
 {
 
@@ -332,6 +372,12 @@ void ProblemSpecPage::displayObjMapHelp()
 void ProblemSpecPage::displayObjModuleHelp()
 {
     QString f = ":/Help/EvalModules.html";
+    displayHelp(f, help_box);
+}
+
+void ProblemSpecPage::displayDVModuleHelp()
+{
+    QString f = ":/Help/DVModules.html";
     displayHelp(f, help_box);
 }
 
@@ -769,14 +815,17 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
 
     QLabel* ressed_label = new QLabel(tr("Reseed population file:"));
 //    QLineEdit *reseed_edit = new QLineEdit;
+    QPushButton * eval_reseed_pop_button = new QPushButton(tr("Evaluate"));
 
     QGridLayout* reseed_layout = new QGridLayout;
     reseed_layout->addWidget(ressed_label, 0 , 0);
     reseed_layout->addWidget(reseed_edit, 0 , 1);
+    reseed_layout->addWidget(eval_reseed_pop_button, 1, 1);
 
     reseed->setLayout(reseed_layout);
 
     connect(reseed_edit, &QLineEdit::textEdited, config_dialogue, &ConfigDialog::changeRessed);
+    connect(eval_reseed_pop_button, &QAbstractButton::clicked, config_dialogue, &ConfigDialog::evalReseedPop);
 
     ////
 
