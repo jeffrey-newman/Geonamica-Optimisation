@@ -9,6 +9,7 @@
 
 #include "ParallelEvaluator.hpp"
 #include "NSGAII.hpp"
+#include "NSGAII-CE.hpp"
 #include "../GeonamicaPolicyOptimiser.hpp"
 #include "../GeonamicaPolicyParameters.hpp"
 #include "../GeonamicaPolicyCheckpoints.hpp"
@@ -165,7 +166,7 @@ int main(int argc, char *argv[])
             //create evaluator server
             boost::filesystem::path eval_log = params.save_dir.second / "evaluation_timing.log";
             std::ofstream eval_strm(eval_log.c_str());
-            ParallelEvaluatePopServerNonBlocking eval_server(env, world, geon_eval.getProblemDefinitions());
+//            ParallelEvaluatePopServerNonBlocking eval_server(env, world, geon_eval.getProblemDefinitions());
             if (eval_strm.is_open())
             {
                 eval_server.log(ParallelEvaluatorBase::LVL1, eval_strm);
@@ -178,9 +179,10 @@ int main(int argc, char *argv[])
 
             // The optimiser
             boost::scoped_ptr<NSGAII<RNG> > optimiser;
+            boost::scoped_ptr<NSGAIICE<RNG> > parallel_optimiser;
             if (using_mpi)
             {
-                optimiser.reset(new NSGAII<RNG>(rng, eval_server));
+                parallel_optimiser.reset(new NSGAIICE<RNG>(rng, env, world, geon_eval.getProblemDefinitions()));
             }
             else
             {
@@ -206,7 +208,14 @@ int main(int argc, char *argv[])
                 pop->push_back(max_dvs);
                 pop->push_back(min_dvs);
                 //Postprocess the results
-                optimiser->savePop(pop, params.test_dir.second, "tested_pop");
+                if (using_mpi)
+                {
+                    parallel_optimiser->savePop(pop, params.test_dir.second, "tested_pop");
+                }
+                else
+                {
+                    optimiser->savePop(pop, params.test_dir.second, "tested_pop");
+                }
 
             }
             else if(vm.count("postprocess"))

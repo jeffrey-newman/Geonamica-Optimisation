@@ -5,7 +5,7 @@
 #ifndef GEON_OPT_GEONAMICANSGAII_HPP
 #define GEON_OPT_GEONAMICANSGAII_HPP
 
-#include "NSGAII.hpp"
+#include "NSGAII-CE.hpp.hpp"
 #include "GeonamicaPolicyOptimiser.hpp"
 #include <random>
 #include <boost/shared_ptr.hpp>
@@ -27,7 +27,7 @@ public:
     typedef  std::mt19937 RNG;
     unsigned seed;
     RNG rng;
-    NSGAII<RNG> optimiser;
+    NSGAIICE<RNG> optimiser;
     NSGAIIObjsParallel(ParallelEvaluatePopServerNonBlocking & geon_eval);
 };
 
