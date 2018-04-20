@@ -10,7 +10,7 @@
 
 template<typename RNG>
 void
-createCheckpoints(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params);
+createCheckpoints(NSGAIIBase<RNG> & optimiser, GeonamicaPolicyParameters & params);
 
 
 #endif //GEON_OPT_GEONAMICAPOLICYCHECKPOINTS_HPP

@@ -64,6 +64,7 @@ public slots:
     void changeTestDir(QString new_val);
     void changeSaveMaps(QVector<QString> new_val);
 //    void changeSaveMaps(QListWidgetItem *current, QListWidgetItem *previous);
+    void changeAlgorithm(QString new_val);
     void changePopSize(int new_val);
     void changeMaxGenHypImprove(int new_val);
     void changeMaxGen(int new_val);

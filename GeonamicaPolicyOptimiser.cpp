@@ -1802,7 +1802,7 @@ std::pair<std::vector<double>, std::vector<double> > &
     }
 
     std::pair<std::vector<double>, std::vector<double> > &
-    GeonamicaOptimiser::operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars, boost::filesystem::path & save_path)
+    GeonamicaOptimiser::operator()(const std::vector<double>  & real_decision_vars, const std::vector<int> & int_decision_vars, const boost::filesystem::path & save_path)
     {
         try
         {

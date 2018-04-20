@@ -46,8 +46,9 @@ private:
     GeonamicaPolicyParameters params;
     boost::shared_ptr<GeonamicaOptimiser> geon_eval;
     boost::shared_ptr<ParallelEvaluatePopServerNonBlocking> eval_server;
+//    boost::shared_ptr<ParallelEvaluatePopServerNonBlockingContinuousEvolution> eval_server_ce;
     boost::shared_ptr<NSGAIIObjs> nsgaii_objs;
-    boost::shared_ptr<NSGAIIObjsParallel> nsgaii_objs_pll;
+//    boost::shared_ptr<NSGAIICEObjsParallel> nsgaii_objs_pll;
     PopulationSPtr pop;
     double count;
     bool is_initialised;

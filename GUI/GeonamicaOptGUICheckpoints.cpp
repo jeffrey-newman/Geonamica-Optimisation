@@ -24,7 +24,7 @@
 
 template<typename RNG>
 void
-createCheckpointsQtGUI(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread)
+createCheckpointsQtGUI(NSGAIIBase<RNG> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread)
 {
     boost::shared_ptr<SavePopCheckpoint> save_pop;
     if (params.save_freq > 0) save_pop.reset(new SavePopCheckpoint(params.save_freq, params.save_dir.second));
@@ -70,4 +70,4 @@ createCheckpointsQtGUI(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & para
 }
 
 template void
-createCheckpointsQtGUI(NSGAII<std::mt19937> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread );
+createCheckpointsQtGUI(NSGAIIBase<std::mt19937> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread );

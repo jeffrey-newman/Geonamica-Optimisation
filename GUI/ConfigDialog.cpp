@@ -360,7 +360,8 @@ void ConfigDialog::updateParamsValuesInGUI()
     geon_setting_page->updateOuputLogMaps(params->save_maps);
     geon_setting_page->updateDriveLetter(QString::fromStdString(params->wine_geoproject_disk_drive));
     geon_setting_page->updateWhetherThrowExceptns(params->do_throw_excptns);
-    
+
+    ea_Page->updateAlgorithm(QString::fromStdString(params->algorithm));
     ea_Page->updatePop(params->pop_size);
     ea_Page->updateHyprvolTerm(params->max_gen_hvol);
     ea_Page->updateMaxGenTerm(params->max_gen);
@@ -703,6 +704,13 @@ void ConfigDialog::changeSaveMaps(QVector<QString> new_vals)
 //    }
 //    this->params->save_maps.push_back(current->text().toStdString());
 //}
+
+void ConfigDialog::changeAlgorithm(QString new_val)
+{
+    this->params->algorithm = new_val.toStdString();
+    is_modified = true;
+    opt_needs_initialisation = true;
+}
 
 void ConfigDialog::changePopSize(int new_val)
 {

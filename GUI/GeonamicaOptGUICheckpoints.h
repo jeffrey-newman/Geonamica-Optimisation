@@ -12,6 +12,6 @@
 
 template<typename RNG>
 void
-createCheckpointsQtGUI(NSGAII<RNG> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread);
+createCheckpointsQtGUI(NSGAIIBase<RNG> & optimiser, GeonamicaPolicyParameters & params, OptimiserWorker * thread);
 
 #endif //WDS_OPT_WDSOPTCHECKPOINTS_H

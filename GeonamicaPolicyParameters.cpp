@@ -227,7 +227,7 @@ int LoadParameters::saveOptions(std::string filepath, GeonamicaPolicyParameters 
                 ofs << "save-map = " << save_map_spec << "\n";
             });
         }
-
+        ofs << "algorithm = " << _params.algorithm << "\n";
         ofs << "pop-size = " << _params.pop_size << "\n";
         ofs << "max-gen-no-hvol-improve = " << _params.max_gen_hvol << "\n";
         ofs << "max-gen = " << _params.max_gen << "\n";
@@ -337,6 +337,7 @@ LoadParameters::getOptionsDescription(GeonamicaPolicyParameters& params)
 //                ("year-end-saving,b", po::value<int>(&params.year_end_saving),
 //                     "End year for objective map logging - only valid if saving logging file stem is only given and not full filename")
 
+            ("algorithm", po::value<std::string>(&params.algorithm)->default_value("NSGAII Proper"), "Algorith to use: either 'NSGAII Proper' or 'NSGAII - continuous evolution'. This is only applicable if using mpi (i.e. parallel)")
             ("pop-size,p", po::value<int>(&params.pop_size)->default_value(415), "Population size of the NSGAII")
             ("max-gen-no-hvol-improve,x", po::value<int>(&params.max_gen_hvol)->default_value(50),
              "maximum generations with no improvement in the hypervolume metric - terminaation condition")

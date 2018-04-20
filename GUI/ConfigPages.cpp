@@ -765,7 +765,8 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
         reseed_edit(new QLineEdit),
         logging_SpinBox(new QSpinBox),
       email_address_List(new QListWidget),
-      help_box(_help_box)
+      help_box(_help_box),
+      algorithm_selector(new QComboBox)
 {
     QGroupBox *parameters_Group = new QGroupBox(tr("NSGAII parameters"));
 
@@ -775,12 +776,20 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
     pop_SpinBox->setMaximum(1000);
     pop_SpinBox->setSingleStep(50);
 
-    QVBoxLayout* parameters_layout = new QVBoxLayout;
-    parameters_layout->addWidget(pop_SpinBox);
+    QLabel * algorithm_selector_label = new QLabel(tr("Algorithm choice:"));
+    algorithm_selector->addItem(tr("NSGAII Proper"));
+    algorithm_selector->addItem(tr("NSGAII - continuous evolution"));
+
+
+    QGridLayout* parameters_layout = new QGridLayout;
+    parameters_layout->addWidget(pop_SpinBox, 0, 0, 1, 2);
+    parameters_layout->addWidget(algorithm_selector_label, 1, 0, 1, 1);
+    parameters_layout->addWidget(algorithm_selector, 1, 1, 1, 1);
 
     parameters_Group->setLayout(parameters_layout);
 
     connect(pop_SpinBox, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), config_dialogue, &ConfigDialog::changePopSize);
+    connect(algorithm_selector, &QComboBox::currentTextChanged, config_dialogue, &ConfigDialog::changeAlgorithm);
 
     /////
 
@@ -873,6 +882,20 @@ EAPage::EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *pa
     mainLayout->addWidget(email_status_group);
     mainLayout->addStretch(1);
     setLayout(mainLayout);
+}
+
+void EAPage::updateAlgorithm(QString algorithm)
+{
+    int item = algorithm_selector->findText(algorithm);
+    if (item != -1)
+    {
+        algorithm_selector->setCurrentIndex(item);
+    }
+    else
+    {
+        algorithm_selector->addItem(algorithm);
+        algorithm_selector->setCurrentIndex(algorithm_selector->findText(algorithm));
+    }
 }
 
 void EAPage::updatePop(int pop)

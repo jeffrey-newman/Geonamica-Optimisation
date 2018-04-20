@@ -215,6 +215,7 @@ public:
     EAPage(ConfigDialog* config_dialogue, QTextEdit * _help_box, QWidget *parent = 0);
 
     public:
+    void updateAlgorithm(QString algorithm);
     void updatePop(int pop);
     void updateHyprvolTerm(int gen);
     void updateMaxGenTerm(int gen);
@@ -233,6 +234,7 @@ private:
     QSpinBox *logging_SpinBox;
     QTextEdit * help_box;
     QListWidget *email_address_List;
+    QComboBox * algorithm_selector;
 
 };
 

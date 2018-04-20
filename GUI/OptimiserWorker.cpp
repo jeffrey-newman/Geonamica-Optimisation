@@ -41,88 +41,85 @@ void OptimiserWorker::initialise(GeonamicaPolicyParameters _params)
     count = 0;
     params = _params;
 
-    if (using_mpi == false)
+    try
     {
-        try
-        {
-            geon_eval = boost::shared_ptr<GeonamicaOptimiser>(new GeonamicaOptimiser(params));
-
-            //Make the NSGAII
-            nsgaii_objs = getNSGAIIForGeon(*geon_eval);
-
-            // Add the checkpoints
-            createCheckpointsQtGUI(nsgaii_objs->optimiser, params, this);
-
-            // Initialise population
-            pop = PopulationSPtr(new Population);
-            if (params.restart_pop_file.first == "no_seed")
-            {
-                pop = intialisePopulationRandomDVAssignment(params.pop_size, geon_eval->getProblemDefinitions(),
-                                                            nsgaii_objs->rng);
-            }
-            else
-            {
-                pop = restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions());
-            }
-            nsgaii_objs->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
-
-            nsgaii_objs->optimiser.initialiseWithPop(pop);
-            nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "initial_pop");
-        }
-//    nsgaii_objs->optimiser.log();
-        catch (std::runtime_error err)
-        {
-            emit error(QString(err.what()));
-            return;
-        }
-        is_initialised = true;
-    }
-    else
-    {
-        try
+        if (using_mpi == true)
         {
             if (params.wine_prefix_path.first.substr(0, 4) != "copy")
             {
-                emit error(QString(" Using parallel evaluation (mpi) but not making a 'copy' of the prefix for each evaluator. Are you sure?"));
+                emit error(QString(
+                    " Using parallel evaluation (mpi) but not making a 'copy' of the prefix for each evaluator. Are you sure?"));
             }
 
 //            std::cout << "Broadcasting params\n";
             boost::mpi::broadcast(world, _params, 0);
+        }
 
-            geon_eval = boost::shared_ptr<GeonamicaOptimiser>(new GeonamicaOptimiser(params));
-            eval_server = boost::shared_ptr<ParallelEvaluatePopServerNonBlocking>
-                                               (new ParallelEvaluatePopServerNonBlocking(env, world, geon_eval->getProblemDefinitions()));
-            //Make the NSGAII
-            nsgaii_objs_pll = getNSGAIIForGeonParallel(*eval_server);
+        geon_eval = boost::shared_ptr<GeonamicaOptimiser>(new GeonamicaOptimiser(params));
 
-            // Add the checkpoints
-            createCheckpointsQtGUI(nsgaii_objs_pll->optimiser, params, this);
+//        boost::filesystem::path eval_log = params.save_dir.second / "evaluation_timing.log";
+//        std::ofstream eval_strm(eval_log.c_str());
 
-            // Initialise population
-            pop = PopulationSPtr(new Population);
-            if (params.restart_pop_file.first == "no_seed")
+        if (params.algorithm == "NSGAII Proper")
+        {
+            if (using_mpi == true)
             {
-                pop = intialisePopulationRandomDVAssignment(params.pop_size, geon_eval->getProblemDefinitions(),
-                                                            nsgaii_objs_pll->rng);
+                eval_server = boost::shared_ptr<ParallelEvaluatePopServerNonBlocking>
+                    (new ParallelEvaluatePopServerNonBlocking(env, world, geon_eval->getProblemDefinitions()));
+                if (params.is_logging)
+                {
+                    eval_server->log(params.save_dir.second, ParallelEvaluatorBase::LVL1);
+                }
+                nsgaii_objs = getNSGAIIForGeonParallel(*eval_server);
             }
             else
-            {
-                pop = restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions());
+                {
+                    nsgaii_objs = getNSGAIIForGeon(*geon_eval);
             }
-            nsgaii_objs_pll->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
 
-            nsgaii_objs_pll->optimiser.initialiseWithPop(pop);
-            nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "initial_pop");
         }
-//    nsgaii_objs->optimiser.log();
-        catch (std::runtime_error err)
+        else if (params.algorithm == "NSGAII - continuous evolution")
         {
-            emit error(QString(err.what()));
-            return;
+            nsgaii_objs = getNSGAIICEForGeonParallel(env, world, geon_eval->getProblemDefinitions());
         }
-        is_initialised = true;
 
+        if (params.is_logging)
+        {
+            typedef  std::mt19937 RNG;
+            nsgaii_objs->optimiser->log(params.save_dir.second, NSGAIIBase<RNG>::LVL1);
+        }
+
+        // Add the checkpoints
+        createCheckpointsQtGUI(*nsgaii_objs->optimiser, params, this);
+
+        // Initialise population
+        pop = PopulationSPtr(new Population);
+        if (params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty())
+        {
+            pop = intialisePopulationRandomDVAssignment(params.pop_size, geon_eval->getProblemDefinitions(),
+                                                        *nsgaii_objs->rng);
+        }
+        else
+        {
+            pop = restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions());
+        }
+        nsgaii_objs->optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
+
+        nsgaii_objs->optimiser->initialiseWithPop(pop, params.save_dir.second);
+//        nsgaii_objs->optimiser->savePop(pop, params.save_dir.second, "initial_pop");
     }
+//    nsgaii_objs->optimiser.log();
+    catch (std::runtime_error err)
+    {
+        emit error(QString(err.what()));
+        return;
+    }
+
+
+
+    is_initialised = true;
+
+
 }
 
 void
@@ -141,42 +138,22 @@ OptimiserWorker::optimise()
         // Run the optimisation
         bool do_continue = true;
 
-        if (using_mpi == false)
-        {
+
             do
             {
-                nsgaii_objs->optimiser.step();
+                nsgaii_objs->optimiser->step();
                 mutex.lock();
                 if (this->do_terminate) do_continue = false;
                 mutex.unlock();
-                if (nsgaii_objs->optimiser.isFinished()) do_continue = false;
+                if (nsgaii_objs->optimiser->isFinished()) do_continue = false;
             }
             while (do_continue);
 
 //        nsgaii_objs->optimiser.run();
 
             //Postprocess the results
-            if (nsgaii_objs->optimiser.isFinished())
-                nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "final_pop");
-        }
-        else
-        {
-            do
-            {
-                nsgaii_objs_pll->optimiser.step();
-                mutex.lock();
-                if (this->do_terminate) do_continue = false;
-                mutex.unlock();
-                if (nsgaii_objs_pll->optimiser.isFinished()) do_continue = false;
-            }
-            while (do_continue);
-
-//        nsgaii_objs->optimiser.run();
-
-            //Postprocess the results
-            if (nsgaii_objs_pll->optimiser.isFinished())
-                nsgaii_objs_pll->optimiser.savePop(pop, params.save_dir.second, "final_pop");
-        }
+            if (nsgaii_objs->optimiser->isFinished())
+                nsgaii_objs->optimiser->savePop(pop, params.save_dir.second, "final_pop");
 
         std::cout << "Finished running optimisation" << std::endl;
     }
@@ -202,24 +179,14 @@ void OptimiserWorker::step()
         //Expensive calculation here.
         std::cout << "Running optimisation in thread\n";
 
-        if (using_mpi == false)
-        {
+
             // Run the optimisation
-            nsgaii_objs->optimiser.step();
+            nsgaii_objs->optimiser->step();
 
             //Postprocess the results
-            if (nsgaii_objs->optimiser.isFinished())
-                nsgaii_objs->optimiser.savePop(pop, params.save_dir.second, "final_pop");
-        }
-        else
-        {
-            // Run the optimisation
-            nsgaii_objs_pll->optimiser.step();
+            if (nsgaii_objs->optimiser->isFinished())
+                nsgaii_objs->optimiser->savePop(pop, params.save_dir.second, "final_pop");
 
-            //Postprocess the results
-            if (nsgaii_objs_pll->optimiser.isFinished())
-                nsgaii_objs_pll->optimiser.savePop(pop, params.save_dir.second, "final_pop");
-        }https://support.google.com/a/answer/178723?hl=en
 
         std::cout << "Finished running optimisation" << std::endl;
     }
@@ -234,14 +201,7 @@ void
 OptimiserWorker::evalReseedPop()
 {
     PopulationSPtr pop2process(restore_population(params.restart_pop_file.second, geon_eval->getProblemDefinitions()));
-    if (using_mpi == false)
-    {
-        nsgaii_objs->optimiser.savePop(pop2process, params.save_dir.second, "reseeded_pop");
-    }
-    else
-    {
-        nsgaii_objs_pll->optimiser.savePop(pop2process, params.save_dir.second, "reseeded_pop");
-    }
+    nsgaii_objs->optimiser->savePop(pop2process, params.save_dir.second, "reseeded_pop");
 }
 
 void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
@@ -278,7 +238,7 @@ void OptimiserWorker::test(GeonamicaPolicyParameters params_copy)
 
     //Make the NSGAII
     boost::shared_ptr<NSGAIIObjs> testing_nsgaii_objs = getNSGAIIForGeon(testing_geon_eval);
-    testing_nsgaii_objs->optimiser.savePop(pop, params_copy.test_dir.second, "tested_pop");
+    testing_nsgaii_objs->optimiser->savePop(pop, params_copy.test_dir.second, "tested_pop");
 }
 
 void OptimiserWorker::terminate()

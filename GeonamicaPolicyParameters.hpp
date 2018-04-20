@@ -47,6 +47,7 @@ struct GeonamicaPolicyParameters
     std::vector<std::string> save_maps;
     bool is_logging = false;
     int replicates = 10;
+    std::string algorithm;
     int pop_size; // For the GA
     int max_gen_hvol;  // Termination condition for the GA
     int max_gen;
@@ -102,6 +103,7 @@ void serialize(Archive& ar, GeonamicaPolicyParameters& p, const unsigned int ver
     ar & p.save_maps;
     ar & p.is_logging;
     ar & p.replicates;
+    ar & p.algorithm;
     ar & p.pop_size;
     ar & p.max_gen_hvol;
     ar & p.max_gen;

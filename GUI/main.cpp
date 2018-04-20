@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
             ("no-gui", "Run as command line executable without GUI")
             ("test", "Test the optimisation, but do not run it. Must be used in combination with --no-gui")
             ("postprocess", "Run the evaluation and save it for the population in the reseed file the ressed file is specified in the cfg file. Must be used in combination with --no-gui")
-                ("generate-pop", boost::program_options::value<std::string>(&gen_pop_file.first), "Generate a random population then quit, saving population to file specified")
+            ("generate-pop", boost::program_options::value<std::string>(&gen_pop_file.first), "Generate a random population then quit, saving population to file specified")
             ;
 
         boost::program_options::positional_options_description p;
@@ -164,13 +164,19 @@ int main(int argc, char *argv[])
             }
 
             //create evaluator server
-            boost::filesystem::path eval_log = params.save_dir.second / "evaluation_timing.log";
-            std::ofstream eval_strm(eval_log.c_str());
-//            ParallelEvaluatePopServerNonBlocking eval_server(env, world, geon_eval.getProblemDefinitions());
-            if (eval_strm.is_open())
+//            boost::filesystem::path eval_log = params.save_dir.second / "evaluation_timing.log";
+//            std::ofstream eval_strm(eval_log.c_str());
+
+            boost::shared_ptr<ParallelEvaluatePopServerNonBlocking> eval_server;
+            if (params.algorithm == "NSGAII Proper")
             {
-                eval_server.log(ParallelEvaluatorBase::LVL1, eval_strm);
+                eval_server.reset(new ParallelEvaluatePopServerNonBlocking(env, world, geon_eval.getProblemDefinitions()));
+                if (params.is_logging)
+                {
+                    eval_server->log(params.save_dir.second, ParallelEvaluatorBase::LVL1);
+                }
             }
+
 
             // The random number generator
             typedef std::mt19937 RNG;
@@ -178,11 +184,11 @@ int main(int argc, char *argv[])
             RNG rng(seed);
 
             // The optimiser
-            boost::scoped_ptr<NSGAII<RNG> > optimiser;
-            boost::scoped_ptr<NSGAIICE<RNG> > parallel_optimiser;
+            boost::scoped_ptr<NSGAIIBase<RNG> > optimiser;
             if (using_mpi)
             {
-                parallel_optimiser.reset(new NSGAIICE<RNG>(rng, env, world, geon_eval.getProblemDefinitions()));
+                if (params.algorithm == "NSGAII Proper") optimiser.reset(new NSGAII<RNG>(rng, *eval_server));
+                else if (params.algorithm == "NSGAII - continuous evolution") optimiser.reset(new NSGAIICE<RNG>(rng, env, world, geon_eval.getProblemDefinitions()));
             }
             else
             {
@@ -208,14 +214,15 @@ int main(int argc, char *argv[])
                 pop->push_back(max_dvs);
                 pop->push_back(min_dvs);
                 //Postprocess the results
-                if (using_mpi)
-                {
-                    parallel_optimiser->savePop(pop, params.test_dir.second, "tested_pop");
-                }
-                else
-                {
-                    optimiser->savePop(pop, params.test_dir.second, "tested_pop");
-                }
+                optimiser->savePop(pop, params.test_dir.second, "tested_pop");
+//                if (using_mpi)
+//                {
+//                    optimiser->savePop(pop, params.test_dir.second, "tested_pop");
+//                }
+//                else
+//                {
+//                    optimiser->savePop(pop, params.test_dir.second, "tested_pop");
+//                }
 
             }
             else if(vm.count("postprocess"))
@@ -237,9 +244,9 @@ int main(int argc, char *argv[])
             }
             else
             {
-                if (eval_strm.is_open())
+                if (params.is_logging)
                 {
-                    optimiser->log(eval_strm, eval_log, NSGAII<RNG>::LVL1);
+                    optimiser->log(params.save_dir.second, NSGAII<RNG>::LVL1);
                 }
 
                 // Add the checkpoints
@@ -319,16 +326,25 @@ int main(int argc, char *argv[])
             std::cout << "My worker ID is " << params.evaluator_id << std::endl;
             //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
             std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
-            std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";
-            boost::filesystem::path eval_log = params.save_dir.second / log_file_name;
-            std::ofstream eval_strm(eval_log.c_str());
+//            std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";
+//            boost::filesystem::path eval_log = params.save_dir.second / log_file_name;
+//            std::ofstream eval_strm(eval_log.c_str());
             boost::shared_ptr<GeonamicaOptimiser> geon_eval(new GeonamicaOptimiser(params));
-            ParallelEvaluatePopClientNonBlocking eval_client(env, world, geon_eval->getProblemDefinitions(), *geon_eval);
-            if (eval_strm.is_open())
+            boost::shared_ptr<ParallelEvaluatorClientBase> eval_client;
+            if (params.algorithm == "NSGAII Proper")
             {
-                eval_client.log(ParallelEvaluatorBase::LVL1, eval_strm);
+                eval_client.reset(new ParallelEvaluatePopClientNonBlocking(env, world, geon_eval->getProblemDefinitions(), *geon_eval));
             }
-            eval_client();
+            else if (params.algorithm == "NSGAII - continuous evolution")
+            {
+                eval_client.reset(new ParallelEvaluatePopClientNonBlockingContinuousEvolution(env, world, geon_eval->getProblemDefinitions(), *geon_eval));
+            }
+
+            if (params.is_logging)
+            {
+                eval_client->log(params.save_dir.second, ParallelEvaluatorBase::LVL1);
+            }
+            eval_client->operator()();
         }
         catch(std::exception& e)
         {
