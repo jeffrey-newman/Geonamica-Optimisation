@@ -6,6 +6,7 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/program_options.hpp>
 #include <boost/timer/timer.hpp>
+#include <boost/date_time.hpp>
 
 #include "ParallelEvaluator.hpp"
 #include "NSGAII.hpp"
@@ -32,9 +33,9 @@ int main(int argc, char *argv[])
 
     if (world.rank() == 0)
     {
-        std::cout << "This is Jeffrey Newman's Geonamica Optimiser" << std::endl;
-        if (using_mpi) std::cout << "Running in parallel mode using MPI" << std::endl;
-        else std::cout << "Runnning in serial mode" << std::endl;
+        std::cout <<  boost::posix_time::second_clock::local_time() << " " << "This is Jeffrey Newman's Geonamica Optimiser" << std::endl;
+        if (using_mpi) std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Running in parallel mode using MPI" << std::endl;
+        else std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Runnning in serial mode" << std::endl;
 
         CmdLinePaths cfg_file;
         CmdLinePaths gen_pop_file;
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("generate-pop"))
         {
-            std::cout << "You have requested that I generate a random population,\n"
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "You have requested that I generate a random population,\n"
                 " based on the optimisation problem configurations you gave me" << std::endl;
             if (cfg_file.first.empty())
             {
@@ -82,6 +83,8 @@ int main(int argc, char *argv[])
                     return EXIT_FAILURE;
                 }
             }
+
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Generating a population using random DV assignment, using cfg file: " << cfg_file.first <<std::endl;
 
             // The random number generator
             typedef std::mt19937 RNG;
@@ -102,13 +105,13 @@ int main(int argc, char *argv[])
             gen_pop_file.second = boost::filesystem::path(gen_pop_file.first);
             print(pop, gen_pop_file.second);
             if (using_mpi) env.abort(EXIT_SUCCESS);
-            std::cout << "I've finished generating that random population you asked for" << std::endl;
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "I've finished generating that random population you asked for" << std::endl;
             return EXIT_SUCCESS;
         }
 
         if (vm.count("no-gui"))
         {
-            std::cout << "You've asked me to run in command-line mode. I will not display my GUI" << std::endl;
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "You've asked me to run in command-line mode. I will not display my GUI" << std::endl;
 
             if (cfg_file.first.empty())
             {
@@ -127,7 +130,21 @@ int main(int argc, char *argv[])
                 }
             }
 
-            std::cout << "I'm loading the optimisation problem configuration now" << std::endl;
+            if (vm.count("test"))
+            {
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Testing the optimisation configuration, using cfg file: " << cfg_file.first <<std::endl;
+            }
+            else if(vm.count("postprocess"))
+            {
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Postprocessing the optimisation, using cfg file: " << cfg_file.first <<std::endl;
+            }
+            else
+            {
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Running the optimisation, using cfg file: " << cfg_file.first <<std::endl;
+            }
+
+
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "I'm loading the optimisation problem configuration now" << std::endl;
             LoadParameters parameter_loader;
             GeonamicaPolicyParameters params;
             std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
@@ -147,7 +164,7 @@ int main(int argc, char *argv[])
 
             if (using_mpi) boost::mpi::broadcast(world, params, 0);
 
-            std::cout << "I've read the configuration. Just setting a few things up now" << std::endl;
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "I've read the configuration. Just setting a few things up now" << std::endl;
             GeonamicaOptimiser geon_eval(params);
 
             boost::shared_ptr<boost::timer::auto_cpu_timer> timer(nullptr);
@@ -195,11 +212,11 @@ int main(int argc, char *argv[])
                 optimiser.reset(new NSGAII<RNG>(rng, geon_eval));
             }
 
-            std::cout << "Things are all set up now. Ready to do some work!" << std::endl;
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Things are all set up now. Ready to do some work!" << std::endl;
 
             if (vm.count("test"))
             {
-                std::cout << " Testing the optimisation configuration, as you requested...." << std::endl;
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << " Testing the optimisation configuration, as you requested...." << std::endl;
                 ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
                 IndividualSPtr max_dvs(new Individual(problem_defs));
                 max_dvs->setIntDVs(problem_defs->int_upperbounds);
@@ -227,7 +244,7 @@ int main(int argc, char *argv[])
             }
             else if(vm.count("postprocess"))
             {
-                std::cout << " Postprocessing the population file you gave me...." << std::endl;
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << " Postprocessing the population file you gave me...." << std::endl;
                 if (not(params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty()))
                 {
                     ProblemDefinitionsSPtr problem_defs = geon_eval.getProblemDefinitions();
@@ -256,24 +273,25 @@ int main(int argc, char *argv[])
                 PopulationSPtr pop(new Population);
                 if (params.restart_pop_file.first == "no_seed" || params.restart_pop_file.first.empty())
                 {
-                    std::cout << "Creating the population" << std::endl;
+                    std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Creating the population" << std::endl;
                     pop =
                         intialisePopulationRandomDVAssignment(params.pop_size, geon_eval.getProblemDefinitions(), rng);
                 }
                 else
                 {
-                    std::cout << "Restoring the population" << std::endl;
+                    std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Restoring the population" << std::endl;
                     pop = restore_population(params.restart_pop_file.second, geon_eval.getProblemDefinitions());
                 }
                 optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
-                optimiser->initialiseWithPop(pop);
-                optimiser->savePop(pop, params.save_dir.second, "initial_pop");
+                boost::filesystem::path intial_pop_directory = params.save_dir.second / "initial_pop";
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Initialising the population, saving here: " << params.save_dir.first << std::endl;
+                optimiser->initialiseWithPop(pop, intial_pop_directory);
 
-                std::cout << "Running the optimisation now...." << std::endl;
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Running the optimisation now...." << std::endl;
                 optimiser->run();
 
                 //Postprocess the results
-                std::cout << "Finished running the optimisation. Now postprocessing" << std::endl;
+                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Finished running the optimisation. Now postprocessing" << std::endl;
                 optimiser->savePop(pop, params.save_dir.second, "final_pop");
             }
 
@@ -315,15 +333,15 @@ int main(int argc, char *argv[])
     }
     else
     {
-        std::cout << "This is a worker for the Geonamica optimisation, reporting for duty!" << std::endl;
+        std::cout <<  boost::posix_time::second_clock::local_time() << " " << "This is a worker for the Geonamica optimisation, reporting for duty!" << std::endl;
         //load parameters
         try
         {
             GeonamicaPolicyParameters params;
             boost::mpi::broadcast(world, params, 0);
-//            std::cout << "received params\n";
+//            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "received params\n";
             params.evaluator_id = world.rank();
-            std::cout << "My worker ID is " << params.evaluator_id << std::endl;
+            std::cout <<  boost::posix_time::second_clock::local_time() << " " << "My worker ID is " << params.evaluator_id << std::endl;
             //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
             std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
 //            std::string log_file_name = "worker_" + std::to_string(world.rank()) + "_timing.log";
