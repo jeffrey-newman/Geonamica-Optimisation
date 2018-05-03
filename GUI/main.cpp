@@ -284,8 +284,32 @@ int main(int argc, char *argv[])
                 }
                 optimiser->getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
                 boost::filesystem::path intial_pop_directory = params.save_dir.second / "initial_pop";
-                std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Initialising the population, saving here: " << params.save_dir.first << std::endl;
-                optimiser->initialiseWithPop(pop, intial_pop_directory);
+                if (!(boost::filesystem::exists(intial_pop_directory)))
+                {
+                    try
+                    {
+                        boost::filesystem::create_directories(intial_pop_directory);
+                        std::cout << "path " << intial_pop_directory << " did not exist, so created\n";
+                    }
+                    catch(boost::filesystem::filesystem_error& e)
+                    {
+                        std::cout << "Attempted to create " << intial_pop_directory << " but was unable\n";
+                        std::cout << e.what() << "\n";
+                    }
+                }
+                if (boost::filesystem::exists(intial_pop_directory))
+                {
+                    std::cout << boost::posix_time::second_clock::local_time() << " "
+                              << "Initialising the population, saving here: " << params.save_dir.first << std::endl;
+                    optimiser->initialiseWithPop(pop, intial_pop_directory);
+                }
+                else
+                {
+                    std::cout << boost::posix_time::second_clock::local_time() << " "
+                              << "Initialising the population but not saving" << std::endl;
+                    optimiser->initialiseWithPop(pop);
+                }
+
 
                 std::cout <<  boost::posix_time::second_clock::local_time() << " " << "Running the optimisation now...." << std::endl;
                 optimiser->run();
