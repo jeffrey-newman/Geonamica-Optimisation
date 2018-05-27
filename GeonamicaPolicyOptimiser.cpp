@@ -826,10 +826,25 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
 
         // Now make batch and running commands for running Geonamica.
         std::stringstream run_command_ss;
-        run_bat_file = params.save_dir.second / ("run_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
-        save_bat_file = params.save_dir.second / ("save_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
-        run_sh_file = params.save_dir.second / ("run_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
-        save_sh_file = params.save_dir.second / ("save_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
+        boost::filesystem::path console_script_dir = params.save_dir.second / "ConsoleScripts";
+        if (!(boost::filesystem::exists(console_script_dir)))
+        {
+            try
+            {
+                boost::filesystem::create_directories(console_script_dir);
+//                std::cout << "path " << console_script_dir.c_str() << " did not exist, so created\n";
+            }
+            catch(boost::filesystem::filesystem_error& e)
+            {
+                std::cout << "Attempted to create " << console_script_dir.c_str() << " for console scripts but was unable\n";
+                std::cout << e.what() << "\n";
+            }
+        }
+
+        run_bat_file = console_script_dir / ("run_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
+        save_bat_file = console_script_dir / ("save_geonamica_worker" + std::to_string(params.evaluator_id) + ".bat");
+        run_sh_file = console_script_dir / ("run_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
+        save_sh_file = console_script_dir / ("save_wine_worker" + std::to_string(params.evaluator_id) + ".sh");
 
         std::ofstream run_bat_file_stream(run_bat_file.string().c_str());
         std::ofstream save_bat_file_stream(save_bat_file.string().c_str());
@@ -892,6 +907,29 @@ GeonamicaOptimiser::saveMap(blink::raster::gdal_raster<T> & map, const boost::fi
         save_sh_file_stream.close();
         save_bat_file_stream.close();
 //        run_command = run_command_ss.str();
+
+        // Set up logging directory.
+        if (params.is_logging)
+        {
+            logdir = params.save_dir.second / "GeonamicaOptimiserLogs";
+            if (!(boost::filesystem::exists(logdir)))
+            {
+                try
+                {
+                    boost::filesystem::create_directories(logdir);
+//                    std::cout << "path " << path.first << " did not exist, so created\n";
+                }
+                catch(boost::filesystem::filesystem_error& e)
+                {
+                    std::cout << "Attempted to create " << logdir.string().c_str() << " but was unable\n";
+                    std::cout << e.what() << "\n";
+                    params.is_logging = false;
+                }
+            }
+        }
+
+
+
     }
 
 
@@ -1397,7 +1435,7 @@ void
                                        boost::posix_time::to_simple_string(
                                                boost::posix_time::second_clock::local_time()) +
                                        ".log";
-                this->logfile = params.save_dir.second / filename;
+                this->logfile = logdir / filename;
                 delete_previous_logfile = true;
             }
             else

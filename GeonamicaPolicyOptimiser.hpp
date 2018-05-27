@@ -96,7 +96,8 @@ private:
     std::vector<int> zone_id_lookup; // maps the index of the vector as the nth zonal decision variable to the subregion id in subregion map.
     int min_delineated_id;
     int max_delineated_id;
-    
+
+    boost::filesystem::path logdir;
     boost::filesystem::path logfile;
     boost::filesystem::path previous_logfile;
 
