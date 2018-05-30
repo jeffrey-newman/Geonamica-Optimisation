@@ -34,6 +34,7 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/bind.hpp>
+#include <boost/asio.hpp>
 #include "Modules/boost_placeholder/dll/import.hpp" // for import_alias
 #include "ColourMapperParsers.h"
 #include "Evaluation.hpp"
@@ -1434,7 +1435,7 @@ void
                                        +
                                        boost::posix_time::to_simple_string(
                                                boost::posix_time::second_clock::local_time()) +
-                                       ".log";
+                                        + "_" + boost::asio::ip::host_name() + ".log";
                 this->logfile = logdir / filename;
                 delete_previous_logfile = true;
             }

@@ -372,15 +372,15 @@ int main(int argc, char *argv[])
 //            boost::filesystem::path eval_log = params.save_dir.second / log_file_name;
 //            std::ofstream eval_strm(eval_log.c_str());
             boost::shared_ptr<GeonamicaOptimiser> geon_eval(new GeonamicaOptimiser(params));
-            boost::shared_ptr<ParallelEvaluatorClientBase> eval_client;
-            if (params.algorithm == "NSGAII Proper")
-            {
-                eval_client.reset(new ParallelEvaluatePopClientNonBlocking(env, world, geon_eval->getProblemDefinitions(), *geon_eval));
-            }
-            else if (params.algorithm == "NSGAII - continuous evolution")
-            {
-                eval_client.reset(new ParallelEvaluatePopClientNonBlockingContinuousEvolution(env, world, geon_eval->getProblemDefinitions(), *geon_eval));
-            }
+            boost::shared_ptr<ParallelEvaluatorClientBase> eval_client(new ParallelEvaluatePopClientNonBlocking(env, world, geon_eval->getProblemDefinitions(), *geon_eval));
+//            if (params.algorithm == "NSGAII Proper")
+//            {
+//                eval_client.reset
+//            }
+//            else if (params.algorithm == "NSGAII - continuous evolution")
+//            {
+//                eval_client.reset(new ParallelEvaluatePopClientNonBlocking(env, world, geon_eval->getProblemDefinitions(), *geon_eval));
+//            }
 
             if (params.is_logging)
             {
