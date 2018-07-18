@@ -31,6 +31,10 @@ int main(int argc, char *argv[])
     bool using_mpi = false;
     if (world.size() > 1) using_mpi = true;
 
+    std::cout << "sleeping" ;
+    std::this_thread::sleep_for(std::chrono::seconds(20));
+    std::cout << "...resuming" << std::endl;
+
     if (world.rank() == 0)
     {
         std::cout <<  boost::posix_time::second_clock::local_time() << " " << "This is Jeffrey Newman's Geonamica Optimiser" << std::endl;
