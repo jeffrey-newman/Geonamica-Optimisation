@@ -9,8 +9,4 @@ Decision variables:
 1. whether each zone in a zonal layer is actively stimulated, allowed, weakly restricted or completely restricted. This also adds an decision variable relating to how many cells in the zonal layer that are in a state that is not 'allowed' therefore favouring a 'free' market.
 2. Any geoproject defined variable (or vector of variables) which is obtainable using a PUGI-compatible xpath statement 
 
-Dependancies:
-1. My fork of AHHZ's raster repositories
-2. Boost
-3. Pugixml - included in source tree
-
+Information on dependencies and compiling is found in the wiki: https://github.com/jeffrey-newman/Geonamica-Optimisation/wiki/Compilation-notes
